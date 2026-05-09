@@ -32,6 +32,9 @@ Thumbs.db
 # Logs
 *.log
 
+# Claude Code
+.claude/settings.local.json
+
 # Playwright
 .playwright-mcp/
 page-snapshot.md
