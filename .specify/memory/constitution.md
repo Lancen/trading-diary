@@ -1,22 +1,9 @@
 <!--
   Sync Impact Report
   ==================
-  Version change: 3.0.0 → 3.1.0 (MINOR)
-  Rationale: ORM changed from Hibernate/JPA to MyBatis-Plus. New domain constraint (认证与授权).
-  RoundingMode added to 金额精度. Phase 0 checklist updated. Stale Sync Report entry cleaned.
-  Modified principles:
-    II. 分层不可逆 — code examples updated from JPA Repository to MyBatis-Plus Mapper
-  Added sections:
-    - 领域约束 §5: 认证与授权 (JWT + Spring Security)
-  Updated sections:
-    - 领域约束 §1: 金额精度 — added RoundingMode.HALF_UP requirement
-    - Phase 0 检查清单 — updated for MyBatis-Plus patterns, added 认证项
-    - Governance — added relationship note between CLAUDE.md AI guidelines and constitution
-  Removed sections: None
-  Templates requiring updates:
-    - CLAUDE.md ✅ already aligned (ORM changed in same commit)
-    - docs/standards/technical-standards.md ✅ already aligned (same commit)
-  Follow-up TODOs: None
+  Version: 0.0.1 (初始化版本)
+  Ratified: 2026-05-09
+  This is the initial project constitution. No prior versions.
 -->
 
 # Trading Diary 项目宪法
@@ -311,4 +298,4 @@ SaaS 产品必须以 JWT + Spring Security 实现无状态认证。
 
 ---
 
-**Version**: 3.1.0 | **Ratified**: 2026-05-09 | **Last Amended**: 2026-05-09
+**Version**: 0.0.1 | **Ratified**: 2026-05-09 | **Last Amended**: 2026-05-09

@@ -42,7 +42,7 @@ trading-diary — 交易日记应用。项目处于初始化阶段（2026-05-08 
 
 ## 行为准则
 
-以下准则面向 AI（Claude Code），与宪法（`.specify/memory/constitution.md` v3.1.0）的工程决策原则并行。AI 准则约束编码过程，宪法约束系统设计。**权衡：偏向谨慎而非速度，简单任务可自行判断。**
+以下准则面向 AI（Claude Code），与宪法（`.specify/memory/constitution.md` v0.0.1）的工程决策原则并行。AI 准则约束编码过程，宪法约束系统设计。**权衡：偏向谨慎而非速度，简单任务可自行判断。**
 
 ### 1. 编码前先思考
 
@@ -150,7 +150,7 @@ npx playwright test --headed    # 有头模式调试
 
 ## 项目宪法
 
-本项目遵循宪法（`.specify/memory/constitution.md` v3.1.0）作为最高准则。核心原则：
+本项目遵循宪法（`.specify/memory/constitution.md` v0.0.1）作为最高准则。核心原则：
 
 1. **约定优于配置** — 优先使用 Spring Boot 默认约定
 2. **分层不可逆** — Controller → Service → Mapper，不可反向调用
