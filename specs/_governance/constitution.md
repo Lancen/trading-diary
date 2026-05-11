@@ -5,17 +5,14 @@
   Ratified: 2026-05-09
   Last Amended: 2026-05-11
   Changes in 0.1.0:
-    - 新增 "What 与 How 的边界" 章节
+    - 新增 "What 与 How 的边界" 章节，定义宪法与技术规范的判断标准
     - 4 条核心原则各增加"裁决"说明（Tie-Breaker）
-    - 建立 specs/_governance/ 独立版本化存放
-
-  权威副本：specs/_governance/constitution.md
-  本文件为 Speckit 工具缓存副本，内容与权威副本同步。
+    - 建立 specs/_governance/ 独立版本化存放（本文档为权威副本）
 -->
 
 # Trading Diary 项目宪法
 
-> **权威副本**：`specs/_governance/constitution.md` 是本宪法的单一事实来源（Single Source of Truth）。本文件为 Speckit 工具缓存副本。
+> **权威声明**：本文档（`specs/_governance/constitution.md`）是项目宪法的**单一事实来源（Single Source of Truth）**。`.specify/memory/constitution.md` 是工具缓存副本，内容与本文档同步。当两者不一致时，以本文档为准。
 
 宪法是项目最高准则。它定义**决策原则**，而非实现细节。当两个方案冲突时，宪法告诉你选哪个。实现细节见 `docs/standards/technical-standards.md`。
 
@@ -42,7 +39,7 @@
 
 ## 核心原则
 
-每条原则包含三个要素：**规则**（做什么）、**为什么**（背后的取舍）、**反模式**（具体代码示例）。
+每条原则包含四个要素：**规则**（做什么）、**为什么**（背后的取舍）、**裁决**（冲突时选哪个）、**反模式**（具体代码示例）。
 
 ### I. 约定优于配置
 
@@ -326,6 +323,7 @@ SaaS 产品必须以 JWT + Spring Security 实现无状态认证。
 
 | 文件 | 用途 |
 |------|------|
+| `.specify/memory/constitution.md` | Speckit 工具缓存副本（与本文档同步） |
 | `docs/standards/technical-standards.md` | 技术实现规范（本文档的配套细节） |
 | `CLAUDE.md` | 项目技术栈、AI 行为准则、日常命令 |
 | `docs/architecture/` | 架构设计决策记录 |
