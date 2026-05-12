@@ -1,16 +1,4 @@
 spring:
-  datasource:
-    url: jdbc:h2:mem:tradingdiary;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
-    hikari:
-      maximum-pool-size: 10
-      minimum-idle: 5
-      connection-timeout: 20000
-      idle-timeout: 600000
-      max-lifetime: 1800000
-
   h2:
     console:
       enabled: true
@@ -30,11 +18,11 @@ springdoc:
 
 app:
   jwt:
-    secret: dev-secret-key-at-least-256-bits-long-for-hs256
+    secret: ${app.jwt.secret:dev-secret}
     access-expiration: 900
     refresh-expiration: 604800
   init:
-    admin-password: admin123
+    admin-password: ${app.init.admin-password:admin123}
   auto-login:
     enabled: true
     username: admin
