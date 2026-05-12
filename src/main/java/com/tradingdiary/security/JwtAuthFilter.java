@@ -18,8 +18,11 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.Set;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 
 @Component
+@Order(Ordered.HIGHEST_PRECEDENCE + 100)
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(JwtAuthFilter.class);
