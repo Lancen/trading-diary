@@ -31,7 +31,10 @@ springdoc:
 app:
   jwt:
     secret: dev-secret-key-change-in-production-min-256-bits-long
-    access-token-expiration: 900000
-    refresh-token-expiration: 604800000
+    access-expiration: 900
+    refresh-expiration: 604800
+  init:
+    admin-password: admin123
   auto-login:
     enabled: true
+    username: admin
