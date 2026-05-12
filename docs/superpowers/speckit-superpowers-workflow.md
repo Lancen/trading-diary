@@ -19,7 +19,7 @@
     ▼
 ┌─────────────────────────────────┐
 │ 1. brainstorming (superpowers)   │  探索、提问、对齐
-│    → design doc                  │  产出：设计文档（§1-§6 为 WHAT+HOW，§7 为纯 WHAT 摘要）
+│    → design doc                  │  产出：设计文档（§7 前为 WHAT+HOW 技术方案，§7 为纯 WHAT 摘要）
 └────────────┬────────────────────┘
              │
              ▼
@@ -65,7 +65,7 @@
 
 | 章节 | 内容 | 用途 |
 |------|------|------|
-| §1-§6 | 数据库、后端、前端、脚手架（WHAT + HOW 混合） | speckit-plan 的技术参考 |
+| §7 之前的所有章节 | 数据库、后端、前端、脚手架等（WHAT + HOW 混合） | speckit-plan 的技术参考 |
 | §7 | 纯 WHAT 功能描述（无技术术语） | speckit-specify 的输入 |
 
 **关键规则**:
@@ -97,11 +97,11 @@
 
 **执行**: `/speckit-plan`
 
-> ⚠️ `/speckit-plan` 不会自动读取 design doc。执行时 AI MUST 主动读取 `docs/superpowers/specs/` 下对应的 design doc，将其 §1-§6 的技术决策（数据库设计、组件清单、配置方案）作为 plan.md 的技术上下文填充。
+> ⚠️ `/speckit-plan` 不会自动读取 design doc。执行时 AI MUST 主动读取 `docs/superpowers/specs/` 下对应的 design doc，将其 §7 之前所有章节的技术决策作为 plan.md 的技术上下文填充。
 
 **职责**:
 - 基于 spec.md 生成技术实施计划
-- **主动读取 design doc §1-§6**，复用已决策的技术方案（不对已决策事项重复讨论）
+- **主动读取 design doc §7 之前的所有章节**，复用已决策的技术方案（不对已决策事项重复讨论）
 - 产出分步骤的实施路线图
 
 **输出**: `specs/NNN-feature-name/plan.md`
@@ -152,7 +152,7 @@ design doc §7 的格式规范：
 
 ### design doc → speckit-plan
 
-speckit-plan 执行时，AI 应读取 design doc §1-§6 获取技术决策上下文，避免重复讨论已确定的方案。
+speckit-plan 执行时，AI 应读取 design doc §7 之前的所有章节获取技术决策上下文，避免重复讨论已确定的方案。
 
 ## 不做的事
 
