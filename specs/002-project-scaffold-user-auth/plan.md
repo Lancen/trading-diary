@@ -80,12 +80,14 @@ src/main/java/com/tradingdiary/
 │   ├── SysUser.java
 │   ├── SysRole.java
 │   ├── SysUserRole.java
-│   └── SysPermission.java
+│   ├── SysPermission.java
+│   └── SysRefreshToken.java
 ├── mapper/
 │   ├── SysUserMapper.java
 │   ├── SysRoleMapper.java
 │   ├── SysUserRoleMapper.java
-│   └── SysPermissionMapper.java
+│   ├── SysPermissionMapper.java
+│   └── SysRefreshTokenMapper.java
 ├── model/
 │   ├── request/LoginRequest.java
 │   ├── vo/TokenVO.java

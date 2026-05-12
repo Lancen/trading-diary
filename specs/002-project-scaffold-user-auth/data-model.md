@@ -6,12 +6,14 @@
 
 ```
 sys_user ──< sys_user_role >── sys_role
-                                  │
-                                  ▼ (Phase 1+)
-                            sys_role_permission
-                                  │
-                                  ▼
-                            sys_permission
+     │                            │
+     │                            ▼ (Phase 1+)
+     │                      sys_role_permission
+     │                            │
+     │                            ▼
+     │                      sys_permission
+     │
+     └──< sys_refresh_token  (令牌失效管理)
 ```
 
 ## Tables
@@ -60,6 +62,22 @@ sys_user ──< sys_user_role >── sys_role
 
 **索引**: `uk_user_role` (UNIQUE: user_id, role_id), `idx_user_id`, `idx_role_id`
 
+### sys_refresh_token — 刷新令牌失效表
+
+| 字段 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| id | BIGINT | PK, AUTO_INCREMENT | 主键 |
+| user_id | BIGINT | NOT NULL, FK → sys_user.id | 用户 ID |
+| token_hash | VARCHAR(255) | NOT NULL | 刷新令牌 SHA-256 哈希 |
+| expires_at | DATETIME | NOT NULL | 令牌过期时间 |
+| revoked | TINYINT(1) | NOT NULL, DEFAULT 0 | 0=有效, 1=已撤销 |
+| created_at | DATETIME | NOT NULL, DEFAULT CURRENT_TIMESTAMP | 创建时间 |
+
+**索引**: `idx_user_id`, `idx_token_hash` (UNIQUE)
+
+**业务场景**: 刷新令牌签发时写入哈希记录；刷新时标记旧记录 revoked=1 并写入新记录；登出时标记所有该用户未过期记录 revoked=1；验证时检查 `revoked=0 AND expires_at > NOW()`。
+**生命周期**: 签发 → 有效期内可用 → 刷新时旧记录撤销 → 过期自动失效。保留 7 天（与 refresh token 有效期一致）后可由定时任务清理。
+
 ### sys_permission — 权限表（Phase 1 预留）
 
 | 字段 | 类型 | 约束 | 说明 |
@@ -68,6 +86,8 @@ sys_user ──< sys_user_role >── sys_role
 | code | VARCHAR(50) | UNIQUE, NOT NULL | 权限编码（如 `trade:read`） |
 | name | VARCHAR(50) | NOT NULL | 权限名称 |
 | created_at | DATETIME | NOT NULL, DEFAULT CURRENT_TIMESTAMP | 创建时间 |
+| updated_at | DATETIME | NOT NULL, DEFAULT CURRENT_TIMESTAMP ON UPDATE | 更新时间 |
+| is_deleted | TINYINT(1) | NOT NULL, DEFAULT 0 | 软删除标记 |
 
 **说明**: 本阶段仅建表，不填充数据。为 Phase 1 的 `@PreAuthorize` 权限控制预留。
 
@@ -78,6 +98,9 @@ sys_user ──< sys_user_role >── sys_role
 | id | BIGINT | PK, AUTO_INCREMENT | 主键 |
 | role_id | BIGINT | NOT NULL, FK → sys_role.id | 角色 ID |
 | permission_id | BIGINT | NOT NULL, FK → sys_permission.id | 权限 ID |
+| created_at | DATETIME | NOT NULL, DEFAULT CURRENT_TIMESTAMP | 创建时间 |
+| updated_at | DATETIME | NOT NULL, DEFAULT CURRENT_TIMESTAMP ON UPDATE | 更新时间 |
+| is_deleted | TINYINT(1) | NOT NULL, DEFAULT 0 | 软删除标记 |
 
 **说明**: 本阶段仅建表，不填充数据。
 

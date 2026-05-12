@@ -46,16 +46,18 @@
 
 ### 4. 令牌模型：Access + Refresh Token 轮换
 
-**Decision**: Access Token 15min + Refresh Token 7d，刷新时同时轮换两个 token
+**Decision**: Access Token 15min + Refresh Token 7d，刷新时同时轮换两个 token。失效管理通过 `sys_refresh_token` DB 表实现——签发时写入 SHA-256 哈希，刷新/登出时标记 `revoked=1`，验证时检查 `revoked=0 AND expires_at > NOW()`。
 
 **Rationale**:
 - 宪法 §5 要求 Access Token 15min，Refresh Token 7d
 - Token 轮换防止 refresh token 被盗用后长期有效
-- 登出时标记 refresh token 为失效（DB 记录或内存黑名单）
+- DB 表管理 token 失效：持久可靠，重启不丢失，支持按用户批量撤销（登出所有设备）
+- SHA-256 哈希存储，不存原始 token 明文，安全性高于内存黑名单
 
 **Alternatives considered**:
 - 单 token 长有效期：一旦泄漏无法撤销
 - 不轮换 refresh token：登出后旧 token 仍可用
+- 内存黑名单：重启丢失，单机有效但扩展性差
 
 ### 5. 密码存储：BCrypt
 
