@@ -1,177 +1,219 @@
 # Speckit + Superpowers 混合使用流程
 
-**版本**: 1.1.0 | **日期**: 2026-05-11
+**版本**: 2.0.0 | **日期**: 2026-05-12
+
+适用于任何软件项目，从模糊想法到可交付代码的完整开发链路。
 
 ## 定位
 
-| 工具 | 擅长的 | 输入 | 输出 |
-|------|--------|------|------|
-| **Superpowers** | 前期探索、设计对齐、执行纪律、验证闭环 | 模糊想法 | design doc（WHAT + HOW） |
-| **Speckit** | 结构化规范、模板驱动、artifact 一致性、任务编排 | 明确的 WHAT 描述 | spec.md → plan.md → tasks.md |
+| 工具 | 角色 | 输入 | 输出 |
+|------|------|------|------|
+| **Superpowers** | 前期探索 + 后期执行 | 模糊想法 | design doc → 可运行代码 |
+| **Speckit** | 中期结构化 | 明确的需求描述 | spec.md → plan.md → tasks.md |
 
-核心原则：**Superpowers 管前期和后期，Speckit 管中期结构化**。
+Superpowers 负责"想清楚要做什么"和"把它做出来"，Speckit 负责中间的结构化规范、一致性检查、任务编排。
 
-## 完整流程
+## 完整流程（7 步）
 
 ```
 模糊想法
     │
     ▼
-┌─────────────────────────────────┐
-│ 1. brainstorming (superpowers)   │  探索、提问、对齐
-│    → design doc                  │  产出：技术方案章节 + "功能描述" 章节（纯 WHAT 摘要）
-└────────────┬────────────────────┘
-             │
-             ▼
-┌─────────────────────────────────┐
-│ 2. speckit-specify               │  读取 "功能描述" 章节 → 转为结构化 spec
-│    → spec.md                     │  产出：用户故事、功能需求、成功标准（纯 WHAT）
-└────────────┬────────────────────┘
-             │
-             ▼
-┌─────────────────────────────────┐
-│ 3. speckit-plan                  │  读取 "功能描述" 之前的章节 → 填充技术上下文
-│    → plan.md                     │  复用已决策的技术方案，不重复讨论
-└────────────┬────────────────────┘
-             │
-             ▼
-┌─────────────────────────────────┐
-│ 4. speckit-tasks                 │  生成依赖排序的任务列表
-│    → tasks.md                    │
-└────────────┬────────────────────┘
-             │
-             ▼
-┌─────────────────────────────────┐
-│ 5. executing-plans (superpowers) │  分批执行，验证检查点
-│    + test-driven-development     │  每步验证，不跳步骤
-│    + verification-before-complete│
-└─────────────────────────────────┘
+┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐
+│1. 探索    │ → │2. 规范    │ → │3. 计划    │ → │4. 拆解    │ → │5. 检查    │ → │6. 准备    │ → │7. 执行    │
+│brainstorm│   │specify   │   │plan      │   │tasks     │   │analyze   │   │环境      │   │subagent  │
+└──────────┘   └──────────┘   └──────────┘   └──────────┘   └──────────┘   └──────────┘   └──────────┘
+     │              │              │              │              │              │              │
+     ▼              ▼              ▼              ▼              ▼              ▼              ▼
+ design doc     spec.md        plan.md        tasks.md       分析报告      编译通过       可交付代码
+ (WHAT+HOW)    (纯 WHAT)     research.md                   修复提交      pnpm install
+                             data-model.md
+                             contracts/
+                             quickstart.md
 ```
 
-## 各阶段详解
+---
 
-### 1. brainstorming → design doc
+## 步骤 1：探索（brainstorming）
 
 **执行**: `/superpowers:brainstorming`
 
-**职责**:
-- 探索项目上下文
-- 评估范围，必要时拆分子系统
-- 逐个提问澄清需求
-- 提出 2-3 种方案及权衡
-- 逐节展示设计并获取批准
+**做什么**：
+- 读取项目现有代码、文档、规范
+- 评估需求规模，过大的拆分为多个子项目
+- 逐个提问澄清关键设计决策（一次一个问题，多项选择优先）
+- 提出 2-3 种方案及权衡，给出推荐
+- 逐节展示设计并获取用户批准
 
-**产出 — design doc 两段式结构**:
+**产出 — design doc 两段式结构**，由固定标题分隔：
 
-| 区域 | 内容 | 用途 |
-|------|------|------|
-| `## 功能描述` 之前的章节 | 数据库、后端、前端、脚手架等（WHAT + HOW 混合） | speckit-plan 的技术参考 |
-| `## 功能描述（供 speckit-specify 使用）` | 纯 WHAT 功能描述（无技术术语） | speckit-specify 的输入 |
+```markdown
+## 数据库设计           ← 技术方案章节（WHAT + HOW）
+## 后端设计             ← 数量任意，顺序任意
+## 前端设计             ← speckit-plan 读取这些
+## ...
 
-> 两段由固定标题 `## 功能描述（供 speckit-specify 使用）` 分隔。此标题之前的章节数量可以任意，标题之后必须紧跟纯 WHAT 摘要。
+## 功能描述（供 speckit-specify 使用）   ← 固定标题，不可改名
+> 纯 WHAT 摘要，无任何技术术语          ← speckit-specify 读取这个
+```
 
-**关键规则**:
-- "功能描述" 章节必须不含技术实现细节（无框架名、无库名、无代码结构）
-- "功能描述" 用自然语言描述用户能做什么、系统提供什么
-- 章节序号不重要，标题文字是接口契约
+| 区域 | 消费者 | 约束 |
+|------|--------|------|
+| `## 功能描述` 之前的章节 | speckit-plan | WHAT + HOW 混合，可写任何技术细节 |
+| `## 功能描述` 及之后 | speckit-specify | 纯 WHAT，自然语言，禁止框架名/库名/代码结构 |
+
+**关键规则**：
+- "功能描述" 标题是接口契约，改名会破坏下游工具链
+- 功能描述只描述用户能做什么、系统提供什么
 - brainstorming 结束必须 commit design doc
 
-### 2. speckit-specify → spec.md
+---
+
+## 步骤 2：规范（speckit-specify）
 
 **执行**: `/speckit-specify <"功能描述" 章节的纯 WHAT 文本>`
 
-**职责**:
-- 将纯 WHAT 描述转为结构化规范
-- 生成用户故事（带优先级和验收场景）
-- 生成功能需求（FR-xxx，可测试）
-- 生成成功标准（SC-xxx，可度量、技术无关）
-- 识别关键实体和边界场景
+**输入**: 从 design doc "功能描述" 章节**复制文本**，不要传整个文件路径。传文件路径会导致技术细节渗入 spec。
 
-**输入方式**:
-```
-/speckit-specify 搭建项目脚手架和用户认证体系。管理员通过种子数据初始化...
-```
+**产出**：
+- `spec.md` — 用户故事（P1/P2/P3 优先级）、验收场景、功能需求（FR-xxx）、成功标准（SC-xxx）、边界场景、关键实体、假设条件
+- `checklists/requirements.md` — 质量检查清单
 
-**注意**: 直接复制 design doc 中 "功能描述" 章节的文本内容，不要传整个 design doc 文件路径。
+**注意**: speckit 模板的章节标题已翻译为中文，但 AI 指令注释和格式标记（`[P]`、`[US1]`、FR-/SC- 前缀）保持英文。
 
-**产出**: `specs/NNN-feature-name/spec.md` + 质量检查清单
+---
 
-### 3. speckit-plan → plan.md
+## 步骤 3：计划（speckit-plan）
 
 **执行**: `/speckit-plan`
 
-> ⚠️ `/speckit-plan` 不会自动读取 design doc。执行时 AI MUST 主动读取 `docs/superpowers/specs/` 下对应的 design doc，将其中 `## 功能描述` 标题之前所有章节的技术决策作为 plan.md 的技术上下文填充。
+> ⚠️ **speckit-plan 不会自动读取 design doc**。执行时 AI MUST 主动读取 `docs/superpowers/specs/` 下对应的 design doc，将 "功能描述" 标题之前所有章节的技术决策作为技术上下文填充。不做这一步 = 重复讨论已决策的方案。
 
-**职责**:
-- 基于 spec.md 生成技术实施计划
-- **主动读取 design doc 中 "功能描述" 之前的所有章节**，复用已决策的技术方案（不对已决策事项重复讨论）
-- 产出分步骤的实施路线图
+**产出**: `plan.md` + `research.md` + `data-model.md` + `contracts/` + `quickstart.md`
 
-**输出**: `specs/NNN-feature-name/plan.md`
+---
 
-### 4. speckit-tasks → tasks.md
+## 步骤 4：拆解（speckit-tasks）
 
 **执行**: `/speckit-tasks`
 
-**职责**:
-- 将 plan.md 分解为可执行的任务列表
-- 标注任务依赖关系
-- 每个任务应有明确的验证标准
+**产出**: `tasks.md` — 按 User Story 分组的任务列表，标注依赖关系和并行标记 [P]。
 
-**输出**: `specs/NNN-feature-name/tasks.md`
+**局限认知**: tasks.md 按 spec 的用户故事分组，不代表代码的真实耦合关系。例如 login/refresh/logout 在 spec 中是两个 User Story，但在代码中是同一个 AuthService/AuthController 实现。执行时相邻阶段可能自然合并——这是正常的，不是 tasks.md 的质量问题。
 
-### 5. 执行（superpowers）
+---
 
-**执行**: `/superpowers:executing-plans` 或 `/superpowers:subagent-driven-development`
+## 步骤 5：检查（speckit-analyze）
 
-**职责**:
-- 按 tasks.md 顺序执行
-- 每个任务写测试 → 写代码 → 验证
-- 关键节点请求 code review
-- 完成前运行完整验证
+**执行**: `/speckit-analyze`
 
-**相关技能**:
-- `test-driven-development` — 每个任务先写测试
-- `verification-before-completion` — 声称完成前必须验证
-- `requesting-code-review` — 关键节点请求审查
-- `finishing-a-development-branch` — 完成后决定合并方式
+**为什么必须在实施前做**: tasks.md 基于 spec.md 生成，但 spec 不包含所有技术细节。analyze 在 spec/plan/tasks 之间做交叉检查，发现的缺口必须在实施前修复，否则边写边补会导致返工。
+
+**常见发现**：
+| 类型 | 示例 | 修复方式 |
+|------|------|---------|
+| data-model 缺表/缺字段 | 刷新令牌失效需要 `sys_refresh_token` 表未建模 | 补充到 data-model.md、plan.md、tasks.md |
+| tasks 遗漏关键步骤 | token 刷新/登出的实现任务被拆分到另一阶段 | 合并或补充任务 |
+| 成功标准无验证手段 | 性能指标无对应测试任务 | 标注验证阶段 |
+| 术语不一致 | spec 用"凭证"，plan 用"token" | 确认是可接受的还是需要统一 |
+
+---
+
+## 步骤 6：环境准备
+
+**为什么必须**: AI agent 在沙箱中通常无法执行包管理器、系统级安装命令。这些必须在派发 agent 之前由人（或主 session）完成。
+
+| 检查项 | 验证命令 | agent 能做吗 |
+|--------|---------|-------------|
+| 语言运行时版本 | `java -version`、`node -v` | ❌ 不能安装 |
+| 包管理器 | `gradle --version`、`pnpm --version` | ❌ 不能安装 |
+| 首次编译通过 | `./gradlew compileJava` | ⚠️ 需要 JDK 路径 |
+| 前端依赖安装 | `cd frontend && pnpm install` | ❌ 沙箱限制 |
+| 敏感配置 | `.env` 文件就位 | ✅ 但不会自动创建 |
+
+> **核心原则：编译通过是派发 agent 的前置条件。不要在编译不过的情况下继续加代码——问题会复合。**
+
+额外建议：
+- 统一配置方式（所有环境通过 `.env` + `application.yml` 默认值管理）
+- 一个能跑通的最小启动流程，确保 agent 生成的代码不会因环境问题批量失败
+
+---
+
+## 步骤 7：执行（subagent-driven-development）
+
+**执行**: `/superpowers:subagent-driven-development`
+
+### 批量策略
+
+tasks.md 的细粒度任务不适合逐条派发（浪费且容易冲突）。按文件边界和依赖关系合并为批：
+
+```
+Phase 1: 项目脚手架            ← 1-2 agent 并行
+Phase 2: 基础设施              ← N agent 并行（互不重叠的文件组）
+Phase 3-N: User Story 实现     ← 1 agent/Story（紧密耦合不拆分）
+Phase N+1: 测试                ← N agent 并行（后端 + 前端）
+Phase N+2: 收尾                ← 手动完成
+```
+
+### Agent 派发规则
+
+| 规则 | 说明 |
+|------|------|
+| [P] 标记的独立文件组可并行派发 | 无文件重叠 = 无冲突 |
+| 紧密耦合的模块不拆分 | 同一 Service/Controller/Config 必须同一个 agent |
+| 每批必须 commit | 编译验证 + `git commit` = agent 的"完成"定义 |
+| agent 无法执行 shell 时 | 主 session 接管编译和提交 |
+| 不接受"文件创建了但没编译" | BLOCKED 状态，必须补完 |
+| 同一批内出现失败 | 修复 → 编译 → 提交后再进下一批 |
+
+### Agent 能力边界
+
+| agent 能做 | agent 不能做（需主 session） |
+|-----------|---------------------------|
+| 创建/编辑源文件 | 执行 `gradle wrapper` |
+| 运行编译命令（如有权限） | `brew install` |
+| git commit | `pnpm install` |
+| 读取项目文件 | 启动应用服务 |
+| 搜索代码 | 浏览器测试（需 Playwright MCP） |
+
+### 执行顺序原则
+
+- **Phase 1→2→3 串行**，Phase 2 内部可大规模并行
+- **每批提交后立即编译验证**，不在编译不过的情况下继续加代码
+- **测试 Phase 可与收尾并行**，测试编写和最终验证可以覆盖
+
+---
 
 ## 接口契约
 
-### brainstorming → speckit-specify
+| 上游 | 下游 | 传递方式 | 关键约束 |
+|------|------|---------|---------|
+| brainstorming | speckit-specify | 复制 "功能描述" 文本 | 纯 WHAT，不传文件路径 |
+| brainstorming | speckit-plan | AI 主动读取 "功能描述" 之前的章节 | speckit 不会自动读 design doc |
+| speckit-analyze | 修复 | 分析报告 → 修复 spec/plan/tasks | 修复后才能执行 |
 
-design doc 中 `## 功能描述` 章节的格式规范：
+---
 
-```markdown
-## 功能描述（供 speckit-specify 使用）
+## 工具链选择
 
-> 此章节是纯 WHAT 摘要，不含技术实现细节，专门作为 speckit 工具链的输入接口。
+| 用这个 | 不用那个 | 理由 |
+|--------|---------|------|
+| brainstorming | speckit-clarify | brainstorming 已充分澄清，clarify 冗余 |
+| speckit-plan | writing-plans | speckit-plan 与 spec/tasks 联动，artifact 一致性更好 |
+| speckit-analyze | speckit-checklist | analyze 跨 artifact 检查，checklist 仅在单个 spec 内 |
+| subagent-driven-development | executing-plans | 同一 session，快速迭代；任务量大时选 executing-plans |
 
-<2-3 句话的自然语言描述，覆盖：谁、能做什么、关键约束>
-```
-
-> ⚠️ 章节标题必须是 `## 功能描述（供 speckit-specify 使用）`，不能修改。这是 brainstorming 和 speckit 之间的接口契约。
-
-**示例**:
-> 搭建项目脚手架和用户认证体系。管理员通过种子数据初始化（用户名 admin，密码从环境变量配置）。系统支持账号密码登录，验证成功后签发短期访问令牌和长期刷新令牌。令牌过期后可刷新，登出后刷新令牌失效。所有密码加密存储。预置 ADMIN 和 USER 两种角色用于权限控制。开发阶段启动时自动以管理员身份登录，开发者无需手动输入密码即可访问所有接口。生产模式下自动登录失效，所有接口必须携带有效令牌。
-
-### design doc → speckit-plan
-
-speckit-plan 执行时，AI 应读取 design doc 中 `## 功能描述` 标题之前的所有章节获取技术决策上下文，避免重复讨论已确定的方案。
-
-## 不做的事
-
-| 只用一个 | 理由 |
-|----------|------|
-| brainstorming > speckit-clarify | brainstorming 已充分澄清，clarify 冗余 |
-| speckit-plan > writing-plans | speckit-plan 与 spec/tasks 联动，artifact 一致性更好 |
-| superpowers code-review > speckit-analyze | superpowers 的 review 更严格、更交互 |
-| superpowers verification > speckit-checklist | 功能重叠，选更严格的 |
+---
 
 ## 反模式
 
-- 跳过 brainstorming 直接 speckit-specify → 需求未充分探索，spec 可能偏离意图
-- speckit-specify 输入整个 design doc 文件 → 技术细节渗入 spec，违反"纯 WHAT"
-- speckit-plan 不读 design doc → 重复讨论已确定的技术决策
-- brainstorming 后跳过 speckit 直接写代码 → 缺少结构化 spec/plan/tasks，缺乏可追溯性
-- 执行阶段不用 TDD → 违反宪法测试规范
+| 反模式 | 后果 | 预防 |
+|--------|------|------|
+| 跳过 brainstorming 直接 speckit-specify | 需求未探索，spec 偏离意图 | 永远从 brainstorming 开始 |
+| speckit-specify 传入整个 design doc 文件路径 | 技术细节渗入 spec | 只复制 "功能描述" 段落文本 |
+| speckit-plan 不读 design doc | 重复讨论已决策方案 | 在 workflow 文档中明确标注 |
+| 跳过 speckit-analyze | data-model 缺口带入实施，边写边补 | analyze → 修复 → 再执行 |
+| 跳过环境准备 | agent 批量失败，反复修复环境问题 | 编译通过是派发 agent 的前置条件 |
+| 编译不过继续加代码 | 错误复合，修复成本指数增长 | 每批提交后立即编译 |
+| 僵硬按 tasks.md 阶段执行 | 相邻阶段重复实现 | 执行时识别自然合并，不僵化 |
+| agent 文件创建了没编译 | 代码质量无保证 | "没编译 = BLOCKED，不是 DONE" |
