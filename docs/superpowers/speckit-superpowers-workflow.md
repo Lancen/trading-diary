@@ -97,9 +97,11 @@
 
 **执行**: `/speckit-plan`
 
+> ⚠️ `/speckit-plan` 不会自动读取 design doc。执行时 AI MUST 主动读取 `docs/superpowers/specs/` 下对应的 design doc，将其 §1-§6 的技术决策（数据库设计、组件清单、配置方案）作为 plan.md 的技术上下文填充。
+
 **职责**:
 - 基于 spec.md 生成技术实施计划
-- 引用 design doc §1-§6 中的技术决策（数据库设计、组件清单、配置方案）
+- **主动读取 design doc §1-§6**，复用已决策的技术方案（不对已决策事项重复讨论）
 - 产出分步骤的实施路线图
 
 **输出**: `specs/NNN-feature-name/plan.md`
