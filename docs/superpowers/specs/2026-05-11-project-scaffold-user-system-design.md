@@ -257,7 +257,7 @@ frontend/src/
 
 ---
 
-## §7 功能描述（供 speckit-specify 使用）
+## 功能描述（供 speckit-specify 使用）
 
 > 此章节是纯 WHAT 摘要，不含技术实现细节，专门作为 speckit 工具链的输入接口。
 

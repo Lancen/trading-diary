@@ -1,6 +1,6 @@
 # Speckit + Superpowers 混合使用流程
 
-**版本**: 1.0.0 | **日期**: 2026-05-11
+**版本**: 1.1.0 | **日期**: 2026-05-11
 
 ## 定位
 
@@ -19,19 +19,19 @@
     ▼
 ┌─────────────────────────────────┐
 │ 1. brainstorming (superpowers)   │  探索、提问、对齐
-│    → design doc                  │  产出：设计文档（§7 前为 WHAT+HOW 技术方案，§7 为纯 WHAT 摘要）
+│    → design doc                  │  产出：技术方案章节 + "功能描述" 章节（纯 WHAT 摘要）
 └────────────┬────────────────────┘
              │
              ▼
 ┌─────────────────────────────────┐
-│ 2. speckit-specify               │  将 design doc §7 纯 WHAT 描述转为结构化 spec
+│ 2. speckit-specify               │  读取 "功能描述" 章节 → 转为结构化 spec
 │    → spec.md                     │  产出：用户故事、功能需求、成功标准（纯 WHAT）
 └────────────┬────────────────────┘
              │
              ▼
 ┌─────────────────────────────────┐
-│ 3. speckit-plan                  │  生成实施计划
-│    → plan.md                     │  引用 design doc §1-§6 中的技术决策
+│ 3. speckit-plan                  │  读取 "功能描述" 之前的章节 → 填充技术上下文
+│    → plan.md                     │  复用已决策的技术方案，不重复讨论
 └────────────┬────────────────────┘
              │
              ▼
@@ -63,19 +63,22 @@
 
 **产出 — design doc 两段式结构**:
 
-| 章节 | 内容 | 用途 |
+| 区域 | 内容 | 用途 |
 |------|------|------|
-| §7 之前的所有章节 | 数据库、后端、前端、脚手架等（WHAT + HOW 混合） | speckit-plan 的技术参考 |
-| §7 | 纯 WHAT 功能描述（无技术术语） | speckit-specify 的输入 |
+| `## 功能描述` 之前的章节 | 数据库、后端、前端、脚手架等（WHAT + HOW 混合） | speckit-plan 的技术参考 |
+| `## 功能描述（供 speckit-specify 使用）` | 纯 WHAT 功能描述（无技术术语） | speckit-specify 的输入 |
+
+> 两段由固定标题 `## 功能描述（供 speckit-specify 使用）` 分隔。此标题之前的章节数量可以任意，标题之后必须紧跟纯 WHAT 摘要。
 
 **关键规则**:
-- §7 必须不含技术实现细节（无框架名、无库名、无代码结构）
-- §7 用自然语言描述用户能做什么、系统提供什么
+- "功能描述" 章节必须不含技术实现细节（无框架名、无库名、无代码结构）
+- "功能描述" 用自然语言描述用户能做什么、系统提供什么
+- 章节序号不重要，标题文字是接口契约
 - brainstorming 结束必须 commit design doc
 
 ### 2. speckit-specify → spec.md
 
-**执行**: `/speckit-specify <§7 纯 WHAT 描述>`
+**执行**: `/speckit-specify <"功能描述" 章节的纯 WHAT 文本>`
 
 **职责**:
 - 将纯 WHAT 描述转为结构化规范
@@ -89,7 +92,7 @@
 /speckit-specify 搭建项目脚手架和用户认证体系。管理员通过种子数据初始化...
 ```
 
-**注意**: 直接复制 design doc §7 内容，不要传整个 design doc 文件路径。
+**注意**: 直接复制 design doc 中 "功能描述" 章节的文本内容，不要传整个 design doc 文件路径。
 
 **产出**: `specs/NNN-feature-name/spec.md` + 质量检查清单
 
@@ -97,11 +100,11 @@
 
 **执行**: `/speckit-plan`
 
-> ⚠️ `/speckit-plan` 不会自动读取 design doc。执行时 AI MUST 主动读取 `docs/superpowers/specs/` 下对应的 design doc，将其 §7 之前所有章节的技术决策作为 plan.md 的技术上下文填充。
+> ⚠️ `/speckit-plan` 不会自动读取 design doc。执行时 AI MUST 主动读取 `docs/superpowers/specs/` 下对应的 design doc，将其中 `## 功能描述` 标题之前所有章节的技术决策作为 plan.md 的技术上下文填充。
 
 **职责**:
 - 基于 spec.md 生成技术实施计划
-- **主动读取 design doc §7 之前的所有章节**，复用已决策的技术方案（不对已决策事项重复讨论）
+- **主动读取 design doc 中 "功能描述" 之前的所有章节**，复用已决策的技术方案（不对已决策事项重复讨论）
 - 产出分步骤的实施路线图
 
 **输出**: `specs/NNN-feature-name/plan.md`
@@ -137,22 +140,24 @@
 
 ### brainstorming → speckit-specify
 
-design doc §7 的格式规范：
+design doc 中 `## 功能描述` 章节的格式规范：
 
 ```markdown
-## §7 功能描述（供 speckit-specify 使用）
+## 功能描述（供 speckit-specify 使用）
 
 > 此章节是纯 WHAT 摘要，不含技术实现细节，专门作为 speckit 工具链的输入接口。
 
 <2-3 句话的自然语言描述，覆盖：谁、能做什么、关键约束>
 ```
 
+> ⚠️ 章节标题必须是 `## 功能描述（供 speckit-specify 使用）`，不能修改。这是 brainstorming 和 speckit 之间的接口契约。
+
 **示例**:
 > 搭建项目脚手架和用户认证体系。管理员通过种子数据初始化（用户名 admin，密码从环境变量配置）。系统支持账号密码登录，验证成功后签发短期访问令牌和长期刷新令牌。令牌过期后可刷新，登出后刷新令牌失效。所有密码加密存储。预置 ADMIN 和 USER 两种角色用于权限控制。开发阶段启动时自动以管理员身份登录，开发者无需手动输入密码即可访问所有接口。生产模式下自动登录失效，所有接口必须携带有效令牌。
 
 ### design doc → speckit-plan
 
-speckit-plan 执行时，AI 应读取 design doc §7 之前的所有章节获取技术决策上下文，避免重复讨论已确定的方案。
+speckit-plan 执行时，AI 应读取 design doc 中 `## 功能描述` 标题之前的所有章节获取技术决策上下文，避免重复讨论已确定的方案。
 
 ## 不做的事
 
