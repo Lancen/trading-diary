@@ -1,4 +1,9 @@
 spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
   flyway:
     enabled: false
 
@@ -12,10 +17,10 @@ springdoc:
 
 app:
   jwt:
-    secret: ${APP_JWT_SECRET:test-secret-key-for-unit-tests-min-256-bits}
+    secret: test-secret-key-for-unit-tests-min-256-bits
     access-expiration: 900
     refresh-expiration: 604800
   init:
-    admin-password: ${APP_INIT_ADMIN_PASSWORD:admin123}
+    admin-password: admin123
   auto-login:
     enabled: false
