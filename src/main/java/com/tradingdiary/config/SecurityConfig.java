@@ -48,9 +48,10 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             );
 
-        // Dev-mode auto-login: active only with dev profile
+        // Both filters before UsernamePasswordAuthenticationFilter
+        // autoLoginFilter added first → executes before jwtAuthFilter
         if (autoLoginFilter != null) {
-            http.addFilterBefore(autoLoginFilter, JwtAuthFilter.class);
+            http.addFilterBefore(autoLoginFilter, UsernamePasswordAuthenticationFilter.class);
         }
         http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
