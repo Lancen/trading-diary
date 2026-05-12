@@ -1,36 +1,36 @@
-# Specification Quality Checklist: 项目脚手架 + 用户认证体系
+# 规范质量清单：项目脚手架 + 用户认证体系
 
-**Purpose**: Validate specification completeness and quality before proceeding to planning
-**Created**: 2026-05-11
-**Feature**: [spec.md](../spec.md)
+**用途**: 在进入实施计划前验证规范的完整性和质量
+**创建日期**: 2026-05-11
+**功能**: [spec.md](../spec.md)
 
-## Content Quality
+## 内容质量
 
-- [x] No implementation details (languages, frameworks, APIs)
-- [x] Focused on user value and business needs
-- [x] Written for non-technical stakeholders
-- [x] All mandatory sections completed
+- [x] 无实现细节（语言、框架、API）
+- [x] 聚焦用户价值和业务需求
+- [x] 面向非技术干系人编写
+- [x] 所有必填章节已完成
 
-## Requirement Completeness
+## 需求完整性
 
-- [x] No [NEEDS CLARIFICATION] markers remain
-- [x] Requirements are testable and unambiguous
-- [x] Success criteria are measurable
-- [x] Success criteria are technology-agnostic (no implementation details)
-- [x] All acceptance scenarios are defined
-- [x] Edge cases are identified
-- [x] Scope is clearly bounded
-- [x] Dependencies and assumptions identified
+- [x] 无 [NEEDS CLARIFICATION] 标记
+- [x] 需求可测试且无歧义
+- [x] 成功标准可度量
+- [x] 成功标准技术无关（无实现细节）
+- [x] 所有验收场景已定义
+- [x] 边界场景已识别
+- [x] 范围边界清晰
+- [x] 依赖和假设已识别
 
-## Feature Readiness
+## 功能就绪
 
-- [x] All functional requirements have clear acceptance criteria
-- [x] User scenarios cover primary flows
-- [x] Feature meets measurable outcomes defined in Success Criteria
-- [x] No implementation details leak into specification
+- [x] 所有功能需求有明确的验收标准
+- [x] 用户场景覆盖主要流程
+- [x] 功能满足成功标准中定义的可度量结果
+- [x] 无实现细节泄漏到规范中
 
-## Notes
+## 附注
 
-- 全部通过。使用纯 WHAT 输入（design doc §7），规范中无任何技术实现细节（JWT/BCrypt/Spring/RBAC）。
+- 全部通过。使用纯 WHAT 输入（design doc "功能描述" 章节），规范中无任何技术实现细节（JWT/BCrypt/Spring/RBAC）。
 - 与 001 版本对比：001 版因 design doc 直接输入导致少量技术术语渗入，002 版完全干净。
 - 规范已就绪，可进入 `/speckit-plan` 阶段。
