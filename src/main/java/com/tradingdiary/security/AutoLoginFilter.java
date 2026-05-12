@@ -42,6 +42,13 @@ public class AutoLoginFilter extends OncePerRequestFilter {
         this.userDetailsService = userDetailsService;
     }
 
+    /**
+     * Package-private setter for testing without Spring context.
+     */
+    void setUsername(String username) {
+        this.autoLoginUsername = username;
+    }
+
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
                                     @NonNull HttpServletResponse response,
