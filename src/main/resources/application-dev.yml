@@ -30,7 +30,7 @@ springdoc:
 
 app:
   jwt:
-    secret: dev-secret-key-change-in-production-min-256-bits-long
+    secret: dev-secret-key-at-least-256-bits-long-for-hs256
     access-expiration: 900
     refresh-expiration: 604800
   init:

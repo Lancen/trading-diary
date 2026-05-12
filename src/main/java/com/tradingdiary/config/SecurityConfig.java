@@ -1,6 +1,8 @@
 package com.tradingdiary.config;
 
+import com.tradingdiary.security.AutoLoginFilter;
 import com.tradingdiary.security.JwtAuthFilter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -26,6 +28,9 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
 
+    @Autowired(required = false)
+    private AutoLoginFilter autoLoginFilter;
+
     public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
         this.jwtAuthFilter = jwtAuthFilter;
     }
@@ -43,7 +48,10 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             );
 
-        // TODO Phase 4: Add AutoLoginFilter before JwtAuthFilter when available
+        // Dev-mode auto-login: active only with dev profile
+        if (autoLoginFilter != null) {
+            http.addFilterBefore(autoLoginFilter, JwtAuthFilter.class);
+        }
         http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
