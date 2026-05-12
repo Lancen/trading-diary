@@ -1,0 +1,25 @@
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 10
+
+logging:
+  level:
+    com.tradingdiary: INFO
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+app:
+  jwt:
+    secret: ${app.jwt.secret}
+    access-expiration: 900
+    refresh-expiration: 604800
+  init:
+    admin-password: ${app.init.admin-password}
+  auto-login:
+    enabled: false

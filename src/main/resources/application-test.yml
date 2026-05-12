@@ -1,0 +1,26 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  flyway:
+    enabled: false
+
+logging:
+  level:
+    com.tradingdiary.mapper: DEBUG
+
+springdoc:
+  api-docs:
+    enabled: false
+
+app:
+  jwt:
+    secret: test-secret-key-for-unit-tests-min-256-bits
+    access-expiration: 900
+    refresh-expiration: 604800
+  init:
+    admin-password: admin123
+  auto-login:
+    enabled: false

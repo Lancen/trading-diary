@@ -162,6 +162,8 @@ npx playwright test --headed    # 有头模式调试
 技术实现规范（代码标准、数据库、API、安全、事务、日志、测试、部署、监控）见 `docs/standards/technical-standards.md`。
 
 <!-- SPECKIT START -->
-For additional context about technologies to be used, project structure,
-shell commands, and other important information, read the current plan
+**Current feature**: [002-project-scaffold-user-auth](specs/002-project-scaffold-user-auth/)
+- Spec: [spec.md](specs/002-project-scaffold-user-auth/spec.md)
+- Plan: [plan.md](specs/002-project-scaffold-user-auth/plan.md)
+- Tasks: (pending `/speckit-tasks`)
 <!-- SPECKIT END -->

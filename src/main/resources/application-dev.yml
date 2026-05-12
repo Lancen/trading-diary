@@ -1,0 +1,22 @@
+logging:
+  level:
+    com.tradingdiary.mapper: DEBUG
+    org.flywaydb: DEBUG
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+
+app:
+  jwt:
+    secret: ${app.jwt.secret:dev-secret}
+    access-expiration: 900
+    refresh-expiration: 604800
+  init:
+    admin-password: ${app.init.admin-password:admin123}
+  auto-login:
+    enabled: true
+    username: admin
