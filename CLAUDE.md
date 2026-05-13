@@ -102,6 +102,18 @@ trading-diary — 交易日记应用。项目处于初始化阶段（2026-05-08 
 
 检验标准：`V{n}__*.sql` 中每张表都含 `created_at` 列。
 
+### 6. 中英混合文本格式化
+
+**所有包含代码标识符的中文描述，标识符必须用 `` ` `` 包裹。**
+
+- tasks.md、plan.md、spec.md 等文档中，Java 类名、方法名、文件路径、表名、字段名、枚举值、注解名一律用 `` ` `` 包裹
+- 示例：`StockInfoCleanseService`、`data_collection_log`、`GET /api/v1/admin/collection/status`、`@PreAuthorize`
+- 纯中文内容不加反引号
+
+**为什么**: Markdown 渲染后反引号内容显示为等宽字体，视觉上清晰区分代码标识符和自然语言，大幅提升可读性。
+
+检验标准：任何中文文档中出现的英文代码标识符都能在 Markdown 渲染后以等宽字体展示。
+
 ## 项目结构
 
 ```text
