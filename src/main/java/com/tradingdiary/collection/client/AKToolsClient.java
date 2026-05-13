@@ -9,6 +9,8 @@ import org.springframework.web.client.RestClient;
 
 import java.net.http.HttpClient;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
 @Component
 public class AKToolsClient {
@@ -17,6 +19,16 @@ public class AKToolsClient {
 
     private final RestClient restClient;
     private final String baseUrl;
+
+    /**
+     * Minimum delay between AKTools API calls to avoid overwhelming the service (in milliseconds).
+     */
+    private static final long RATE_LIMIT_DELAY_MS = 200;
+
+    /**
+     * Timestamp of the last API call, used for rate limiting.
+     */
+    private volatile long lastCallTimestamp = 0;
 
     public AKToolsClient(@Value("${aktools.base-url:http://localhost:8081}") String baseUrl) {
         this.baseUrl = baseUrl;
@@ -80,10 +92,74 @@ public class AKToolsClient {
         return get("/api/public/stock_margin_detail_szse?date={date}", date);
     }
 
+    /**
+     * Fetch industry constituents for a batch of symbols with rate limiting between calls.
+     * Iterates through each symbol, calling fetchIndustryCons individually with delays.
+     *
+     * @param symbols list of industry board symbols
+     * @return list of raw JSON responses, one per symbol
+     */
+    public List<String> fetchIndustryConsBatch(List<String> symbols) {
+        List<String> results = new ArrayList<>();
+        for (String symbol : symbols) {
+            results.add(fetchIndustryCons(symbol));
+            sleepBetweenCalls();
+        }
+        return results;
+    }
+
+    /**
+     * Fetch concept constituents for a batch of symbols with rate limiting between calls.
+     *
+     * @param symbols list of concept board symbols
+     * @return list of raw JSON responses, one per symbol
+     */
+    public List<String> fetchConceptConsBatch(List<String> symbols) {
+        List<String> results = new ArrayList<>();
+        for (String symbol : symbols) {
+            results.add(fetchConceptCons(symbol));
+            sleepBetweenCalls();
+        }
+        return results;
+    }
+
     private String get(String path, Object... uriVariables) {
+        rateLimit();
         return restClient.get()
                 .uri(path, uriVariables)
                 .retrieve()
                 .body(String.class);
+    }
+
+    /**
+     * Enforce rate limiting between AKTools API calls.
+     * Ensures a minimum delay of RATE_LIMIT_DELAY_MS between successive calls.
+     */
+    private void rateLimit() {
+        long now = System.currentTimeMillis();
+        long elapsed = now - lastCallTimestamp;
+
+        if (elapsed < RATE_LIMIT_DELAY_MS) {
+            try {
+                Thread.sleep(RATE_LIMIT_DELAY_MS - elapsed);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        lastCallTimestamp = System.currentTimeMillis();
+    }
+
+    /**
+     * Sleep between calls for rate limiting when doing sequential batch operations.
+     */
+    void sleepBetweenCalls() {
+        // rateLimit() in get() already handles per-call delay,
+        // this ensures inter-call spacing in batch loops
+        try {
+            Thread.sleep(RATE_LIMIT_DELAY_MS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 }

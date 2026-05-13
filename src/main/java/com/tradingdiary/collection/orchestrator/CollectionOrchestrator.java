@@ -2,15 +2,26 @@ package com.tradingdiary.collection.orchestrator;
 
 import com.tradingdiary.collection.client.AKToolsClient;
 import com.tradingdiary.entity.DataCollectionLog;
+import com.tradingdiary.entity.Industry;
+import com.tradingdiary.entity.Concept;
 import com.tradingdiary.entity.RawData;
+import com.tradingdiary.mapper.ConceptMapper;
 import com.tradingdiary.mapper.DataCollectionLogMapper;
+import com.tradingdiary.mapper.IndustryMapper;
 import com.tradingdiary.mapper.RawDataMapper;
+import com.tradingdiary.service.collection.ConceptCleanseService;
+import com.tradingdiary.service.collection.IndustryCleanseService;
+import com.tradingdiary.service.collection.MarginCleanseService;
+import com.tradingdiary.service.collection.StockDailyCleanseService;
+import com.tradingdiary.service.collection.StockInfoCleanseService;
+import com.tradingdiary.service.collection.TradeCalendarService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
@@ -28,13 +39,37 @@ public class CollectionOrchestrator {
     private final AKToolsClient aktoolsClient;
     private final DataCollectionLogMapper logMapper;
     private final RawDataMapper rawDataMapper;
+    private final StockInfoCleanseService stockInfoCleanseService;
+    private final StockDailyCleanseService stockDailyCleanseService;
+    private final IndustryCleanseService industryCleanseService;
+    private final ConceptCleanseService conceptCleanseService;
+    private final MarginCleanseService marginCleanseService;
+    private final TradeCalendarService tradeCalendarService;
+    private final IndustryMapper industryMapper;
+    private final ConceptMapper conceptMapper;
 
     public CollectionOrchestrator(AKToolsClient aktoolsClient,
                                   DataCollectionLogMapper logMapper,
-                                  RawDataMapper rawDataMapper) {
+                                  RawDataMapper rawDataMapper,
+                                  StockInfoCleanseService stockInfoCleanseService,
+                                  StockDailyCleanseService stockDailyCleanseService,
+                                  IndustryCleanseService industryCleanseService,
+                                  ConceptCleanseService conceptCleanseService,
+                                  MarginCleanseService marginCleanseService,
+                                  TradeCalendarService tradeCalendarService,
+                                  IndustryMapper industryMapper,
+                                  ConceptMapper conceptMapper) {
         this.aktoolsClient = aktoolsClient;
         this.logMapper = logMapper;
         this.rawDataMapper = rawDataMapper;
+        this.stockInfoCleanseService = stockInfoCleanseService;
+        this.stockDailyCleanseService = stockDailyCleanseService;
+        this.industryCleanseService = industryCleanseService;
+        this.conceptCleanseService = conceptCleanseService;
+        this.marginCleanseService = marginCleanseService;
+        this.tradeCalendarService = tradeCalendarService;
+        this.industryMapper = industryMapper;
+        this.conceptMapper = conceptMapper;
     }
 
     /**
@@ -155,23 +190,25 @@ public class CollectionOrchestrator {
     private String dispatchFetch(String dataType, LocalDate tradeDate) {
         String dateStr = tradeDate != null ? tradeDate.toString() : "";
         switch (dataType) {
-            case "STOCK_SPOT":
-                return aktoolsClient.fetchStockSpot();
+            case "STOCK_INFO":
             case "STOCK_DAILY":
-                return aktoolsClient.fetchStockDaily("sh000001", dateStr, dateStr);
-            case "INDUSTRY_NAMES":
+                // Both use stock_zh_a_spot_em — same JSON, different cleanse extraction
+                return aktoolsClient.fetchStockSpot();
+            case "INDUSTRY_NAME":
                 return aktoolsClient.fetchIndustryNames();
             case "INDUSTRY_CONS":
-                return aktoolsClient.fetchIndustryCons("sh000001");
-            case "CONCEPT_NAMES":
+                // Multi-fetch handled in cleanse step; fetch step is a no-op
+                return "[]";
+            case "CONCEPT_NAME":
                 return aktoolsClient.fetchConceptNames();
             case "CONCEPT_CONS":
-                return aktoolsClient.fetchConceptCons("sh000001");
+                // Multi-fetch handled in cleanse step; fetch step is a no-op
+                return "[]";
             case "TRADE_CALENDAR":
                 return aktoolsClient.fetchTradeCalendar();
-            case "MARGIN_DETAIL_SSE":
+            case "MARGIN_DAILY_SSE":
                 return aktoolsClient.fetchMarginDetailSse(dateStr);
-            case "MARGIN_DETAIL_SZSE":
+            case "MARGIN_DAILY_SZSE":
                 return aktoolsClient.fetchMarginDetailSzse(dateStr);
             default:
                 throw new IllegalArgumentException("Unknown data type: " + dataType);
@@ -186,10 +223,10 @@ public class CollectionOrchestrator {
         logMapper.insert(cleanseLog);
 
         try {
-            // Placeholder: dispatch to cleanse service (Phase 3)
-            dispatchCleanse(dataType, tradeDate, collectionLogId);
+            int recordCount = dispatchCleanse(dataType, tradeDate, collectionLogId);
 
             cleanseLog.setStatus("SUCCESS");
+            cleanseLog.setRecordCount(recordCount);
             cleanseLog.setCompletedAt(LocalDateTime.now());
         } catch (Exception e) {
             String errorMsg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
@@ -202,24 +239,109 @@ public class CollectionOrchestrator {
         logMapper.updateById(cleanseLog);
     }
 
-    private void dispatchCleanse(String dataType, LocalDate tradeDate, Long collectionLogId) {
+    private int dispatchCleanse(String dataType, LocalDate tradeDate, Long collectionLogId) {
+        // Fetch the raw JSON from the FETCH step (query RawData by collection_log_id)
+        RawData rawData = rawDataMapper.selectOne(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<RawData>()
+                        .eq(RawData::getCollectionLogId, collectionLogId)
+        );
+        String rawJson = rawData != null ? rawData.getRawJson() : null;
+
+        int recordCount;
         switch (dataType) {
-            case "TRADE_CALENDAR":
-                log.info("Cleanse placeholder: TRADE_CALENDAR for {}", tradeDate);
+            case "STOCK_INFO":
+                recordCount = stockInfoCleanseService.cleanse(rawJson, tradeDate);
                 break;
-            case "STOCK_SPOT":
             case "STOCK_DAILY":
-            case "INDUSTRY_NAMES":
+                recordCount = stockDailyCleanseService.cleanse(rawJson, tradeDate);
+                break;
+            case "INDUSTRY_NAME":
+                recordCount = industryCleanseService.cleanseNames(rawJson);
+                break;
             case "INDUSTRY_CONS":
-            case "CONCEPT_NAMES":
+                recordCount = cleanseAllIndustryCons(tradeDate);
+                break;
+            case "CONCEPT_NAME":
+                recordCount = conceptCleanseService.cleanseNames(rawJson);
+                break;
             case "CONCEPT_CONS":
-            case "MARGIN_DETAIL_SSE":
-            case "MARGIN_DETAIL_SZSE":
-                log.info("Cleanse placeholder: {} for {}", dataType, tradeDate);
+                recordCount = cleanseAllConceptCons(tradeDate);
+                break;
+            case "MARGIN_DAILY_SSE":
+                recordCount = marginCleanseService.cleanse(rawJson, "SSE", tradeDate);
+                break;
+            case "MARGIN_DAILY_SZSE":
+                recordCount = marginCleanseService.cleanse(rawJson, "SZSE", tradeDate);
+                break;
+            case "TRADE_CALENDAR":
+                recordCount = tradeCalendarService.syncTradeCalendar();
                 break;
             default:
                 throw new IllegalArgumentException("Unknown data type: " + dataType);
         }
+
+        log.info("Cleanse dispatch complete: dataType={}, records={}", dataType, recordCount);
+        return recordCount;
+    }
+
+    /**
+     * Query all industry codes from the industry table, fetch constituents for each,
+     * and cleanse into stock_industry table.
+     */
+    private int cleanseAllIndustryCons(LocalDate tradeDate) {
+        List<Industry> industries = industryMapper.selectList(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Industry>()
+                        .eq(Industry::getIsDeleted, false)
+        );
+
+        if (industries.isEmpty()) {
+            log.warn("No industries found in DB to fetch constituents for");
+            return 0;
+        }
+
+        int total = 0;
+        for (Industry industry : industries) {
+            try {
+                String rawJson = aktoolsClient.fetchIndustryCons(industry.getCode());
+                int count = industryCleanseService.cleanseCons(rawJson, industry.getCode(), tradeDate);
+                total += count;
+            } catch (Exception e) {
+                log.error("Failed to cleanse constituents for industry {}", industry.getCode(), e);
+            }
+        }
+        log.info("Cleansed all industry cons: {} total relations across {} industries",
+                total, industries.size());
+        return total;
+    }
+
+    /**
+     * Query all concept codes from the concept table, fetch constituents for each,
+     * and cleanse into stock_concept table.
+     */
+    private int cleanseAllConceptCons(LocalDate tradeDate) {
+        List<Concept> concepts = conceptMapper.selectList(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Concept>()
+                        .eq(Concept::getIsDeleted, false)
+        );
+
+        if (concepts.isEmpty()) {
+            log.warn("No concepts found in DB to fetch constituents for");
+            return 0;
+        }
+
+        int total = 0;
+        for (Concept concept : concepts) {
+            try {
+                String rawJson = aktoolsClient.fetchConceptCons(concept.getCode());
+                int count = conceptCleanseService.cleanseCons(rawJson, concept.getCode(), tradeDate);
+                total += count;
+            } catch (Exception e) {
+                log.error("Failed to cleanse constituents for concept {}", concept.getCode(), e);
+            }
+        }
+        log.info("Cleansed all concept cons: {} total relations across {} concepts",
+                total, concepts.size());
+        return total;
     }
 
     private DataCollectionLog createLog(String dataType, String jobType, LocalDate tradeDate) {
