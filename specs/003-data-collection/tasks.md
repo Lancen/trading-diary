@@ -59,7 +59,7 @@
 - [ ] T022 [P] Create CollectionStatusVO (per-contract response model) in `src/main/java/com/tradingdiary/collection/model/CollectionStatusVO.java`
 - [ ] T023 [P] Create GapReportVO (per-contract gap response model) in `src/main/java/com/tradingdiary/collection/model/GapReportVO.java`
 - [ ] T024 Implement CollectionOrchestrator with FETCH→CLEANSE lifecycle, per-key concurrency lock, and 3-retry logic in `src/main/java/com/tradingdiary/collection/orchestrator/CollectionOrchestrator.java`
-- [ ] T025 Verify AKToolsClient connectivity by running TradeCalendarService.fetch and inspect data_collection_log + raw_data tables
+- [ ] T025 Verify AKToolsClient connectivity by running TradeCalendarService.fetch; if AKTools is down, error message must explicitly state "AKTools Docker may be down, check docker ps" (not silent failure); inspect data_collection_log + raw_data tables on success
 
 **检查点**: AKTools connectivity confirmed, orchestration pipeline ready
 
@@ -79,9 +79,9 @@
 - [ ] T029 [P] [US1] Implement ConceptCleanseService (parse concept names JSON + iterate concept cons → batch INSERT) in `src/main/java/com/tradingdiary/service/collection/ConceptCleanseService.java`
 - [ ] T030 [US1] Implement MarginCleanseService (parse stock_margin_detail_sse/szse JSON → INSERT margin_daily + extract margin_stock) in `src/main/java/com/tradingdiary/service/collection/MarginCleanseService.java`
 - [ ] T031 [US1] Wire AKToolsClient.fetchXxx() → CleanseService mapping in CollectionOrchestrator.orchestrate() per data_type enum in `src/main/java/com/tradingdiary/collection/orchestrator/CollectionOrchestrator.java`
-- [ ] T032 [US1] Implement CollectionScheduler with @Scheduled cron tasks (16:00 stock spot, 17:00 industry/concept, 18:00 margin daily) and @Profile("!test") in `src/main/java/com/tradingdiary/collection/scheduler/CollectionScheduler.java`
+- [ ] T032 [US1] Implement CollectionScheduler with @Scheduled cron tasks (16:00 stock spot, 17:00 industry/concept, 18:00 margin daily), @Profile("!test"), and trade_calendar check before execution (skip if not a trading day, e.g. national holidays on MON-FRI) in `src/main/java/com/tradingdiary/collection/scheduler/CollectionScheduler.java`
 - [ ] T033 [US1] Add 200ms rate limiter and 4-thread async executor for bulk stock_daily calls in `src/main/java/com/tradingdiary/collection/client/AKToolsClient.java`
-- [ ] T034 [US1] Implement raw_data monthly archive job (@Scheduled 1st day of month, GZIP JSON Lines to backups/raw_data/) in `src/main/java/com/tradingdiary/collection/scheduler/CollectionScheduler.java`
+- [ ] T034 [US1] Implement raw_data monthly archive job (@Scheduled 1st day of month, GZIP JSON Lines to project-root-relative `backups/raw_data/YYYY-MM.json.gz`, path configurable via `app.collection.archive-path` in application.yml) in `src/main/java/com/tradingdiary/collection/scheduler/CollectionScheduler.java`
 - [ ] T035 [US1] Verify end-to-end: simulate trading day → observe all 6 data types collected, FETCH+CLEANSE logs recorded, margin_stock auto-populated
 
 **检查点**: US1 fully functional — daily auto collection runs without manual intervention
@@ -104,7 +104,7 @@
 - [ ] T041 [US2] Create frontend collection status page with status cards (FETCH + CLEANSE states, timestamps, record counts, error messages, expand for recent logs) in `frontend/src/app/(dashboard)/admin/collection/page.tsx`
 - [ ] T042 [US2] Create frontend margin completeness page with week table (week range, exchange, expected/collected/missing, status badges, date filter, refresh gap button) in `frontend/src/app/(dashboard)/admin/collection/margin/page.tsx`
 - [ ] T043 [US2] Add "数据采集" nav menu item with sub-items ("采集状态", "两融完整性") to sidebar layout in `frontend/src/components/layout/`
-- [ ] T044 [US2] Verify end-to-end: open collection status page → see all 9 data type cards with correct statuses; open margin completeness page → select date range → see week table with gap detection results
+- [ ] T044 [US2] Verify end-to-end: open collection status page → see data type status cards (9 enum types: STOCK_INFO, STOCK_DAILY, TRADE_CALENDAR, INDUSTRY_NAME, INDUSTRY_CONS, CONCEPT_NAME, CONCEPT_CONS, MARGIN_DAILY_SSE, MARGIN_DAILY_SZSE) with correct statuses; open margin completeness page → select date range → see week table with gap detection results
 
 **检查点**: US2 fully functional — admin can monitor collection health and data completeness from management console
 
@@ -157,9 +157,11 @@
 - [ ] T059 [P] Write MockMvc integration test for POST /api/v1/admin/collection/trigger in `src/test/java/com/tradingdiary/collection/controller/CollectionControllerTest.java`
 - [ ] T060 Write Playwright E2E test: open collection status page, verify cards display in `e2e/collection-status.spec.ts`
 - [ ] T061 [P] Write Playwright E2E test: open margin completeness page, verify week table and gap detection in `e2e/collection-margin-gaps.spec.ts`
-- [ ] T062 Run quickstart.md validation: verify all commands execute successfully
-- [ ] T063 Code review cleanup: verify all classes have proper @Component/@Service/@Repository annotations, consistent JavaDoc removal, import organization
-- [ ] T064 Security check: verify all CollectionController endpoints require ADMIN role, no sensitive data in error responses
+- [ ] T062 [P] Verify SC-002 (retry within 30s): mock AKTools failure 3 times, assert total retry duration ≤ 30s (2s + 4s + 8s = 14s × 3 retries max) in `src/test/java/com/tradingdiary/collection/client/AKToolsClientTest.java`
+- [ ] T063 [P] Verify SC-007 (historical backfill within 2h): measure margin backfill for 1 week (~5 trading days × 2 exchanges) per shard, extrapolate to full historical window and confirm per-shard time × total shards ≤ 2h
+- [ ] T064 Run quickstart.md validation: verify all commands execute successfully
+- [ ] T065 Code review cleanup: verify all classes have proper @Component/@Service/@Repository annotations, consistent JavaDoc removal, import organization
+- [ ] T066 Security check: verify all CollectionController endpoints require ADMIN role, no sensitive data in error responses
 
 ---
 
