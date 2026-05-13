@@ -92,6 +92,16 @@ trading-diary — 交易日记应用。项目处于初始化阶段（2026-05-08 
 
 多步骤任务先简述计划，每步附带验证方式。强成功标准让你独立循环，弱标准则需不断澄清。
 
+### 5. 数据库表标准字段
+
+**所有表必须包含 `id`、`created_at`、`updated_at`。`is_deleted` 按业务需要判断。**
+
+- design doc 编写完毕后自检每个表的字段是否齐全，不依赖审查发现。
+- 纯日志表（如 `data_collection_log`）可只含 `created_at`，不需要 `updated_at` 和 `is_deleted`。
+- 原始数据暂存表（如 `raw_data`）同理，按实际场景判断。
+
+检验标准：`V{n}__*.sql` 中每张表都含 `created_at` 列。
+
 ## 项目结构
 
 ```text
