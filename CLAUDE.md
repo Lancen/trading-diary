@@ -114,6 +114,18 @@ trading-diary — 交易日记应用。项目处于初始化阶段（2026-05-08 
 
 检验标准：任何中文文档中出现的英文代码标识符都能在 Markdown 渲染后以等宽字体展示。
 
+### 7. 开发流程强制入口
+
+**所有 speckit + superpowers 混合开发流程 MUST 遵循 `docs/superpowers/speckit-superpowers-workflow.md`。**
+
+- 执行任何 speckit 或 superpowers 步骤前，必须确认当前步骤与 workflow 文档定义一致
+- workflow 文档中定义的接口契约、审查门禁、TDD 纪律为强制规则，不可跳过或自行裁量
+- 换 session 后第一条开发指令，必须先读取 workflow 文档再行动
+
+**为什么**: workflow 文档是 speckit + superpowers 混合流程的唯一权威。没有它，AI 会退回各自独立的默认行为——speckit 不走审查门禁，superpowers 不走任务拆解，TDD 纪律丢失。
+
+检验标准：任何 speckit/superpowers 命令执行前，AI 能说出当前在 workflow 的哪一个步骤、该步骤的产出物和下一个步骤。
+
 ## 项目结构
 
 ```text
