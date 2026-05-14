@@ -237,6 +237,18 @@ Phase N+2: 收尾                ← 手动完成
 
 两者互补，不替代。实现类必须同时满足 TDD 单元测试 + Phase 6/7 的集成/E2E 测试。
 
+**Implementer Report 必须包含 TDD Evidence**：
+
+```
+## TDD Evidence
+- [ ] 加载 superpowers:test-driven-development skill
+- [ ] RED: 测试文件 + 测试方法名 + 确认失败的截图/输出
+- [ ] GREEN: 实现文件 + 测试绿证明
+- [ ] 测试文件路径: src/test/java/.../XxxTest.java
+```
+
+未提交 TDD Evidence 的 report → 视为 TDD 纪律违规，审查返回 ❌。
+
 ### 两阶段审查
 
 每批实现完成后，经过两道审查门禁才能进入下一批：
@@ -279,8 +291,9 @@ Implementer 实现 + commit
 | 缺失 | 需求里的每一项都实现了吗？report 声称做了但实际没做？ |
 | 多余 | 是否实现了需求没提的功能？是否过度设计？ |
 | 误解 | 是否把需求理解错了？是否解决了错误的问题？ |
+| **TDD 纪律** | **每个实现文件是否有对应的单元测试文件？测试文件是否在实现文件之前提交（git log 时间戳）？report 是否包含 TDD Evidence section？** |
 
-**审查人必须**：读代码，不信任报告。独立验证一切。
+**审查人必须**：读代码 + 读 git log，不信任 report。独立验证一切。
 
 **结果**: ✅ Spec 合规 或 ❌ 具体问题清单（含文件:行号）
 
