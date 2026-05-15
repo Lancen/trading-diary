@@ -184,6 +184,25 @@ Phase N+2: 收尾                ← 手动完成
 | agent 无法执行 shell 时 | 主 session 接管编译和提交 |
 | 不接受"文件创建了但没编译" | BLOCKED 状态，必须补完 |
 | 同一批内出现失败 | 修复 → 编译 → 提交后再进下一批 |
+| 单 agent 任务数 ≤ 5 | 超过 5 个任务时必须拆批，避免 agent 认知过载 |
+| 单 agent 执行时间预警 | > 600s（10 分钟）时检查是否任务过多，下一批减半 |
+| 单 agent token 消耗预警 | > 60k token 时说明上下文膨胀，下一批减半 |
+
+### Agent 执行分析
+
+每次 agent 完成时返回 `<usage>` 标签提供三个指标：
+
+| 指标 | 含义 | 健康阈值 |
+|------|------|---------|
+| `total_tokens` | 消耗的 token 总数 | ≤ 60,000 |
+| `tool_uses` | 工具调用次数（Read/Write/Bash 等） | ≤ 80 |
+| `duration_ms` | 执行时长（毫秒） | ≤ 600,000 |
+
+**效率诊断**：
+- token 高 + tool_uses 高 → 任务太多，拆批
+- token 低 + tool_uses 高 → agent 在频繁读文件，上下文给的不足
+- duration 高 + token 低 → agent 在等待（编译/网络），非任务问题
+- duration 高 + token 高 + tool_uses 低 → agent 推理过度，任务描述不够清晰
 
 ### Agent 能力边界
 
