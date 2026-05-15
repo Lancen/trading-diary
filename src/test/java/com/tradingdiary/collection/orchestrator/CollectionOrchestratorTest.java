@@ -42,23 +42,26 @@ class CollectionOrchestratorTest {
 
     private TradeCalendarMapper tradeCalendarMapper;
     private DataCollectionLogMapper dataCollectionLogMapper;
+    private AKToolsClient aktoolsClient;
+    private StockDailyCleanseService stockDailyCleanseService;
+    private StockInfoMapper stockInfoMapper;
     private CollectionOrchestrator orchestrator;
 
     @BeforeEach
     void setUp() {
         tradeCalendarMapper = mock(TradeCalendarMapper.class);
         dataCollectionLogMapper = mock(DataCollectionLogMapper.class);
-        AKToolsClient aktoolsClient = mock(AKToolsClient.class);
+        aktoolsClient = mock(AKToolsClient.class);
         RawDataMapper rawDataMapper = mock(RawDataMapper.class);
         StockInfoCleanseService stockInfoCleanseService = mock(StockInfoCleanseService.class);
-        StockDailyCleanseService stockDailyCleanseService = mock(StockDailyCleanseService.class);
+        stockDailyCleanseService = mock(StockDailyCleanseService.class);
         IndustryCleanseService industryCleanseService = mock(IndustryCleanseService.class);
         ConceptCleanseService conceptCleanseService = mock(ConceptCleanseService.class);
         MarginCleanseService marginCleanseService = mock(MarginCleanseService.class);
         TradeCalendarService tradeCalendarService = mock(TradeCalendarService.class);
         IndustryMapper industryMapper = mock(IndustryMapper.class);
         ConceptMapper conceptMapper = mock(ConceptMapper.class);
-        StockInfoMapper stockInfoMapper = mock(StockInfoMapper.class);
+        stockInfoMapper = mock(StockInfoMapper.class);
 
         CollectionOrchestrator real = new CollectionOrchestrator(
                 aktoolsClient, dataCollectionLogMapper, rawDataMapper,
@@ -268,6 +271,57 @@ class CollectionOrchestratorTest {
         assertThat(result).contains("skipped");
         // Only week 2 dates (3 dates) need orchestration
         verify(orchestrator, times(3)).orchestrate(eq("MARGIN_DAILY_SSE"), any());
+    }
+
+    @Test
+    void shouldBackfillStockDailyWithAllStocks() {
+        com.tradingdiary.entity.StockInfo stock1 = new com.tradingdiary.entity.StockInfo();
+        stock1.setCode("000001");
+        com.tradingdiary.entity.StockInfo stock2 = new com.tradingdiary.entity.StockInfo();
+        stock2.setCode("000002");
+
+        when(stockInfoMapper.selectList(null)).thenReturn(java.util.Arrays.asList(stock1, stock2));
+        when(aktoolsClient.fetchStockDaily(eq("000001"), any(), any())).thenReturn("[{\"日期\":\"2026-05-15\",\"开盘\":10.0,\"收盘\":10.5,\"最高\":11.0,\"最低\":9.8,\"成交量\":1000000,\"成交额\":10500000}]");
+        when(aktoolsClient.fetchStockDaily(eq("000002"), any(), any())).thenReturn("[{\"日期\":\"2026-05-15\",\"开盘\":20.0,\"收盘\":20.5,\"最高\":21.0,\"最低\":19.8,\"成交量\":2000000,\"成交额\":41000000}]");
+        when(stockDailyCleanseService.cleanseHistJson(any(), any())).thenReturn(1);
+
+        String result = orchestrator.backfillStockDaily(
+                LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 15));
+
+        assertThat(result).contains("2 stocks succeeded", "0 failed");
+        verify(stockDailyCleanseService, times(2)).cleanseHistJson(any(), any());
+    }
+
+    @Test
+    void shouldBackfillStockDailyWithNoStocks() {
+        when(stockInfoMapper.selectList(null)).thenReturn(java.util.Collections.emptyList());
+
+        String result = orchestrator.backfillStockDaily(
+                LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 15));
+
+        assertThat(result).contains("No stocks in stock_info table");
+        verify(aktoolsClient, never()).fetchStockDaily(any(), any(), any());
+    }
+
+    @Test
+    void shouldContinueBackfillAfterSingleStockFailure() {
+        com.tradingdiary.entity.StockInfo stock1 = new com.tradingdiary.entity.StockInfo();
+        stock1.setCode("000001");
+        com.tradingdiary.entity.StockInfo stock2 = new com.tradingdiary.entity.StockInfo();
+        stock2.setCode("000002");
+
+        when(stockInfoMapper.selectList(null)).thenReturn(java.util.Arrays.asList(stock1, stock2));
+        when(aktoolsClient.fetchStockDaily(eq("000001"), any(), any()))
+                .thenThrow(new RuntimeException("API error"));
+        when(aktoolsClient.fetchStockDaily(eq("000002"), any(), any()))
+                .thenReturn("[{\"日期\":\"2026-05-15\",\"开盘\":20.0,\"收盘\":20.5,\"最高\":21.0,\"最低\":19.8,\"成交量\":2000000,\"成交额\":41000000}]");
+        when(stockDailyCleanseService.cleanseHistJson(any(), any())).thenReturn(1);
+
+        String result = orchestrator.backfillStockDaily(
+                LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 15));
+
+        assertThat(result).contains("1 stocks succeeded", "1 failed");
+        verify(stockDailyCleanseService, times(1)).cleanseHistJson(any(), any());
     }
 
     private TradeCalendar buildTradingDay(LocalDate date) {
