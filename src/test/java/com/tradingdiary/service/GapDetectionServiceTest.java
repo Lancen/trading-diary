@@ -16,6 +16,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -48,7 +49,7 @@ class GapDetectionServiceTest {
                 LocalDate.of(2026, 5, 15)
         );
 
-        when(tradeCalendarMapper.selectList(any())).thenReturn(tradingDays);
+        when(tradeCalendarMapper.selectTradingDays(eq(start), eq(end))).thenReturn(tradingDays);
         when(marginDailyMapper.selectDistinctTradeDates(start, end, "SSE"))
                 .thenReturn(collectedDates);
 
@@ -83,7 +84,7 @@ class GapDetectionServiceTest {
                 LocalDate.of(2026, 5, 13)
         );
 
-        when(tradeCalendarMapper.selectList(any())).thenReturn(tradingDays);
+        when(tradeCalendarMapper.selectTradingDays(eq(start), eq(end))).thenReturn(tradingDays);
         when(marginDailyMapper.selectDistinctTradeDates(start, end, "SZSE"))
                 .thenReturn(collectedDates);
 
@@ -108,7 +109,7 @@ class GapDetectionServiceTest {
         tradingDays.add(buildCalendar(LocalDate.of(2026, 5, 11)));
         tradingDays.add(buildCalendar(LocalDate.of(2026, 5, 12)));
 
-        when(tradeCalendarMapper.selectList(any())).thenReturn(tradingDays);
+        when(tradeCalendarMapper.selectTradingDays(eq(start), eq(end))).thenReturn(tradingDays);
         when(marginDailyMapper.selectDistinctTradeDates(start, end, "SSE"))
                 .thenReturn(List.of());
 
@@ -129,9 +130,7 @@ class GapDetectionServiceTest {
         LocalDate start = LocalDate.of(2026, 5, 11);
         LocalDate end = LocalDate.of(2026, 5, 15);
 
-        when(tradeCalendarMapper.selectList(any())).thenReturn(List.of());
-        when(marginDailyMapper.selectDistinctTradeDates(start, end, "SSE"))
-                .thenReturn(List.of());
+        when(tradeCalendarMapper.selectTradingDays(eq(start), eq(end))).thenReturn(List.of());
 
         GapReportVO report = gapDetectionService.getGaps(start, end, "SSE");
 
@@ -166,7 +165,7 @@ class GapDetectionServiceTest {
                 LocalDate.of(2026, 5, 15)
         );
 
-        when(tradeCalendarMapper.selectList(any())).thenReturn(tradingDays);
+        when(tradeCalendarMapper.selectTradingDays(eq(start), eq(end))).thenReturn(tradingDays);
         when(marginDailyMapper.selectDistinctTradeDates(start, end, "SZSE"))
                 .thenReturn(collectedDates);
 

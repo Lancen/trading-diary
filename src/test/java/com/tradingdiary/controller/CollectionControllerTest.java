@@ -59,12 +59,12 @@ class CollectionControllerTest {
         DataCollectionLog fetchLog = buildLog("MARGIN_DAILY_SSE", "FETCH", "SUCCESS", 100);
         DataCollectionLog cleanseLog = buildLog("MARGIN_DAILY_SSE", "CLEANSE", "SUCCESS", 100);
 
+        when(dataCollectionLogMapper.selectLatestByDataTypeAndJobType(anyString(), anyString()))
+                .thenReturn(null);
         when(dataCollectionLogMapper.selectLatestByDataTypeAndJobType("MARGIN_DAILY_SSE", "FETCH"))
                 .thenReturn(fetchLog);
         when(dataCollectionLogMapper.selectLatestByDataTypeAndJobType("MARGIN_DAILY_SSE", "CLEANSE"))
                 .thenReturn(cleanseLog);
-        when(dataCollectionLogMapper.selectLatestByDataTypeAndJobType(anyString(), anyString()))
-                .thenReturn(null);
 
         ApiResponse<List<CollectionStatusVO>> response = collectionController.status();
 
@@ -80,10 +80,10 @@ class CollectionControllerTest {
         DataCollectionLog fetchLog = buildLog("STOCK_DAILY", "FETCH", "FAILED", 0);
         fetchLog.setErrorMsg("Connection timeout");
 
-        when(dataCollectionLogMapper.selectLatestByDataTypeAndJobType("STOCK_DAILY", "FETCH"))
-                .thenReturn(fetchLog);
         when(dataCollectionLogMapper.selectLatestByDataTypeAndJobType(anyString(), anyString()))
                 .thenReturn(null);
+        when(dataCollectionLogMapper.selectLatestByDataTypeAndJobType("STOCK_DAILY", "FETCH"))
+                .thenReturn(fetchLog);
 
         ApiResponse<List<CollectionStatusVO>> response = collectionController.status();
 
@@ -151,7 +151,7 @@ class CollectionControllerTest {
 
         when(gapDetectionService.getGaps(start, end, "SSE")).thenReturn(gapReport);
 
-        ApiResponse<GapReportVO> response = collectionController.gaps(start, end, null);
+        ApiResponse<GapReportVO> response = collectionController.gaps(start, end, "SSE");
 
         assertThat(response.getCode()).isEqualTo(200);
     }
