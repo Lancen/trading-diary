@@ -213,6 +213,7 @@ Phase N+2: 收尾                ← 手动完成
 | git commit | `pnpm install` |
 | 读取项目文件 | 启动应用服务 |
 | 搜索代码 | 浏览器测试（需 Playwright MCP） |
+| — | 读取主 session 的环境变量（`JAVA_HOME` 等需在 prompt 中显式设置） |
 
 ### 执行顺序原则
 
@@ -234,6 +235,13 @@ Phase N+2: 收尾                ← 手动完成
 2. GREEN: 写最少代码让测试绿
 3. REFACTOR: 清理代码，保持绿
 4. 循环直到实现完成
+
+## 环境准备
+
+在运行任何 Java/gradle 命令之前：
+```bash
+export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
+```
 
 不加载 TDD skill = 不要开始写代码。
 ```
