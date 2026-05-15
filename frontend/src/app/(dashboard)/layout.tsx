@@ -37,8 +37,6 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     await logout();
   }
 
-  const navLinks = [{ href: "/dashboard", label: "控制台" }];
-
   return (
     <div className="flex min-h-screen">
       {/* Sidebar */}
@@ -50,19 +48,42 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
         </div>
 
         <nav className="flex-1 space-y-1">
-          {navLinks.map((link) => (
+          <Link
+            href="/dashboard"
+            className={`block rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              pathname === "/dashboard"
+                ? "bg-primary text-primary-foreground"
+                : "text-gray-700 hover:bg-gray-200"
+            }`}
+          >
+            Dashboard
+          </Link>
+
+          <div className="pt-4">
+            <div className="mb-1 px-3 text-xs font-semibold uppercase text-gray-400">
+              Data Collection
+            </div>
             <Link
-              key={link.href}
-              href={link.href}
-              className={`block rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                pathname === link.href
+              href="/admin/collection"
+              className={`block rounded-lg px-6 py-2 text-sm font-medium transition-colors ${
+                pathname === "/admin/collection"
                   ? "bg-primary text-primary-foreground"
                   : "text-gray-700 hover:bg-gray-200"
               }`}
             >
-              {link.label}
+              Collection Status
             </Link>
-          ))}
+            <Link
+              href="/admin/collection/margin"
+              className={`block rounded-lg px-6 py-2 text-sm font-medium transition-colors ${
+                pathname === "/admin/collection/margin"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              Margin Completeness
+            </Link>
+          </div>
         </nav>
 
         <Button
@@ -70,7 +91,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
           className="w-full"
           onClick={handleLogout}
         >
-          退出登录
+          Logout
         </Button>
       </aside>
 
@@ -91,7 +112,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={handleLogout}>
-                退出登录
+                Logout
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
