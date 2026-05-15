@@ -116,7 +116,7 @@ public class CollectionOrchestrator {
         } catch (Exception e) {
             log.error("Unexpected error during orchestration: dataType={}, tradeDate={}",
                     dataType, tradeDate, e);
-            return "执行异常: " + e.getMessage();
+            return "执行异常，请查看系统日志";
         } finally {
             lock.unlock();
             lockMap.remove(lockKey);

@@ -20,6 +20,6 @@ public class SecurityExceptionHandler {
         if (ex instanceof LockedException) {
             return new UnauthorizedException(100103, "账户已被锁定");
         }
-        return new UnauthorizedException(100100, "认证失败: " + ex.getMessage());
+        return new UnauthorizedException(100100, "认证失败");
     }
 }
