@@ -1,0 +1,1072 @@
+- generic [ref=e2]:
+  - link "Skip to main content" [ref=e3] [cursor=pointer]:
+    - /url: "#content-area"
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e9]:
+        - generic [ref=e12]:
+          - generic [ref=e13]:
+            - link "Claude Code Docs home page light logo" [ref=e14] [cursor=pointer]:
+              - /url: /docs/en/overview
+              - generic [ref=e15]: Claude Code Docs home page
+              - img "light logo" [ref=e16]
+            - button "English" [ref=e18] [cursor=pointer]:
+              - generic [ref=e19]: English
+              - img [ref=e20]
+          - generic [ref=e22]:
+            - button "Open search" [ref=e23] [cursor=pointer]:
+              - generic [ref=e24]:
+                - img [ref=e25]
+                - generic [ref=e28]: Search...
+              - generic [ref=e29]: ⌘K
+            - button "Toggle assistant panel" [ref=e30] [cursor=pointer]:
+              - img [ref=e31]
+              - generic [ref=e34]: Ask AI
+          - generic [ref=e35]:
+            - navigation [ref=e36]:
+              - list [ref=e37]:
+                - listitem [ref=e38]:
+                  - link "Claude Developer Platform" [ref=e39] [cursor=pointer]:
+                    - /url: https://platform.claude.com/
+                - listitem [ref=e40]:
+                  - link "Claude Code on the Web" [ref=e41] [cursor=pointer]:
+                    - /url: https://claude.ai/code
+                    - generic [ref=e43]:
+                      - generic [ref=e44]: Claude Code on the Web
+                      - img [ref=e45]
+            - button "Toggle dark mode" [ref=e48] [cursor=pointer]:
+              - img [ref=e49]
+        - generic [ref=e57]:
+          - link "Getting started" [ref=e58] [cursor=pointer]:
+            - /url: /docs/en/overview
+            - text: Getting started
+          - link "Build with Claude Code" [ref=e60] [cursor=pointer]:
+            - /url: /docs/en/agents
+            - text: Build with Claude Code
+          - link "Administration" [ref=e62] [cursor=pointer]:
+            - /url: /docs/en/admin-setup
+            - text: Administration
+          - link "Configuration" [ref=e64] [cursor=pointer]:
+            - /url: /docs/en/settings
+            - text: Configuration
+          - link "Reference" [ref=e66] [cursor=pointer]:
+            - /url: /docs/en/cli-reference
+            - text: Reference
+          - link "Agent SDK" [ref=e68] [cursor=pointer]:
+            - /url: /docs/en/agent-sdk/overview
+            - text: Agent SDK
+          - link "What's New" [ref=e70] [cursor=pointer]:
+            - /url: /docs/en/whats-new
+            - text: What's New
+          - link "Resources" [ref=e72] [cursor=pointer]:
+            - /url: /docs/en/legal-and-compliance
+            - text: Resources
+      - generic [ref=e74]:
+        - generic [ref=e78]:
+          - generic [ref=e79]:
+            - heading "Settings and permissions" [level=5] [ref=e81]
+            - list [ref=e82]:
+              - listitem [ref=e83]:
+                - link "Settings" [ref=e84] [cursor=pointer]:
+                  - /url: /docs/en/settings
+                  - generic [ref=e87]: Settings
+              - listitem [ref=e88]:
+                - link "Permissions" [ref=e89] [cursor=pointer]:
+                  - /url: /docs/en/permissions
+                  - generic [ref=e92]: Permissions
+              - listitem [ref=e93]:
+                - link "Sandboxing" [ref=e94] [cursor=pointer]:
+                  - /url: /docs/en/sandboxing
+                  - generic [ref=e97]: Sandboxing
+          - generic [ref=e98]:
+            - heading "Model and responses" [level=5] [ref=e100]
+            - list [ref=e101]:
+              - listitem [ref=e102]:
+                - link "Model configuration" [ref=e103] [cursor=pointer]:
+                  - /url: /docs/en/model-config
+                  - generic [ref=e106]: Model configuration
+              - listitem [ref=e107]:
+                - link "Speed up responses with fast mode" [ref=e108] [cursor=pointer]:
+                  - /url: /docs/en/fast-mode
+                  - generic [ref=e111]: Speed up responses with fast mode
+              - listitem [ref=e112]:
+                - link "Output styles" [ref=e113] [cursor=pointer]:
+                  - /url: /docs/en/output-styles
+                  - generic [ref=e116]: Output styles
+          - generic [ref=e117]:
+            - heading "Interface" [level=5] [ref=e119]
+            - list [ref=e120]:
+              - listitem [ref=e121]:
+                - link "Terminal configuration" [ref=e122] [cursor=pointer]:
+                  - /url: /docs/en/terminal-config
+                  - generic [ref=e125]: Terminal configuration
+              - listitem [ref=e126]:
+                - link "Fullscreen rendering" [ref=e127] [cursor=pointer]:
+                  - /url: /docs/en/fullscreen
+                  - generic [ref=e130]: Fullscreen rendering
+              - listitem [ref=e131]:
+                - link "Voice dictation" [ref=e132] [cursor=pointer]:
+                  - /url: /docs/en/voice-dictation
+                  - generic [ref=e135]: Voice dictation
+              - listitem [ref=e136]:
+                - link "Customize status line" [ref=e137] [cursor=pointer]:
+                  - /url: /docs/en/statusline
+                  - generic [ref=e140]: Customize status line
+              - listitem [ref=e141]:
+                - link "Customize keyboard shortcuts" [ref=e142] [cursor=pointer]:
+                  - /url: /docs/en/keybindings
+                  - generic [ref=e145]: Customize keyboard shortcuts
+        - generic [ref=e148]:
+          - banner [ref=e149]:
+            - generic [ref=e150]:
+              - generic [ref=e151]: Settings and permissions
+              - generic [ref=e152]:
+                - heading "Sandboxing" [level=1] [ref=e153]
+                - generic [ref=e154]:
+                  - button "Copy page" [ref=e155] [cursor=pointer]:
+                    - generic [ref=e156]:
+                      - img [ref=e157]
+                      - generic [ref=e160]: Copy page
+                  - button "More actions" [ref=e161] [cursor=pointer]:
+                    - img [ref=e162]
+            - paragraph [ref=e165]: Learn how Claude Code’s sandboxed bash tool provides filesystem and network isolation for safer, more autonomous agent execution.
+          - generic [ref=e166]:
+            - blockquote [ref=e167]:
+              - heading "Documentation Index" [level=2] [ref=e168]
+              - paragraph [ref=e169]:
+                - text: "Fetch the complete documentation index at:"
+                - link "https://code.claude.com/docs/llms.txt" [ref=e170] [cursor=pointer]:
+                  - /url: https://code.claude.com/docs/llms.txt
+              - paragraph [ref=e171]: Use this file to discover all available pages before exploring further.
+            - heading "Navigate to header Overview" [level=2] [ref=e172]:
+              - link "Navigate to header" [ref=e173] [cursor=pointer]:
+                - /url: "#overview"
+                - img [ref=e175]
+              - generic [ref=e177] [cursor=pointer]: Overview
+            - generic [ref=e178]: Claude Code features native sandboxing to provide a more secure environment for agent execution while reducing the need for constant permission prompts. Instead of asking permission for each bash command, sandboxing creates defined boundaries upfront where Claude Code can work more freely with reduced risk.
+            - generic [ref=e179]: The sandboxed bash tool uses OS-level primitives to enforce both filesystem and network isolation.
+            - heading "Navigate to header Why sandboxing matters" [level=2] [ref=e180]:
+              - link "Navigate to header" [ref=e181] [cursor=pointer]:
+                - /url: "#why-sandboxing-matters"
+                - img [ref=e183]
+              - generic [ref=e185] [cursor=pointer]: Why sandboxing matters
+            - generic [ref=e186]: "Traditional permission-based security requires constant user approval for bash commands. While this provides control, it can lead to:"
+            - list [ref=e187]:
+              - listitem [ref=e188]:
+                - strong [ref=e189]: Approval fatigue
+                - text: ": Repeatedly clicking “approve” can cause users to pay less attention to what they’re approving"
+              - listitem [ref=e190]:
+                - strong [ref=e191]: Reduced productivity
+                - text: ": Constant interruptions slow down development workflows"
+              - listitem [ref=e192]:
+                - strong [ref=e193]: Limited autonomy
+                - text: ": Claude Code cannot work as efficiently when waiting for approvals"
+            - generic [ref=e194]: "Sandboxing addresses these challenges by:"
+            - list [ref=e195]:
+              - listitem [ref=e196]:
+                - strong [ref=e197]: Defining clear boundaries
+                - text: ": Specify exactly which directories and network hosts Claude Code can access"
+              - listitem [ref=e198]:
+                - strong [ref=e199]: Reducing permission prompts
+                - text: ": Safe commands within the sandbox don’t require approval"
+              - listitem [ref=e200]:
+                - strong [ref=e201]: Maintaining security
+                - text: ": Attempts to access resources outside the sandbox trigger immediate notifications"
+              - listitem [ref=e202]:
+                - strong [ref=e203]: Enabling autonomy
+                - text: ": Claude Code can run more independently within defined limits"
+            - generic [ref=e204]:
+              - img "Warning" [ref=e206]
+              - generic [ref=e209]:
+                - text: Effective sandboxing requires
+                - strong [ref=e210]: both
+                - text: filesystem and network isolation. Without network isolation, a compromised agent could exfiltrate sensitive files like SSH keys. Without filesystem isolation, a compromised agent could backdoor system resources to gain network access. When configuring sandboxing it is important to ensure that your configured settings do not create bypasses in these systems.
+            - heading "Navigate to header How it works" [level=2] [ref=e211]:
+              - link "Navigate to header" [ref=e212] [cursor=pointer]:
+                - /url: "#how-it-works"
+                - img [ref=e214]
+              - generic [ref=e216] [cursor=pointer]: How it works
+            - heading "Navigate to header Filesystem isolation" [level=3] [ref=e217]:
+              - link "Navigate to header" [ref=e218] [cursor=pointer]:
+                - /url: "#filesystem-isolation"
+                - img [ref=e220]
+              - generic [ref=e222] [cursor=pointer]: Filesystem isolation
+            - generic [ref=e223]: "The sandboxed bash tool restricts file system access to specific directories:"
+            - list [ref=e224]:
+              - listitem [ref=e225]:
+                - strong [ref=e226]: Default writes behavior
+                - text: ": Read and write access to the current working directory and its subdirectories"
+              - listitem [ref=e227]:
+                - strong [ref=e228]: Default read behavior
+                - text: ": Read access to the entire computer, except certain denied directories"
+              - listitem [ref=e229]:
+                - strong [ref=e230]: Blocked access
+                - text: ": Cannot modify files outside the current working directory without explicit permission"
+              - listitem [ref=e231]:
+                - strong [ref=e232]: Configurable
+                - text: ": Define custom allowed and denied paths through settings"
+            - generic [ref=e233]:
+              - text: You can grant write access to additional paths using
+              - code [ref=e234]: sandbox.filesystem.allowWrite
+              - text: in your settings. These restrictions are enforced at the OS level (Seatbelt on macOS, bubblewrap on Linux), so they apply to all subprocess commands, including tools like
+              - code [ref=e235]: kubectl
+              - text: ","
+              - code [ref=e236]: terraform
+              - text: ", and"
+              - code [ref=e237]: npm
+              - text: ", not just Claude’s file tools."
+            - heading "Navigate to header Network isolation" [level=3] [ref=e238]:
+              - link "Navigate to header" [ref=e239] [cursor=pointer]:
+                - /url: "#network-isolation"
+                - img [ref=e241]
+              - generic [ref=e243] [cursor=pointer]: Network isolation
+            - generic [ref=e244]: "Network access is controlled through a proxy server running outside the sandbox:"
+            - list [ref=e245]:
+              - listitem [ref=e246]:
+                - strong [ref=e247]: Domain restrictions
+                - text: ": Only approved domains can be accessed"
+              - listitem [ref=e248]:
+                - strong [ref=e249]: User confirmation
+                - text: ": New domain requests trigger permission prompts (unless"
+                - link "allowManagedDomainsOnly" [ref=e250] [cursor=pointer]:
+                  - /url: /docs/en/settings#sandbox-settings
+                  - code [ref=e251]: allowManagedDomainsOnly
+                - text: is enabled, which blocks non-allowed domains automatically)
+              - listitem [ref=e252]:
+                - strong [ref=e253]: Custom proxy support
+                - text: ": Advanced users can implement custom rules on outgoing traffic"
+              - listitem [ref=e254]:
+                - strong [ref=e255]: Comprehensive coverage
+                - text: ": Restrictions apply to all scripts, programs, and subprocesses spawned by commands"
+            - generic [ref=e256]:
+              - img "Note" [ref=e258]
+              - generic [ref=e261]:
+                - text: The built-in proxy enforces the allowlist based on the requested hostname and does not terminate or inspect TLS traffic. See
+                - link "Security limitations" [ref=e262] [cursor=pointer]:
+                  - /url: "#security-limitations"
+                - text: for the implications of this design, and
+                - link "Custom proxy configuration" [ref=e263] [cursor=pointer]:
+                  - /url: "#custom-proxy-configuration"
+                - text: if your threat model requires TLS inspection.
+            - heading "Navigate to header OS-level enforcement" [level=3] [ref=e264]:
+              - link "Navigate to header" [ref=e265] [cursor=pointer]:
+                - /url: "#os-level-enforcement"
+                - img [ref=e267]
+              - generic [ref=e269] [cursor=pointer]: OS-level enforcement
+            - generic [ref=e270]: "The sandboxed bash tool leverages operating system security primitives:"
+            - list [ref=e271]:
+              - listitem [ref=e272]:
+                - strong [ref=e273]: macOS
+                - text: ": Uses Seatbelt for sandbox enforcement"
+              - listitem [ref=e274]:
+                - strong [ref=e275]: Linux
+                - text: ": Uses"
+                - link "bubblewrap" [ref=e276] [cursor=pointer]:
+                  - /url: https://github.com/containers/bubblewrap
+                - text: for isolation
+              - listitem [ref=e277]:
+                - strong [ref=e278]: WSL2
+                - text: ": Uses bubblewrap, same as Linux"
+            - generic [ref=e279]: WSL1 is not supported because bubblewrap requires kernel features only available in WSL2.
+            - generic [ref=e280]: These OS-level restrictions ensure that all child processes spawned by Claude Code’s commands inherit the same security boundaries.
+            - heading "Navigate to header Getting started" [level=2] [ref=e281]:
+              - link "Navigate to header" [ref=e282] [cursor=pointer]:
+                - /url: "#getting-started"
+                - img [ref=e284]
+              - generic [ref=e286] [cursor=pointer]: Getting started
+            - heading "Navigate to header Prerequisites" [level=3] [ref=e287]:
+              - link "Navigate to header" [ref=e288] [cursor=pointer]:
+                - /url: "#prerequisites"
+                - img [ref=e290]
+              - generic [ref=e292] [cursor=pointer]: Prerequisites
+            - generic [ref=e293]:
+              - text: "On"
+              - strong [ref=e294]: macOS
+              - text: ", sandboxing works out of the box using the built-in Seatbelt framework."
+            - generic [ref=e295]:
+              - text: "On"
+              - strong [ref=e296]: Linux and WSL2
+              - text: ", install the required packages first:"
+            - generic [ref=e297]:
+              - tablist [ref=e298]:
+                - tab "Ubuntu/Debian" [selected] [ref=e299] [cursor=pointer]:
+                  - generic [ref=e300]: Ubuntu/Debian
+                - tab "Fedora" [ref=e301] [cursor=pointer]:
+                  - generic [ref=e302]: Fedora
+              - tabpanel "Ubuntu/Debian Fedora Report incorrect code Copy the contents from the code block Ask AI sudo apt-get install bubblewrap socat" [ref=e304]:
+                - generic [ref=e305]:
+                  - generic [ref=e306]:
+                    - button "Report incorrect code" [ref=e308] [cursor=pointer]:
+                      - img [ref=e309]
+                    - button "Copy the contents from the code block" [ref=e312] [cursor=pointer]:
+                      - img [ref=e313]
+                    - button "Ask AI" [ref=e317] [cursor=pointer]:
+                      - img [ref=e318]
+                  - code [ref=e324]:
+                    - generic [ref=e325]: sudo apt-get install bubblewrap socat
+            - generic [ref=e326]:
+              - text: On Ubuntu 24.04 and later, the default AppArmor policy prevents bubblewrap from creating the user namespaces it needs for isolation. Add an AppArmor profile that grants
+              - code [ref=e327]: bwrap
+              - text: "this capability:"
+            - generic [ref=e328]:
+              - generic [ref=e329]:
+                - button "Report incorrect code" [ref=e331] [cursor=pointer]:
+                  - img [ref=e332]
+                - button "Copy the contents from the code block" [ref=e335] [cursor=pointer]:
+                  - img [ref=e336]
+                - button "Ask AI" [ref=e340] [cursor=pointer]:
+                  - img [ref=e341]
+              - code [ref=e347]:
+                - generic [ref=e348]: sudo tee /etc/apparmor.d/bwrap > /dev/null <<'EOF'
+                - generic [ref=e349]: abi <abi/4.0>,
+                - generic [ref=e350]: include <tunables/global>
+                - generic [ref=e351]: "profile bwrap /usr/bin/bwrap flags=(unconfined) {"
+                - generic [ref=e352]: userns,
+                - generic [ref=e353]: include if exists <local/bwrap>
+                - generic [ref=e354]: "}"
+                - generic [ref=e355]: EOF
+            - generic [ref=e356]:
+              - text: The profile applies only to
+              - code [ref=e357]: bwrap
+              - text: "itself, not to the commands it runs inside the sandbox. Reload AppArmor to apply it:"
+            - generic [ref=e358]:
+              - generic [ref=e359]:
+                - button "Report incorrect code" [ref=e361] [cursor=pointer]:
+                  - img [ref=e362]
+                - button "Copy the contents from the code block" [ref=e365] [cursor=pointer]:
+                  - img [ref=e366]
+                - button "Ask AI" [ref=e370] [cursor=pointer]:
+                  - img [ref=e371]
+              - code [ref=e377]:
+                - generic [ref=e378]: sudo systemctl reload apparmor
+            - generic [ref=e379]:
+              - text: WSL1 does not support sandboxing because it lacks the required Linux namespace primitives. If you see
+              - code [ref=e380]: Sandboxing requires WSL2
+              - text: ", upgrade your distribution to WSL2 or run Claude Code without sandboxing."
+            - generic [ref=e381]:
+              - text: On WSL2, sandboxed commands cannot launch Windows binaries such as
+              - code [ref=e382]: cmd.exe
+              - text: ","
+              - code [ref=e383]: powershell.exe
+              - text: ", or anything under"
+              - code [ref=e384]: /mnt/c/
+              - text: . WSL hands these off to the Windows host over a Unix socket, which the sandbox blocks. If a command needs to invoke a Windows binary, add it to
+              - link "excludedCommands" [ref=e385] [cursor=pointer]:
+                - /url: /docs/en/settings#sandbox-settings
+                - code [ref=e386]: excludedCommands
+              - text: so it runs outside the sandbox.
+            - heading "Navigate to header Enable sandboxing" [level=3] [ref=e387]:
+              - link "Navigate to header" [ref=e388] [cursor=pointer]:
+                - /url: "#enable-sandboxing"
+                - img [ref=e390]
+              - generic [ref=e392] [cursor=pointer]: Enable sandboxing
+            - generic [ref=e393]:
+              - text: You can enable sandboxing by running the
+              - code [ref=e394]: /sandbox
+              - text: "command:"
+            - generic [ref=e395]:
+              - generic [ref=e396]:
+                - button "Report incorrect code" [ref=e398] [cursor=pointer]:
+                  - img [ref=e399]
+                - button "Copy the contents from the code block" [ref=e402] [cursor=pointer]:
+                  - img [ref=e403]
+                - button "Ask AI" [ref=e407] [cursor=pointer]:
+                  - img [ref=e408]
+              - code [ref=e414]:
+                - generic [ref=e415]: /sandbox
+            - generic [ref=e416]:
+              - text: This opens a menu where you can choose between sandbox modes. If required dependencies are missing (such as
+              - code [ref=e417]: bubblewrap
+              - text: or
+              - code [ref=e418]: socat
+              - text: on Linux), the menu displays installation instructions for your platform.
+            - generic [ref=e419]:
+              - text: By default, if the sandbox cannot start (missing dependencies or unsupported platform), Claude Code shows a warning and runs commands without sandboxing. To make this a hard failure instead, set
+              - link "sandbox.failIfUnavailable" [ref=e420] [cursor=pointer]:
+                - /url: /docs/en/settings#sandbox-settings
+                - code [ref=e421]: sandbox.failIfUnavailable
+              - text: to
+              - code [ref=e422]: "true"
+              - text: . This is intended for managed deployments that require sandboxing as a security gate.
+            - heading "Navigate to header Sandbox modes" [level=3] [ref=e423]:
+              - link "Navigate to header" [ref=e424] [cursor=pointer]:
+                - /url: "#sandbox-modes"
+                - img [ref=e426]
+              - generic [ref=e428] [cursor=pointer]: Sandbox modes
+            - generic [ref=e429]: "Claude Code offers two sandbox modes:"
+            - generic [ref=e430]:
+              - strong [ref=e431]: Auto-allow mode
+              - text: ": Bash commands will attempt to run inside the sandbox and are automatically allowed without requiring permission. Commands that cannot be sandboxed (such as those needing network access to non-allowed hosts) fall back to the regular permission flow. Explicit deny rules are always respected, and"
+              - code [ref=e432]: rm
+              - text: or
+              - code [ref=e433]: rmdir
+              - text: commands that target
+              - code [ref=e434]: /
+              - text: ", your home directory, or other critical system paths still trigger a permission prompt. Ask rules apply only to commands that fall back to the regular permission flow."
+            - generic [ref=e435]:
+              - strong [ref=e436]: Regular permissions mode
+              - text: ": All bash commands go through the standard permission flow, even when sandboxed. This provides more control but requires more approvals."
+            - generic [ref=e437]: In both modes, the sandbox enforces the same filesystem and network restrictions. The difference is only in whether sandboxed commands are auto-approved or require explicit permission.
+            - generic [ref=e438]:
+              - img "Info" [ref=e440]
+              - generic [ref=e443]: Auto-allow mode works independently of your permission mode setting. Even if you’re not in “accept edits” mode, sandboxed bash commands will run automatically when auto-allow is enabled. This means bash commands that modify files within the sandbox boundaries will execute without prompting, even when file edit tools would normally require approval.
+            - heading "Navigate to header Configure sandboxing" [level=3] [ref=e444]:
+              - link "Navigate to header" [ref=e445] [cursor=pointer]:
+                - /url: "#configure-sandboxing"
+                - img [ref=e447]
+              - generic [ref=e449] [cursor=pointer]: Configure sandboxing
+            - generic [ref=e450]:
+              - text: Customize sandbox behavior through your
+              - code [ref=e451]: settings.json
+              - text: file. See
+              - link "Settings" [ref=e452] [cursor=pointer]:
+                - /url: /docs/en/settings#sandbox-settings
+              - text: for complete configuration reference.
+            - heading "Navigate to header Granting subprocess write access to specific paths" [level=4] [ref=e453]:
+              - link "Navigate to header" [ref=e454] [cursor=pointer]:
+                - /url: "#granting-subprocess-write-access-to-specific-paths"
+                - img [ref=e456]
+              - generic [ref=e458] [cursor=pointer]: Granting subprocess write access to specific paths
+            - generic [ref=e459]:
+              - text: By default, sandboxed commands can only write to the current working directory. If subprocess commands like
+              - code [ref=e460]: kubectl
+              - text: ","
+              - code [ref=e461]: terraform
+              - text: ", or"
+              - code [ref=e462]: npm
+              - text: need to write outside the project directory, use
+              - code [ref=e463]: sandbox.filesystem.allowWrite
+              - text: "to grant access to specific paths:"
+            - generic [ref=e464]:
+              - generic [ref=e465]:
+                - button "Report incorrect code" [ref=e467] [cursor=pointer]:
+                  - img [ref=e468]
+                - button "Copy the contents from the code block" [ref=e471] [cursor=pointer]:
+                  - img [ref=e472]
+                - button "Ask AI" [ref=e476] [cursor=pointer]:
+                  - img [ref=e477]
+              - code [ref=e483]:
+                - generic [ref=e484]: "{"
+                - generic [ref=e485]: "\"sandbox\": {"
+                - generic [ref=e486]: "\"enabled\": true,"
+                - generic [ref=e487]: "\"filesystem\": {"
+                - generic [ref=e488]: "\"allowWrite\": [\"~/.kube\", \"/tmp/build\"]"
+                - generic [ref=e489]: "}"
+                - generic [ref=e490]: "}"
+                - generic [ref=e491]: "}"
+            - generic [ref=e492]:
+              - text: These paths are enforced at the OS level, so all commands running inside the sandbox, including their child processes, respect them. This is the recommended approach when a tool needs write access to a specific location, rather than excluding the tool from the sandbox entirely with
+              - code [ref=e493]: excludedCommands
+              - text: .
+            - generic [ref=e494]:
+              - text: When
+              - code [ref=e495]: allowWrite
+              - text: (or
+              - code [ref=e496]: denyWrite
+              - text: /
+              - code [ref=e497]: denyRead
+              - text: /
+              - code [ref=e498]: allowRead
+              - text: ) is defined in multiple
+              - link "settings scopes" [ref=e499] [cursor=pointer]:
+                - /url: /docs/en/settings#settings-precedence
+              - text: ", the arrays are"
+              - strong [ref=e500]: merged
+              - text: ", meaning paths from every scope are combined, not replaced. For example, if managed settings allow writes to"
+              - code [ref=e501]: /opt/company-tools
+              - text: and a user adds
+              - code [ref=e502]: ~/.kube
+              - text: in their personal settings, both paths are included in the final sandbox configuration. This means users and projects can extend the list without duplicating or overriding paths set by higher-priority scopes.
+            - generic [ref=e503]: "Path prefixes control how paths are resolved:"
+            - table [ref=e506]:
+              - rowgroup [ref=e507]:
+                - row "Prefix Meaning Example" [ref=e508]:
+                  - columnheader "Prefix" [ref=e509]
+                  - columnheader "Meaning" [ref=e510]
+                  - columnheader "Example" [ref=e511]
+              - rowgroup [ref=e512]:
+                - row "/ Absolute path from filesystem root /tmp/build stays /tmp/build" [ref=e513]:
+                  - cell / [ref=e514]:
+                    - code [ref=e515]: /
+                  - cell "Absolute path from filesystem root" [ref=e516]
+                  - cell "/tmp/build stays /tmp/build" [ref=e517]:
+                    - code [ref=e518]: /tmp/build
+                    - text: stays
+                    - code [ref=e519]: /tmp/build
+                - row "~/ Relative to home directory ~/.kube becomes $HOME/.kube" [ref=e520]:
+                  - cell "~/" [ref=e521]:
+                    - code [ref=e522]: ~/
+                  - cell "Relative to home directory" [ref=e523]
+                  - cell "~/.kube becomes $HOME/.kube" [ref=e524]:
+                    - code [ref=e525]: ~/.kube
+                    - text: becomes
+                    - code [ref=e526]: $HOME/.kube
+                - row "./ or no prefix Relative to the project root for project settings, or to ~/.claude for user settings ./output in .claude/settings.json resolves to <project-root>/output" [ref=e527]:
+                  - cell "./ or no prefix" [ref=e528]:
+                    - code [ref=e529]: ./
+                    - text: or no prefix
+                  - cell "Relative to the project root for project settings, or to ~/.claude for user settings" [ref=e530]:
+                    - text: Relative to the project root for project settings, or to
+                    - code [ref=e531]: ~/.claude
+                    - text: for user settings
+                  - cell "./output in .claude/settings.json resolves to <project-root>/output" [ref=e532]:
+                    - code [ref=e533]: ./output
+                    - text: in
+                    - code [ref=e534]: .claude/settings.json
+                    - text: resolves to
+                    - code [ref=e535]: <project-root>/output
+            - generic [ref=e536]:
+              - text: The older
+              - code [ref=e537]: //path
+              - text: prefix for absolute paths still works. If you previously used single-slash
+              - code [ref=e538]: /path
+              - text: expecting project-relative resolution, switch to
+              - code [ref=e539]: ./path
+              - text: . This syntax differs from
+              - link "Read and Edit permission rules" [ref=e540] [cursor=pointer]:
+                - /url: /docs/en/permissions#read-and-edit
+              - text: ", which use"
+              - code [ref=e541]: //path
+              - text: for absolute and
+              - code [ref=e542]: /path
+              - text: "for project-relative. Sandbox filesystem paths use standard conventions:"
+              - code [ref=e543]: /tmp/build
+              - text: is an absolute path.
+            - generic [ref=e544]:
+              - text: You can also deny write or read access using
+              - code [ref=e545]: sandbox.filesystem.denyWrite
+              - text: and
+              - code [ref=e546]: sandbox.filesystem.denyRead
+              - text: . These are merged with any paths from
+              - code [ref=e547]: Edit(...)
+              - text: and
+              - code [ref=e548]: Read(...)
+              - text: permission rules. To re-allow reading specific paths within a denied region, use
+              - code [ref=e549]: sandbox.filesystem.allowRead
+              - text: ", which takes precedence over"
+              - code [ref=e550]: denyRead
+              - text: . When
+              - code [ref=e551]: allowManagedReadPathsOnly
+              - text: is enabled in managed settings, only managed
+              - code [ref=e552]: allowRead
+              - text: entries are respected; user, project, and local
+              - code [ref=e553]: allowRead
+              - text: entries are ignored.
+              - code [ref=e554]: denyRead
+              - text: still merges from all sources.
+            - generic [ref=e555]:
+              - text: For example, to block reading from the entire home directory while still allowing reads from the current project, add this to your project’s
+              - code [ref=e556]: .claude/settings.json
+              - text: ":"
+            - generic [ref=e557]:
+              - generic [ref=e558]:
+                - button "Report incorrect code" [ref=e560] [cursor=pointer]:
+                  - img [ref=e561]
+                - button "Copy the contents from the code block" [ref=e564] [cursor=pointer]:
+                  - img [ref=e565]
+                - button "Ask AI" [ref=e569] [cursor=pointer]:
+                  - img [ref=e570]
+              - code [ref=e576]:
+                - generic [ref=e577]: "{"
+                - generic [ref=e578]: "\"sandbox\": {"
+                - generic [ref=e579]: "\"enabled\": true,"
+                - generic [ref=e580]: "\"filesystem\": {"
+                - generic [ref=e581]: "\"denyRead\": [\"~/\"],"
+                - generic [ref=e582]: "\"allowRead\": [\".\"]"
+                - generic [ref=e583]: "}"
+                - generic [ref=e584]: "}"
+                - generic [ref=e585]: "}"
+            - generic [ref=e586]:
+              - text: The
+              - code [ref=e587]: .
+              - text: in
+              - code [ref=e588]: allowRead
+              - text: resolves to the project root because this configuration lives in project settings. If you placed the same configuration in
+              - code [ref=e589]: ~/.claude/settings.json
+              - text: ","
+              - code [ref=e590]: .
+              - text: would resolve to
+              - code [ref=e591]: ~/.claude
+              - text: instead, and project files would remain blocked by the
+              - code [ref=e592]: denyRead
+              - text: rule.
+            - generic [ref=e593]:
+              - img "Tip" [ref=e595]
+              - generic [ref=e597]:
+                - generic [ref=e598]: "Not all commands are compatible with sandboxing out of the box. Some notes that may help you make the most out of the sandbox:"
+                - list [ref=e599]:
+                  - listitem [ref=e600]: Many CLI tools require accessing certain hosts. As you use these tools, they will request permission to access certain hosts. Granting permission will allow them to access these hosts now and in the future, enabling them to safely execute inside the sandbox.
+                  - listitem [ref=e601]:
+                    - code [ref=e602]: watchman
+                    - text: is incompatible with running in the sandbox. If you’re running
+                    - code [ref=e603]: jest
+                    - text: ", consider using"
+                    - code [ref=e604]: jest --no-watchman
+                  - listitem [ref=e605]:
+                    - code [ref=e606]: docker
+                    - text: is incompatible with running in the sandbox. Consider specifying
+                    - code [ref=e607]: docker *
+                    - text: in
+                    - code [ref=e608]: excludedCommands
+                    - text: to force it to run outside of the sandbox.
+            - generic [ref=e609]:
+              - img "Note" [ref=e611]
+              - generic [ref=e613]:
+                - generic [ref=e614]:
+                  - text: Claude Code includes an intentional escape hatch mechanism that allows commands to run outside the sandbox when necessary. When a command fails due to sandbox restrictions (such as network connectivity issues or incompatible tools), Claude is prompted to analyze the failure and may retry the command with the
+                  - code [ref=e615]: dangerouslyDisableSandbox
+                  - text: parameter. Commands that use this parameter go through the normal Claude Code permissions flow requiring user permission to execute. This allows Claude Code to handle edge cases where certain tools or network operations cannot function within sandbox constraints.
+                - generic [ref=e616]:
+                  - text: You can disable this escape hatch by setting
+                  - code [ref=e617]: "\"allowUnsandboxedCommands\": false"
+                  - text: in your
+                  - link "sandbox settings" [ref=e618] [cursor=pointer]:
+                    - /url: /docs/en/settings#sandbox-settings
+                  - text: . When disabled, the
+                  - code [ref=e619]: dangerouslyDisableSandbox
+                  - text: parameter is completely ignored and all commands must run sandboxed or be explicitly listed in
+                  - code [ref=e620]: excludedCommands
+                  - text: .
+            - heading "Navigate to header Security benefits" [level=2] [ref=e621]:
+              - link "Navigate to header" [ref=e622] [cursor=pointer]:
+                - /url: "#security-benefits"
+                - img [ref=e624]
+              - generic [ref=e626] [cursor=pointer]: Security benefits
+            - heading "Navigate to header Protection against prompt injection" [level=3] [ref=e627]:
+              - link "Navigate to header" [ref=e628] [cursor=pointer]:
+                - /url: "#protection-against-prompt-injection"
+                - img [ref=e630]
+              - generic [ref=e632] [cursor=pointer]: Protection against prompt injection
+            - generic [ref=e633]: "Even if an attacker successfully manipulates Claude Code’s behavior through prompt injection, the sandbox ensures your system remains secure:"
+            - strong [ref=e635]: "Filesystem protection:"
+            - list [ref=e636]:
+              - listitem [ref=e637]:
+                - text: Cannot modify critical config files such as
+                - code [ref=e638]: ~/.bashrc
+              - listitem [ref=e639]:
+                - text: Cannot modify system-level files in
+                - code [ref=e640]: /bin/
+              - listitem [ref=e641]:
+                - text: Cannot read files that are denied in your
+                - link "Claude permission settings" [ref=e642] [cursor=pointer]:
+                  - /url: /docs/en/permissions#manage-permissions
+            - strong [ref=e644]: "Network protection:"
+            - list [ref=e645]:
+              - listitem [ref=e646]: Cannot exfiltrate data to attacker-controlled servers
+              - listitem [ref=e647]: Cannot download malicious scripts from unauthorized domains
+              - listitem [ref=e648]: Cannot make unexpected API calls to unapproved services
+              - listitem [ref=e649]: Cannot contact any domains not explicitly allowed
+            - strong [ref=e651]: "Monitoring and control:"
+            - list [ref=e652]:
+              - listitem [ref=e653]: All access attempts outside the sandbox are blocked at the OS level
+              - listitem [ref=e654]: You receive immediate notifications when boundaries are tested
+              - listitem [ref=e655]: You can choose to deny, allow once, or permanently update your configuration
+            - heading "Navigate to header Reduced attack surface" [level=3] [ref=e656]:
+              - link "Navigate to header" [ref=e657] [cursor=pointer]:
+                - /url: "#reduced-attack-surface"
+                - img [ref=e659]
+              - generic [ref=e661] [cursor=pointer]: Reduced attack surface
+            - generic [ref=e662]: "Sandboxing limits the potential damage from:"
+            - list [ref=e663]:
+              - listitem [ref=e664]:
+                - strong [ref=e665]: Malicious dependencies
+                - text: ": NPM packages or other dependencies with harmful code"
+              - listitem [ref=e666]:
+                - strong [ref=e667]: Compromised scripts
+                - text: ": Build scripts or tools with security vulnerabilities"
+              - listitem [ref=e668]:
+                - strong [ref=e669]: Social engineering
+                - text: ": Attacks that trick users into running dangerous commands"
+              - listitem [ref=e670]:
+                - strong [ref=e671]: Prompt injection
+                - text: ": Attacks that trick Claude into running dangerous commands"
+            - heading "Navigate to header Transparent operation" [level=3] [ref=e672]:
+              - link "Navigate to header" [ref=e673] [cursor=pointer]:
+                - /url: "#transparent-operation"
+                - img [ref=e675]
+              - generic [ref=e677] [cursor=pointer]: Transparent operation
+            - generic [ref=e678]: "When Claude Code attempts to access network resources outside the sandbox:"
+            - list [ref=e679]:
+              - listitem [ref=e680]: The operation is blocked at the OS level
+              - listitem [ref=e681]: You receive an immediate notification
+              - listitem [ref=e682]:
+                - text: "You can choose to:"
+                - list [ref=e683]:
+                  - listitem [ref=e684]: Deny the request
+                  - listitem [ref=e685]: Allow it once
+                  - listitem [ref=e686]: Update your sandbox configuration to permanently allow it
+            - heading "Navigate to header Security Limitations" [level=2] [ref=e687]:
+              - link "Navigate to header" [ref=e688] [cursor=pointer]:
+                - /url: "#security-limitations"
+                - img [ref=e690]
+              - generic [ref=e692] [cursor=pointer]: Security Limitations
+            - list [ref=e693]:
+              - listitem [ref=e694]: "Network Sandboxing Limitations: The network filtering system operates by restricting the domains that processes are allowed to connect to. The built-in proxy does not terminate or perform TLS inspection on outbound traffic, so the contents of encrypted connections are not examined. You are responsible for ensuring that only trusted domains are allowed in your policy."
+            - generic [ref=e695]:
+              - img "Warning" [ref=e697]
+              - generic [ref=e700]:
+                - text: Allowing broad domains such as
+                - code [ref=e701]: github.com
+                - text: can create paths for data exfiltration. Because the proxy makes its allow decision from the client-supplied hostname without inspecting TLS, code running inside the sandbox can potentially use
+                - link "domain fronting" [ref=e702] [cursor=pointer]:
+                  - /url: https://en.wikipedia.org/wiki/Domain_fronting
+                - text: or similar techniques to reach hosts outside the allowlist. If your threat model requires stronger guarantees, configure a
+                - link "custom proxy" [ref=e703] [cursor=pointer]:
+                  - /url: "#custom-proxy-configuration"
+                - text: that terminates TLS and inspects traffic, and install its CA certificate inside the sandbox. Stronger TLS-aware network isolation is an active area of development.
+            - list [ref=e704]:
+              - listitem [ref=e705]:
+                - text: "Privilege Escalation via Unix Sockets: The"
+                - code [ref=e706]: allowUnixSockets
+                - text: configuration can inadvertently grant access to powerful system services that could lead to sandbox bypasses. For example, if it is used to allow access to
+                - code [ref=e707]: /var/run/docker.sock
+                - text: this would effectively grant access to the host system through exploiting the docker socket. Users are encouraged to carefully consider any unix sockets that they allow through the sandbox.
+              - listitem [ref=e708]:
+                - text: "Filesystem Permission Escalation: Overly broad filesystem write permissions can enable privilege escalation attacks. Allowing writes to directories containing executables in"
+                - code [ref=e709]: $PATH
+                - text: ", system configuration directories, or user shell configuration files ("
+                - code [ref=e710]: .bashrc
+                - text: ","
+                - code [ref=e711]: .zshrc
+                - text: ) can lead to code execution in different security contexts when other users or system processes access these files.
+              - listitem [ref=e712]:
+                - text: "Linux Sandbox Strength: The Linux implementation provides strong filesystem and network isolation but includes an"
+                - code [ref=e713]: enableWeakerNestedSandbox
+                - text: mode that enables it to work inside of Docker environments without privileged namespaces. This option considerably weakens security and should only be used in cases where additional isolation is otherwise enforced.
+            - heading "Navigate to header How sandboxing relates to permissions" [level=2] [ref=e714]:
+              - link "Navigate to header" [ref=e715] [cursor=pointer]:
+                - /url: "#how-sandboxing-relates-to-permissions"
+                - img [ref=e717]
+              - generic [ref=e719] [cursor=pointer]: How sandboxing relates to permissions
+            - generic [ref=e720]:
+              - text: Sandboxing and
+              - link "permissions" [ref=e721] [cursor=pointer]:
+                - /url: /docs/en/permissions
+              - text: "are complementary security layers that work together:"
+            - list [ref=e722]:
+              - listitem [ref=e723]:
+                - strong [ref=e724]: Permissions
+                - text: "control which tools Claude Code can use and are evaluated before any tool runs. They apply to all tools: Bash, Read, Edit, WebFetch, MCP, and others."
+              - listitem [ref=e725]:
+                - strong [ref=e726]: Sandboxing
+                - text: provides OS-level enforcement that restricts what Bash commands can access at the filesystem and network level. It applies only to Bash commands and their child processes.
+            - generic [ref=e727]: "Filesystem and network restrictions are configured through both sandbox settings and permission rules:"
+            - list [ref=e728]:
+              - listitem [ref=e729]:
+                - text: Use
+                - code [ref=e730]: sandbox.filesystem.allowWrite
+                - text: to grant subprocess write access to paths outside the working directory
+              - listitem [ref=e731]:
+                - text: Use
+                - code [ref=e732]: sandbox.filesystem.denyWrite
+                - text: and
+                - code [ref=e733]: sandbox.filesystem.denyRead
+                - text: to block subprocess access to specific paths
+              - listitem [ref=e734]:
+                - text: Use
+                - code [ref=e735]: sandbox.filesystem.allowRead
+                - text: to re-allow reading specific paths within a
+                - code [ref=e736]: denyRead
+                - text: region
+              - listitem [ref=e737]:
+                - text: Use
+                - code [ref=e738]: Read
+                - text: and
+                - code [ref=e739]: Edit
+                - text: deny rules to block access to specific files or directories
+              - listitem [ref=e740]:
+                - text: Use
+                - code [ref=e741]: WebFetch
+                - text: allow/deny rules to control domain access
+              - listitem [ref=e742]:
+                - text: Use sandbox
+                - code [ref=e743]: allowedDomains
+                - text: to control which domains Bash commands can reach
+              - listitem [ref=e744]:
+                - text: Use sandbox
+                - code [ref=e745]: deniedDomains
+                - text: to block specific domains even when a broader
+                - code [ref=e746]: allowedDomains
+                - text: wildcard would otherwise permit them
+            - generic [ref=e747]:
+              - text: Paths from both
+              - code [ref=e748]: sandbox.filesystem
+              - text: settings and permission rules are merged together into the final sandbox configuration.
+            - generic [ref=e749]:
+              - text: This
+              - link "repository" [ref=e750] [cursor=pointer]:
+                - /url: https://github.com/anthropics/claude-code/tree/main/examples/settings
+              - text: includes starter settings configurations for common deployment scenarios, including sandbox-specific examples. Use these as starting points and adjust them to fit your needs.
+            - heading "Navigate to header Advanced usage" [level=2] [ref=e751]:
+              - link "Navigate to header" [ref=e752] [cursor=pointer]:
+                - /url: "#advanced-usage"
+                - img [ref=e754]
+              - generic [ref=e756] [cursor=pointer]: Advanced usage
+            - heading "Navigate to header Custom proxy configuration" [level=3] [ref=e757]:
+              - link "Navigate to header" [ref=e758] [cursor=pointer]:
+                - /url: "#custom-proxy-configuration"
+                - img [ref=e760]
+              - generic [ref=e762] [cursor=pointer]: Custom proxy configuration
+            - generic [ref=e763]: "For organizations requiring advanced network security, you can implement a custom proxy to:"
+            - list [ref=e764]:
+              - listitem [ref=e765]: Decrypt and inspect HTTPS traffic
+              - listitem [ref=e766]: Apply custom filtering rules
+              - listitem [ref=e767]: Log all network requests
+              - listitem [ref=e768]: Integrate with existing security infrastructure
+            - generic [ref=e769]:
+              - generic [ref=e770]:
+                - button "Report incorrect code" [ref=e772] [cursor=pointer]:
+                  - img [ref=e773]
+                - button "Copy the contents from the code block" [ref=e776] [cursor=pointer]:
+                  - img [ref=e777]
+                - button "Ask AI" [ref=e781] [cursor=pointer]:
+                  - img [ref=e782]
+              - code [ref=e788]:
+                - generic [ref=e789]: "{"
+                - generic [ref=e790]: "\"sandbox\": {"
+                - generic [ref=e791]: "\"network\": {"
+                - generic [ref=e792]: "\"httpProxyPort\": 8080,"
+                - generic [ref=e793]: "\"socksProxyPort\": 8081"
+                - generic [ref=e794]: "}"
+                - generic [ref=e795]: "}"
+                - generic [ref=e796]: "}"
+            - heading "Navigate to header Integration with existing security tools" [level=3] [ref=e797]:
+              - link "Navigate to header" [ref=e798] [cursor=pointer]:
+                - /url: "#integration-with-existing-security-tools"
+                - img [ref=e800]
+              - generic [ref=e802] [cursor=pointer]: Integration with existing security tools
+            - generic [ref=e803]: "The sandboxed bash tool works alongside:"
+            - list [ref=e804]:
+              - listitem [ref=e805]:
+                - strong [ref=e806]: Permission rules
+                - text: ": Combine with"
+                - link "permission settings" [ref=e807] [cursor=pointer]:
+                  - /url: /docs/en/permissions
+                - text: for defense-in-depth
+              - listitem [ref=e808]:
+                - strong [ref=e809]: Development containers
+                - text: ": Use with"
+                - link "dev containers" [ref=e810] [cursor=pointer]:
+                  - /url: /docs/en/devcontainer
+                - text: for additional isolation
+              - listitem [ref=e811]:
+                - strong [ref=e812]: Enterprise policies
+                - text: ": Enforce sandbox configurations through"
+                - link "managed settings" [ref=e813] [cursor=pointer]:
+                  - /url: /docs/en/settings#settings-precedence
+            - heading "Navigate to header Best practices" [level=2] [ref=e814]:
+              - link "Navigate to header" [ref=e815] [cursor=pointer]:
+                - /url: "#best-practices"
+                - img [ref=e817]
+              - generic [ref=e819] [cursor=pointer]: Best practices
+            - list [ref=e820]:
+              - listitem [ref=e821]:
+                - strong [ref=e822]: Start restrictive
+                - text: ": Begin with minimal permissions and expand as needed"
+              - listitem [ref=e823]:
+                - strong [ref=e824]: Monitor logs
+                - text: ": Review sandbox violation attempts to understand Claude Code’s needs"
+              - listitem [ref=e825]:
+                - strong [ref=e826]: Use environment-specific configs
+                - text: ": Different sandbox rules for development vs. production contexts"
+              - listitem [ref=e827]:
+                - strong [ref=e828]: Combine with permissions
+                - text: ": Use sandboxing alongside IAM policies for comprehensive security"
+              - listitem [ref=e829]:
+                - strong [ref=e830]: Test configurations
+                - text: ": Verify your sandbox settings don’t block legitimate workflows"
+            - heading "Navigate to header Open source" [level=2] [ref=e831]:
+              - link "Navigate to header" [ref=e832] [cursor=pointer]:
+                - /url: "#open-source"
+                - img [ref=e834]
+              - generic [ref=e836] [cursor=pointer]: Open source
+            - generic [ref=e837]: "The sandbox runtime is available as an open source npm package for use in your own agent projects. This enables the broader AI agent community to build safer, more secure autonomous systems. This can also be used to sandbox other programs you may wish to run. For example, to sandbox an MCP server you could run:"
+            - generic [ref=e838]:
+              - generic [ref=e839]:
+                - button "Report incorrect code" [ref=e841] [cursor=pointer]:
+                  - img [ref=e842]
+                - button "Copy the contents from the code block" [ref=e845] [cursor=pointer]:
+                  - img [ref=e846]
+                - button "Ask AI" [ref=e850] [cursor=pointer]:
+                  - img [ref=e851]
+              - code [ref=e857]:
+                - generic [ref=e858]: npx @anthropic-ai/sandbox-runtime <command-to-sandbox>
+            - generic [ref=e859]:
+              - text: For implementation details and source code, visit the
+              - link "GitHub repository" [ref=e860] [cursor=pointer]:
+                - /url: https://github.com/anthropic-experimental/sandbox-runtime
+              - text: .
+            - heading "Navigate to header Limitations" [level=2] [ref=e861]:
+              - link "Navigate to header" [ref=e862] [cursor=pointer]:
+                - /url: "#limitations"
+                - img [ref=e864]
+              - generic [ref=e866] [cursor=pointer]: Limitations
+            - list [ref=e867]:
+              - listitem [ref=e868]:
+                - strong [ref=e869]: Performance overhead
+                - text: ": Minimal, but some filesystem operations may be slightly slower"
+              - listitem [ref=e870]:
+                - strong [ref=e871]: Compatibility
+                - text: ": Some tools that require specific system access patterns may need configuration adjustments, or may even need to be run outside of the sandbox"
+              - listitem [ref=e872]:
+                - strong [ref=e873]: Platform support
+                - text: ": Supports macOS, Linux, and WSL2. WSL1 is not supported. Native Windows support is planned."
+            - heading "Navigate to header What sandboxing does not cover" [level=2] [ref=e874]:
+              - link "Navigate to header" [ref=e875] [cursor=pointer]:
+                - /url: "#what-sandboxing-does-not-cover"
+                - img [ref=e877]
+              - generic [ref=e879] [cursor=pointer]: What sandboxing does not cover
+            - generic [ref=e880]: "The sandbox isolates Bash subprocesses. Other tools operate under different boundaries:"
+            - list [ref=e881]:
+              - listitem [ref=e882]:
+                - strong [ref=e883]: Built-in file tools
+                - text: ": Read, Edit, and Write use the permission system directly rather than running through the sandbox. See"
+                - link "permissions" [ref=e884] [cursor=pointer]:
+                  - /url: /docs/en/permissions
+                - text: .
+              - listitem [ref=e885]:
+                - strong [ref=e886]: Computer use
+                - text: ": when Claude opens apps and controls your screen, it runs on your actual desktop rather than in an isolated environment. Per-app permission prompts gate each application. See"
+                - link "computer use in the CLI" [ref=e887] [cursor=pointer]:
+                  - /url: /docs/en/computer-use
+                - text: or
+                - link "computer use in Desktop" [ref=e888] [cursor=pointer]:
+                  - /url: /docs/en/desktop#let-claude-use-your-computer
+                - text: .
+            - heading "Navigate to header See also" [level=2] [ref=e889]:
+              - link "Navigate to header" [ref=e890] [cursor=pointer]:
+                - /url: "#see-also"
+                - img [ref=e892]
+              - generic [ref=e894] [cursor=pointer]: See also
+            - list [ref=e895]:
+              - listitem [ref=e896]:
+                - link "Security" [ref=e897] [cursor=pointer]:
+                  - /url: /docs/en/security
+                - text: "- Comprehensive security features and best practices"
+              - listitem [ref=e898]:
+                - link "Permissions" [ref=e899] [cursor=pointer]:
+                  - /url: /docs/en/permissions
+                - text: "- Permission configuration and access control"
+              - listitem [ref=e900]:
+                - link "Settings" [ref=e901] [cursor=pointer]:
+                  - /url: /docs/en/settings
+                - text: "- Complete configuration reference"
+              - listitem [ref=e902]:
+                - link "CLI reference" [ref=e903] [cursor=pointer]:
+                  - /url: /docs/en/cli-reference
+                - text: "- Command-line options"
+          - generic [ref=e905]:
+            - paragraph [ref=e906]: Was this page helpful?
+            - generic [ref=e908]:
+              - button "Yes" [ref=e909] [cursor=pointer]:
+                - img [ref=e910]
+                - generic [ref=e912]: "Yes"
+              - button "No" [ref=e913] [cursor=pointer]:
+                - img [ref=e914]
+                - generic [ref=e916]: "No"
+          - generic [ref=e917]:
+            - link "Permissions" [ref=e918] [cursor=pointer]:
+              - /url: /docs/en/permissions
+              - img [ref=e919]
+              - generic [ref=e921]: Permissions
+            - link "Model configuration" [ref=e922] [cursor=pointer]:
+              - /url: /docs/en/model-config
+              - generic [ref=e923]: Model configuration
+              - img [ref=e924]
+          - generic [ref=e927]:
+            - textbox "Ask a question..." [ref=e928]
+            - generic: ⌘I
+            - button "Send message" [disabled] [ref=e929]:
+              - img [ref=e930]
+      - contentinfo [ref=e932]:
+        - generic [ref=e934]:
+          - generic [ref=e935]:
+            - link "Claude Code Docs home page light logo" [ref=e936] [cursor=pointer]:
+              - /url: /docs/en/overview
+              - generic [ref=e937]: Claude Code Docs home page
+              - img "light logo" [ref=e938]
+            - generic [ref=e939]:
+              - link "x" [ref=e940] [cursor=pointer]:
+                - /url: https://x.com/AnthropicAI
+                - generic [ref=e941]: x
+                - img [ref=e942]
+              - link "linkedin" [ref=e943] [cursor=pointer]:
+                - /url: https://www.linkedin.com/company/anthropicresearch
+                - generic [ref=e944]: linkedin
+                - img [ref=e945]
+          - generic [ref=e946]:
+            - generic [ref=e948]:
+              - paragraph [ref=e949]: Company
+              - link "Anthropic" [ref=e950] [cursor=pointer]:
+                - /url: https://www.anthropic.com/company
+              - link "Careers" [ref=e951] [cursor=pointer]:
+                - /url: https://www.anthropic.com/careers
+              - link "Economic Futures" [ref=e952] [cursor=pointer]:
+                - /url: https://www.anthropic.com/economic-futures
+              - link "Research" [ref=e953] [cursor=pointer]:
+                - /url: https://www.anthropic.com/research
+              - link "News" [ref=e954] [cursor=pointer]:
+                - /url: https://www.anthropic.com/news
+              - link "Trust center" [ref=e955] [cursor=pointer]:
+                - /url: https://trust.anthropic.com/
+              - link "Transparency" [ref=e956] [cursor=pointer]:
+                - /url: https://www.anthropic.com/transparency
+            - generic [ref=e958]:
+              - paragraph [ref=e959]: Help and security
+              - link "Availability" [ref=e960] [cursor=pointer]:
+                - /url: https://www.anthropic.com/supported-countries
+              - link "Status" [ref=e961] [cursor=pointer]:
+                - /url: https://status.anthropic.com/
+              - link "Support center" [ref=e962] [cursor=pointer]:
+                - /url: https://support.claude.com/
+            - generic [ref=e964]:
+              - paragraph [ref=e965]: Learn
+              - link "Courses" [ref=e966] [cursor=pointer]:
+                - /url: https://www.anthropic.com/learn
+              - link "MCP connectors" [ref=e967] [cursor=pointer]:
+                - /url: https://claude.com/partners/mcp
+              - link "Customer stories" [ref=e968] [cursor=pointer]:
+                - /url: https://www.claude.com/customers
+              - link "Engineering blog" [ref=e969] [cursor=pointer]:
+                - /url: https://www.anthropic.com/engineering
+              - link "Events" [ref=e970] [cursor=pointer]:
+                - /url: https://www.anthropic.com/events
+              - link "Powered by Claude" [ref=e971] [cursor=pointer]:
+                - /url: https://claude.com/partners/powered-by-claude
+              - link "Service partners" [ref=e972] [cursor=pointer]:
+                - /url: https://claude.com/partners/services
+              - link "Startups program" [ref=e973] [cursor=pointer]:
+                - /url: https://claude.com/programs/startups
+            - generic [ref=e975]:
+              - paragraph [ref=e976]: Terms and policies
+              - link "Privacy choices" [ref=e977] [cursor=pointer]:
+                - /url: "#"
+              - link "Privacy policy" [ref=e978] [cursor=pointer]:
+                - /url: https://www.anthropic.com/legal/privacy
+              - link "Disclosure policy" [ref=e979] [cursor=pointer]:
+                - /url: https://www.anthropic.com/responsible-disclosure-policy
+              - link "Usage policy" [ref=e980] [cursor=pointer]:
+                - /url: https://www.anthropic.com/legal/aup
+              - link "Commercial terms" [ref=e981] [cursor=pointer]:
+                - /url: https://www.anthropic.com/legal/commercial-terms
+              - link "Consumer terms" [ref=e982] [cursor=pointer]:
+                - /url: https://www.anthropic.com/legal/consumer-terms
+    - generic:
+      - generic [ref=e984]:
+        - generic [ref=e985]:
+          - img [ref=e986]
+          - generic [ref=e989]: Assistant
+        - generic [ref=e990]:
+          - button [ref=e991] [cursor=pointer]:
+            - img [ref=e992]
+          - button [ref=e997] [cursor=pointer]:
+            - img [ref=e998]
+      - generic [ref=e1002]: Responses are generated using AI and may contain mistakes.
+      - generic [ref=e1004]:
+        - textbox [ref=e1005]:
+          - /placeholder: Ask a question...
+        - generic [ref=e1006]:
+          - button [ref=e1007] [cursor=pointer]:
+            - img [ref=e1008]
+          - button [disabled] [ref=e1010]:
+            - img [ref=e1011]

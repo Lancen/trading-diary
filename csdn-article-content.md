@@ -1,0 +1,1159 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e5]:
+    - generic [ref=e6]:
+      - link "CSDN首页" [ref=e8] [cursor=pointer]:
+        - /url: https://www.csdn.net/
+        - img "CSDN首页" [ref=e9]
+      - list [ref=e10]:
+        - listitem "阅读深度、前沿文章" [ref=e11]:
+          - link "博客" [ref=e12] [cursor=pointer]:
+            - /url: https://blog.csdn.net/
+        - listitem "高价值源码课程分享" [ref=e13]:
+          - link "下载" [ref=e14] [cursor=pointer]:
+            - /url: https://download.csdn.net/
+        - listitem "DevPress官方社区" [ref=e15]:
+          - link "社区" [ref=e16] [cursor=pointer]:
+            - /url: https://devpress.csdn.net/
+        - listitem "开源代码托管" [ref=e17]:
+          - link "AtomGit" [ref=e18] [cursor=pointer]:
+            - /url: https://link.csdn.net?target=https%3A%2F%2Fgitcode.com%3Futm_source%3Dcsdn_toolbar
+            - img [ref=e19]
+            - text: AtomGit
+        - listitem "模型市场" [ref=e20]:
+          - link "模型市场" [ref=e21] [cursor=pointer]:
+            - /url: https://taotoken.net?utm_source=tt_csdn_home_topbar
+            - img [ref=e22]
+            - text: 模型市场
+            - img [ref=e23]
+        - listitem [ref=e24]:
+          - generic [ref=e25] [cursor=pointer]: 更多
+    - generic [ref=e29]:
+      - textbox "AI编程" [ref=e1003]
+      - button "搜索" [ref=e32] [cursor=pointer]:
+        - generic [ref=e34]: 搜索
+      - paragraph [ref=e35] [cursor=pointer]:
+        - generic [ref=e36]: AI 搜索
+    - generic [ref=e38]:
+      - generic [ref=e40] [cursor=pointer]: 登录
+      - link "新用户会员0.5元/天" [ref=e42] [cursor=pointer]:
+        - /url: https://mall.csdn.net/vip?utm_source=vip_toolbarhyzx_hy
+      - link "消息" [ref=e45] [cursor=pointer]:
+        - /url: https://i.csdn.net/#/msg/index
+        - generic [ref=e46]: 消息
+      - link "创作中心" [ref=e49] [cursor=pointer]:
+        - /url: https://mp.csdn.net
+      - link "创作" [ref=e51] [cursor=pointer]:
+        - /url: https://mp.csdn.net/edit
+  - generic [ref=e55]:
+    - main [ref=e56]:
+      - generic [ref=e57]:
+        - generic [ref=e59]:
+          - heading "关于Claude Code开启sandbox沙箱之后curl命令无法访问局域网" [level=1] [ref=e61]
+          - generic [ref=e62]:
+            - generic [ref=e64]:
+              - generic [ref=e65]: 原创
+              - generic [ref=e66]: 于 2026-03-26 15:21:35 发布
+              - generic [ref=e67]: ·
+              - generic [ref=e68]: 306 阅读
+              - generic [ref=e69] [cursor=pointer]:
+                - generic [ref=e70]: ·
+                - generic [ref=e71]: "6"
+              - generic [ref=e72]: ·
+              - generic [ref=e73] [cursor=pointer]: "4"
+              - generic [ref=e74]: ·
+              - generic [ref=e76] [cursor=pointer]: CC 4.0 BY-SA版权
+            - generic [ref=e78]:
+              - generic [ref=e79]:
+                - generic [ref=e80]: 文章标签：
+                - paragraph [ref=e81]:
+                  - link "#AI编程" [ref=e82] [cursor=pointer]:
+                    - /url: https://so.csdn.net/so/search/s.do?q=AI%E7%BC%96%E7%A8%8B&t=all&o=vip&s=&l=&f=&viparticle=&from_tracking_code=tag_word&from_code=app_blog_art
+              - paragraph
+        - article [ref=e83]:
+          - generic [ref=e85]:
+            - heading "系统环境" [level=3] [ref=e86]: 系统环境
+            - list [ref=e87]:
+              - listitem [ref=e88]: 宿主机：win11
+              - listitem [ref=e89]: WSL2：ubuntu 24.04
+              - listitem [ref=e90]: WSL 网络模式：NAT模式
+              - listitem [ref=e91]: Claude Code：2.1.81 （安装到WSL中）
+              - listitem [ref=e92]:
+                - text: Claude Code 沙箱配置 （
+                - code [ref=e93]: ~/.claude/settings.json
+                - text: 代码片段如下）
+                - generic [ref=e94]:
+                  - code [ref=e95]:
+                    - generic [ref=e96]: "{"
+                    - text: "\"sandbox\":"
+                    - generic [ref=e97]: "{"
+                    - text: "\"enabled\": true, \"autoAllowBashIfSandboxed\": true, \"allowUnsandboxedCommands\": false, \"excludedCommands\": [\"docker\"], \"filesystem\":"
+                    - generic [ref=e98]: "{"
+                    - text: "\"allowWrite\": [\"//tmp/build\"], \"denyRead\": [\"~/.config/opencode\", \"~/.codex\", \"~/.local/share/opencode\", \"~/.ssh\"] }, \"network\":"
+                    - generic [ref=e99]: "{"
+                    - text: "\"allowedDomains\": [\"github.com\"], \"allowUnixSockets\": [ \"/var/run/docker.sock\" ] } } }"
+                  - generic [ref=e100]:
+                    - button "AI写代码" [ref=e101] [cursor=pointer]
+                    - generic [ref=e102]: json
+                    - generic [ref=e103] [cursor=pointer]: 登录复制
+                  - generic [ref=e105] [cursor=pointer]: 展开
+                  - list [ref=e106]:
+                    - listitem [ref=e107]: "1"
+                    - listitem [ref=e108]: "2"
+                    - listitem [ref=e109]: "3"
+                    - listitem [ref=e110]: "4"
+                    - listitem [ref=e111]: "5"
+                    - listitem [ref=e112]: "6"
+                    - listitem [ref=e113]: "7"
+                    - listitem [ref=e114]: "8"
+                    - listitem [ref=e115]: "9"
+                    - listitem [ref=e116]: "10"
+                    - listitem [ref=e117]: "11"
+                    - listitem [ref=e118]: "12"
+                    - listitem [ref=e119]: "13"
+                    - listitem [ref=e120]: "14"
+                    - listitem [ref=e121]: "15"
+                    - listitem [ref=e122]: "16"
+                    - listitem [ref=e123]: "17"
+                    - listitem [ref=e124]: "18"
+            - heading "问题现象" [level=3] [ref=e125]: 问题现象
+            - paragraph [ref=e126]:
+              - text: 在 claude cli 中，执行bash命令，命令为通过 curl 访问宿主机win11局域网中的设备。
+              - text: 发现执行 curl 命令时总是出现关于
+              - code [ref=e127]: Uses proxy env variable no_proxy == 'localhost,127.0.0.1,::1,*.local,.local,169.254.0.0/16,10.0. 0.0/8,172.16.0.0/12,192.168.0.0/16'
+              - text: 的提示。导致自动化测试时失败。
+            - paragraph [ref=e128]:
+              - img "在这里插入图片描述" [ref=e129]
+            - heading "问题分析" [level=3] [ref=e130]: 问题分析
+            - paragraph [ref=e131]:
+              - text: claude code 开启沙箱之后，会自动设置
+              - code [ref=e132]: NO_PROXY
+              - text: 和
+              - code [ref=e133]: no_proxy
+              - text: ，设置值为
+              - code [ref=e134]: localhost,127.0.0.1,::1,*.local,.local,169.254.0.0/16,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
+              - text: 。
+            - paragraph [ref=e135]:
+              - text: 另外还会设置
+              - code [ref=e136]: http_proxy=http://localhost:3128
+              - text: 和
+              - code [ref=e137]: https_proxy=http://localhost:3128
+            - paragraph [ref=e138]:
+              - text: 我尝试了在
+              - code [ref=e139]: ~/.claude/settings.json
+              - text: 的
+              - code [ref=e140]: env
+              - text: 中设置
+              - code [ref=e141]: no_proxy
+              - text: 和
+              - code [ref=e142]: NO_PROXY
+              - text: 为空，
+              - strong [ref=e143]: 实际没有效果
+            - paragraph [ref=e144]:
+              - text: 将
+              - code [ref=e145]: curl
+              - text: 纳入
+              - code [ref=e146]: excludedCommands
+              - text: ，即
+              - code [ref=e147]: "\"excludedCommands\": [\"docker\", \"curl\"]"
+              - text: ，理论上
+              - code [ref=e148]: curl
+              - text: 命令就不应该在沙箱中运行了，但是实际发现仍然在沙箱中运行。查了一下
+              - link "Claude Code 仓库的 issue" [ref=e149] [cursor=pointer]:
+                - /url: https://github.com/anthropics/claude-code/issues/10524
+              - text: ，发现属于官方文档中的一个bug。
+              - img "在这里插入图片描述" [ref=e150]
+              - text: 该照提示进行修改，将
+              - code [ref=e151]: "\"excludedCommands\": [\"docker\", \"curl\"]"
+              - text: 修改为
+              - code [ref=e152]: "\"excludedCommands\": [\"docker:*\", \"curl:*\"]"
+              - text: 可以解决问题。
+      - generic [ref=e153]:
+        - generic [ref=e154]:
+          - link "大魔王爱学习" [ref=e156] [cursor=pointer]:
+            - /url: https://blog.csdn.net/ljz0929
+            - img [ref=e157]
+            - generic [ref=e158]: 大魔王爱学习
+          - link "关注" [ref=e160] [cursor=pointer]:
+            - /url: javascript:;
+        - list [ref=e162]:
+          - listitem [ref=e163]:
+            - generic [ref=e165] [cursor=pointer]: "6"
+          - listitem [ref=e166]
+          - listitem [ref=e168]:
+            - link "4" [ref=e169] [cursor=pointer]:
+              - /url: javascript:;
+              - generic [ref=e170]: "4"
+          - listitem [ref=e171]:
+            - link "0" [ref=e172] [cursor=pointer]:
+              - /url: "#commentBox"
+              - generic [ref=e173]: "0"
+          - listitem [ref=e174]:
+            - link "分享" [ref=e175] [cursor=pointer]:
+              - /url: javascript:;
+              - generic [ref=e176]: 分享
+          - listitem [ref=e177]
+      - generic [ref=e181]:
+        - generic [ref=e182]:
+          - link "Claude Code（4）：配置文件 & 常用命令" [ref=e184] [cursor=pointer]:
+            - /url: https://chengaoyi.blog.csdn.net/article/details/160883860
+            - generic [ref=e185]:
+              - emphasis [ref=e186]: Claude
+              - emphasis [ref=e187]: Code
+              - text: （4）：配置文件 & 常用
+              - emphasis [ref=e188]: 命令
+          - generic [ref=e189]:
+            - link "blues_C的博客" [ref=e191] [cursor=pointer]:
+              - /url: https://blog.csdn.net/weixin_48321392
+              - generic [ref=e192]: blues_C的博客
+            - generic [ref=e194]: "174"
+        - link "本文介绍了Claude Code的核心配置和使用方法。主要内容包括：1) 项目目录结构，重点说明CLAUDE.md团队共享指令和个人配置CLAUDE.local.md的区别；2) .claude/目录下的关键配置文件，如权限设置、自定义命令、行为规则和工作流技能；3) CLI启动参数的日常用法和CI/CD模式；4) 常用的斜杠命令快捷操作。文章提供了详细的配置模板和速查表，帮助用户快速掌握Claude Code的配置规范和操作技巧。" [ref=e196] [cursor=pointer]:
+          - /url: https://chengaoyi.blog.csdn.net/article/details/160883860
+          - generic [ref=e197]:
+            - text: 本文介绍了
+            - emphasis [ref=e198]: Claude
+            - emphasis [ref=e199]: Code
+            - text: 的核心配置和使用方法。主要内容包括：1) 项目目录结构，重点说明
+            - emphasis [ref=e200]: CLAUDE
+            - text: .md团队共享指令和个人配置
+            - emphasis [ref=e201]: CLAUDE
+            - text: .local.md的区别；2) .
+            - emphasis [ref=e202]: claude
+            - text: /目录下的关键配置文件，如权限设置、自定义
+            - emphasis [ref=e203]: 命令
+            - text: 、行为规则和工作流技能；3) CLI启动参数的日常用法和CI/CD模式；4) 常用的斜杠
+            - emphasis [ref=e204]: 命令
+            - text: 快捷操作。文章提供了详细的配置模板和速查表，帮助用户快速掌握
+            - emphasis [ref=e205]: Claude
+            - emphasis [ref=e206]: Code
+            - text: 的配置规范和操作技巧。
+      - generic [ref=e209]:
+        - generic [ref=e210]:
+          - link "分布式AI Coding： Claude Code 系统架构与技术方案设计文档 2" [ref=e212] [cursor=pointer]:
+            - /url: https://devpress.csdn.net/v1/article/detail/159290238
+            - generic [ref=e213]:
+              - text: 分布式
+              - emphasis [ref=e214]: AI
+              - text: Coding：
+              - emphasis [ref=e215]: Claude
+              - emphasis [ref=e216]: Code
+              - text: 系统架构与技术方案设计文档 2
+          - generic [ref=e217]:
+            - generic [ref=e218]:
+              - link:
+                - /url: https://blog.csdn.net/universsky2015
+            - generic [ref=e220]: "103"
+        - 'link "gVisor (默认) + Firecracker (高安全场景)分布式 Claude Code 系统实施计划。管理区域 Management Zone。: 选择 Redis Streams。内部区域 Internal Zone。Claude Code 集成。: 模块化单体 + 微服务混合架构。沙箱区域 Sandbox Zone。调度 Agent 开发。Worker 节点开发。公共区域 Public Zone。DMZ 区域 DMZ Zone。" [ref=e222] [cursor=pointer]':
+          - /url: https://devpress.csdn.net/v1/article/detail/159290238
+          - generic [ref=e223]:
+            - text: gVisor (默认) + Firecracker (高安全场景)分布式
+            - emphasis [ref=e224]: Claude
+            - emphasis [ref=e225]: Code
+            - text: "系统实施计划。管理区域 Management Zone。: 选择 Redis Streams。内部区域 Internal Zone。"
+            - emphasis [ref=e226]: Claude
+            - emphasis [ref=e227]: Code
+            - text: "集成。: 模块化单体 + 微服务混合架构。"
+            - emphasis [ref=e228]: 沙箱
+            - text: 区域
+            - emphasis [ref=e229]: Sandbox
+            - text: Zone。调度 Agent 开发。Worker 节点开发。公共区域 Public Zone。DMZ 区域 DMZ Zone。
+      - generic [ref=e230]:
+        - generic [ref=e232]:
+          - generic [ref=e233]:
+            - link "Claude正式接管你的电脑!Computer Use深度拆解:原理、上手、安全与竞品..." [ref=e235] [cursor=pointer]:
+              - /url: https://blog.csdn.net/qq_60735796/article/details/159433223
+              - generic [ref=e236]:
+                - emphasis [ref=e237]: Claude
+                - text: 正式接管你的电脑!Computer Use深度拆解:原理、上手、安全与竞品...
+            - generic [ref=e240]: 5-7
+          - 'link "条件要求操作系统macOS(Windows/Linux 暂不支持)客户端Claude Cowork 桌面端 或 Claude Code CLI订阅计划Pro( 20 / 月 ) 或 𝑀 𝑎 𝑥 ( 20 / 月 ) 或 M a x ( 100-200/月)优先系统权限需授予辅助功能(Accessibility)+ 屏幕录制权限 3.2 如何开启? 在Claude Cowork 中: 打开Claude Cowork 桌面应用..." [ref=e242] [cursor=pointer]':
+            - /url: https://blog.csdn.net/qq_60735796/article/details/159433223
+            - generic [ref=e243]:
+              - text: 条件要求操作系统macOS(Windows/Linux 暂不支持)客户端
+              - emphasis [ref=e244]: Claude
+              - emphasis [ref=e245]: Cowork
+              - text: 桌面端 或
+              - emphasis [ref=e246]: Claude
+              - emphasis [ref=e247]: Code
+              - text: CLI订阅计划Pro( 20 / 月 ) 或 𝑀 𝑎 𝑥 ( 20 / 月 ) 或 M a x ( 100-200/月)优先系统权限需授予辅助功能(Accessibility)+ 屏幕录制权限 3.2 如何
+              - emphasis [ref=e248]: 开启
+              - text: "? 在"
+              - emphasis [ref=e249]: Claude
+              - emphasis [ref=e250]: Cowork
+              - text: "中: 打开"
+              - emphasis [ref=e251]: Claude
+              - emphasis [ref=e252]: Cowork
+              - text: 桌面应用...
+        - generic [ref=e254]:
+          - generic [ref=e255]:
+            - link "Claude Cowork:原生桌面AI代理如何重构工作流" [ref=e257] [cursor=pointer]:
+              - /url: https://blog.csdn.net/weixin_27031001/article/details/160924625
+              - generic [ref=e258]:
+                - emphasis [ref=e259]: Claude
+                - emphasis [ref=e260]: Cowork
+                - text: :原生桌面
+                - emphasis [ref=e261]: AI
+                - text: 代理如何重构工作流
+            - generic [ref=e264]: 5-9
+          - link "Claude Cowork不是又一个聊天框,它是Anthropic悄悄塞进你操作系统里的“数字同事”——一个能真正看见你屏幕、操作你鼠标、读取你本地文件、在你IDE里写代码、甚至帮你调试报错的AI代理。它不依赖浏览器沙箱,不绕道云端API做二次解析,而是通过系统级权限,在你的Mac或Windows桌面上原生运行。关键词里那个“Desktop Ag..." [ref=e266] [cursor=pointer]:
+            - /url: https://blog.csdn.net/weixin_27031001/article/details/160924625
+            - generic [ref=e267]:
+              - emphasis [ref=e268]: Claude
+              - emphasis [ref=e269]: Cowork
+              - text: 不是又一个聊天框,它是Anthropic悄悄塞进你操作系统里的“数字同事”——一个能真正看见你屏幕、操作你鼠标、读取你本地文件、在你IDE里写代码、甚至帮你调试报错的
+              - emphasis [ref=e270]: AI
+              - text: 代理。它不依赖浏览器
+              - emphasis [ref=e271]: 沙箱
+              - text: ",不绕道云端API做二次解析,而是通过系统级权限,在你的Mac或Windows桌面上原生运行。关键词里那个“Desktop Ag..."
+        - generic [ref=e273]:
+          - generic [ref=e274]:
+            - link "claude code 源码分析之沙箱机制" [ref=e276] [cursor=pointer]:
+              - /url: https://devpress.csdn.net/v1/article/detail/159958350
+              - generic [ref=e277]:
+                - emphasis [ref=e278]: claude
+                - emphasis [ref=e279]: code
+                - text: 源码分析之
+                - emphasis [ref=e280]: 沙箱
+                - text: 机制
+            - generic [ref=e281]:
+              - link "欲买桂花同载酒,终不似少年游" [ref=e283] [cursor=pointer]:
+                - /url: https://blog.csdn.net/qq_37427142
+                - generic [ref=e284]: 欲买桂花同载酒,终不似少年游
+              - generic [ref=e286]: "462"
+          - link "这样做的原因是：这些路径一旦可写，攻击者可能反过来修改 Claude Code 自己的配置、技能或 git 行为，从而扩大权限。这样做的原因是：这些路径一旦可写，攻击者可能反过来修改 Claude Code 自己的配置、技能或 git 行为，从而扩大权限。在 Windows 原生环境里，通常没有这套 shell 沙箱兜底，所以主要依赖应用层权限系统和工具自己的检查逻辑。在 Windows 原生环境里，通常没有这套 shell 沙箱兜底，所以主要依赖应用层权限系统和工具自己的检查逻辑。" [ref=e288] [cursor=pointer]:
+            - /url: https://devpress.csdn.net/v1/article/detail/159958350
+            - generic [ref=e289]:
+              - text: 这样做的原因是：这些路径一旦可写，攻击者可能反过来修改
+              - emphasis [ref=e290]: Claude
+              - emphasis [ref=e291]: Code
+              - text: 自己的配置、技能或 git 行为，从而扩大权限。这样做的原因是：这些路径一旦可写，攻击者可能反过来修改
+              - emphasis [ref=e292]: Claude
+              - emphasis [ref=e293]: Code
+              - text: 自己的配置、技能或 git 行为，从而扩大权限。在 Windows 原生环境里，通常没有这套 shell
+              - emphasis [ref=e294]: 沙箱
+              - text: 兜底，所以主要依赖应用层权限系统和工具自己的检查逻辑。在 Windows 原生环境里，通常没有这套 shell
+              - emphasis [ref=e295]: 沙箱
+              - text: 兜底，所以主要依赖应用层权限系统和工具自己的检查逻辑。
+        - generic [ref=e297]:
+          - generic [ref=e298]:
+            - link "Claude Code 的沙箱系统" [ref=e300] [cursor=pointer]:
+              - /url: https://blog.csdn.net/m0_54204465/article/details/160265880
+              - generic [ref=e301]:
+                - emphasis [ref=e302]: Claude
+                - emphasis [ref=e303]: Code
+                - text: 的
+                - emphasis [ref=e304]: 沙箱
+                - text: 系统
+            - generic [ref=e305]:
+              - link "m0_54204465的博客" [ref=e307] [cursor=pointer]:
+                - /url: https://blog.csdn.net/m0_54204465
+                - generic [ref=e308]: m0_54204465的博客
+              - generic [ref=e310]: "668"
+          - link "特性实现方案源码位置跨平台一致性统一配置接口,底层适配bubblewrap(Linux)和Seatbelt(macOS)嵌套命名空间apply-seccomp在socat之后应用seccomp,解决socket创建冲突非存在路径保护预创建/dev/null挂载点阻止未来攻击符号链接追踪isSymlinkOutsideBoundary防止symlink绕过延迟挂载点清理activeSandboxCount计数器防止并发竞态智能路径展开Linux上expandGlobPattern自动展开glob。" [ref=e312] [cursor=pointer]:
+            - /url: https://blog.csdn.net/m0_54204465/article/details/160265880
+            - generic [ref=e313]:
+              - text: 特性实现方案源码位置跨平台一致性统一配置接口,底层适配bubblewrap(Linux)和Seatbelt(macOS)嵌套命名空间apply-seccomp在socat之后应用seccomp,解决socket创建冲突非存在路径保护预创建/dev/null挂载点阻止未来攻击符号链接追踪isSymlinkOutsideBoundary防止symlink绕过延迟挂载点清理active
+              - emphasis [ref=e314]: Sandbox
+              - text: Count计数器防止并发竞态智能路径展开Linux上expandGlobPattern自动展开glob。
+        - generic [ref=e316]:
+          - generic [ref=e317]:
+            - link "ClawHub 与 Claude Code 技能生态专题报告_claude技能市场" [ref=e319] [cursor=pointer]:
+              - /url: https://blog.csdn.net/u012565112/article/details/160113455
+              - generic [ref=e320]:
+                - text: ClawHub 与
+                - emphasis [ref=e321]: Claude
+                - emphasis [ref=e322]: Code
+                - text: 技能生态专题报告_
+                - emphasis [ref=e323]: claude
+                - text: 技能市场
+            - generic [ref=e326]: 5-6
+          - 'link "CLI 一键安装:npx clawhub@latestinstall 1.2 Claude Code 插件生态 指标 数据 官方Marketplace 技能数 9,000+ Claude Cowork Plugins 23 个官方插件 插件分类 Skills、Commands、Hooks、MCPServers、Agents 扩展体系对比: 概念 定义 触发方式 典型场景 MCP 连接外部工具/API 的协议适配器 自然语言/自动 接入GitHub、..." [ref=e328] [cursor=pointer]':
+            - /url: https://blog.csdn.net/u012565112/article/details/160113455
+            - generic [ref=e329]:
+              - text: CLI 一键安装:npx clawhub@latestinstall 1.2
+              - emphasis [ref=e330]: Claude
+              - emphasis [ref=e331]: Code
+              - text: 插件生态 指标 数据 官方Marketplace 技能数 9,000+
+              - emphasis [ref=e332]: Claude
+              - emphasis [ref=e333]: Cowork
+              - text: "Plugins 23 个官方插件 插件分类 Skills、Commands、Hooks、MCPServers、Agents 扩展体系对比: 概念 定义 触发方式 典型场景 MCP 连接外部工具/API 的协议适配器 自然语言/自动 接入GitHub、..."
+        - generic [ref=e335]:
+          - generic [ref=e336]:
+            - link "Claude Skills:产品经理必读_产品经理skills" [ref=e338] [cursor=pointer]:
+              - /url: https://blog.csdn.net/shebao3333/article/details/157368405
+              - generic [ref=e339]:
+                - emphasis [ref=e340]: Claude
+                - text: Skills:产品经理必读_产品经理skills
+            - generic [ref=e343]: 4-28
+          - link "2025 年 1 月:Skills 与 Claude 的其他功能集成,如 Memory、Extended Thinking 和新的 Cowork agent。Skills Directory 大幅扩展,自定义 Skills 创建对非技术用户变得更加可访问。 当前状态(2026 年 1 月):Skills 现在可供 Pro、Max、Team 和 Enterprise 用户使用。您可以使用预构建的 Anthropic Skills(用于 Excel..." [ref=e345] [cursor=pointer]:
+            - /url: https://blog.csdn.net/shebao3333/article/details/157368405
+            - generic [ref=e346]:
+              - text: 2025 年 1 月:Skills 与
+              - emphasis [ref=e347]: Claude
+              - text: 的其他功能集成,如 Memory、Extended Thinking 和新的
+              - emphasis [ref=e348]: Cowork
+              - text: agent。Skills Directory 大幅扩展,自定义 Skills 创建对非技术用户变得更加可
+              - emphasis [ref=e349]: 访问
+              - text: 。 当前状态(2026 年 1 月):Skills 现在可供 Pro、Max、Team 和 Enterprise 用户使用。您可以使用预构建的 Anthropic Skills(用于 Excel...
+        - generic [ref=e351]:
+          - generic [ref=e352]:
+            - link "避开这5个坑！Claude Code 权限配置安全指南（含沙箱模式详解）" [ref=e354] [cursor=pointer]:
+              - /url: https://blog.csdn.net/weixin_29202687/article/details/158142562
+              - generic [ref=e355]:
+                - text: 避开这5个坑！
+                - emphasis [ref=e356]: Claude
+                - emphasis [ref=e357]: Code
+                - text: 权限配置安全指南（含
+                - emphasis [ref=e358]: 沙箱
+                - text: 模式详解）
+            - generic [ref=e359]:
+              - link "weixin_29202687的博客" [ref=e361] [cursor=pointer]:
+                - /url: https://blog.csdn.net/weixin_29202687
+                - generic [ref=e362]: weixin_29202687的博客
+              - generic [ref=e364]: "1649"
+          - link "本文深入解析了Claude Code在企业环境中的安全配置，重点介绍了权限配置的五个致命陷阱及其规避策略，包括过度宽松的白名单、忽视沙箱模式、CLAUDE.md配置风险、环境变量泄露和插件供应链风险。文章提供了详细的沙箱模式配置指南和渐进式企业安全策略，帮助团队从基础加固到企业级治理，确保AI辅助开发的安全可控。" [ref=e366] [cursor=pointer]:
+            - /url: https://blog.csdn.net/weixin_29202687/article/details/158142562
+            - generic [ref=e367]:
+              - text: 本文深入解析了
+              - emphasis [ref=e368]: Claude
+              - emphasis [ref=e369]: Code
+              - text: 在企业环境中的安全配置，重点介绍了权限配置的五个致命陷阱及其规避策略，包括过度宽松的白名单、忽视
+              - emphasis [ref=e370]: 沙箱
+              - text: 模式、
+              - emphasis [ref=e371]: CLAUDE
+              - text: .md配置风险、环境变量泄露和插件供应链风险。文章提供了详细的
+              - emphasis [ref=e372]: 沙箱
+              - text: 模式配置指南和渐进式企业安全策略，帮助团队从基础加固到企业级治理，确保
+              - emphasis [ref=e373]: AI
+              - text: 辅助开发的安全可控。
+        - generic [ref=e375]:
+          - generic [ref=e376]:
+            - link "Claude Code安装报错？找不到命令与代理配置实战" [ref=e378] [cursor=pointer]:
+              - /url: https://blog.csdn.net/aidoudoulong/article/details/159506883
+              - generic [ref=e379]:
+                - emphasis [ref=e380]: Claude
+                - emphasis [ref=e381]: Code
+                - text: 安装报错？找不到
+                - emphasis [ref=e382]: 命令
+                - text: 与代理配置实战
+            - generic [ref=e383]:
+              - link "aidoudoulong的博客" [ref=e385] [cursor=pointer]:
+                - /url: https://blog.csdn.net/aidoudoulong
+                - generic [ref=e386]: aidoudoulong的博客
+              - generic [ref=e388]: "3023"
+          - link "Claude Code 常见问题解决指南（2026） 本手册针对Anthropic官方CLI工具Claude Code提供全场景问题解决方案，覆盖安装、网络、认证和性能优化等常见问题。核心排查步骤： 优先使用自诊断：运行/doctor命令自动检测7类问题 安装问题速查：包含12种典型报错及解决方案，如PATH配置、证书错误等 网络代理配置：详细说明企业环境下的代理设置和TLS证书处理方法 认证问题修复：提供重新登录流程和403错误的多种排查方法 特殊场景处理：包括Linux低内存VPS的swap空间配置建议" [ref=e390] [cursor=pointer]:
+            - /url: https://blog.csdn.net/aidoudoulong/article/details/159506883
+            - generic [ref=e391]:
+              - emphasis [ref=e392]: Claude
+              - emphasis [ref=e393]: Code
+              - text: 常见问题解决指南（2026） 本手册针对Anthropic官方CLI工具
+              - emphasis [ref=e394]: Claude
+              - emphasis [ref=e395]: Code
+              - text: 提供全场景问题解决方案，覆盖安装、网络、认证和性能优化等常见问题。核心排查步骤： 优先使用自诊断：运行/doctor
+              - emphasis [ref=e396]: 命令
+              - text: 自动检测7类问题 安装问题速查：包含12种典型报错及解决方案，如PATH配置、证书错误等 网络代理配置：详细说明企业环境下的代理设置和TLS证书处理方法 认证问题修复：提供重新登录流程和403错误的多种排查方法 特殊场景处理：包括Linux低内存VPS的swap空间配置建议
+        - generic [ref=e398]:
+          - generic [ref=e399]:
+            - link "Claude Code 完全解析:从终端工具到智能体革命,OpenClaw的时代深度了解..." [ref=e401] [cursor=pointer]:
+              - /url: https://blog.csdn.net/jinanwuhuaguo/article/details/159513937
+              - generic [ref=e402]:
+                - emphasis [ref=e403]: Claude
+                - emphasis [ref=e404]: Code
+                - text: 完全解析:从终端工具到智能体革命,OpenClaw的时代深度了解...
+            - generic [ref=e407]: 5-2
+          - link "传统意义上,编程是人类将算法思维转化为机器可执行指令的过程。而Claude Code的出现,使这一过程发生了根本性转变:开发者从“如何实现”转向“实现什么”,AI承担了从需求理解到代码生成的完整链条。正如Anthropic内部所言:“代码本身不再珍贵,珍贵的是你要创造的东西。” ..." [ref=e409] [cursor=pointer]:
+            - /url: https://blog.csdn.net/jinanwuhuaguo/article/details/159513937
+            - generic [ref=e410]:
+              - text: 传统意义上,
+              - emphasis [ref=e411]: 编程
+              - text: 是人类将算法思维转化为机器可执行指令的过程。而
+              - emphasis [ref=e412]: Claude
+              - emphasis [ref=e413]: Code
+              - text: 的出现,使这一过程发生了根本性转变:开发者从“如何实现”转向“实现什么”,
+              - emphasis [ref=e414]: AI
+              - text: 承担了从需求理解到代码生成的完整链条。正如Anthropic内部所言:“代码本身不再珍贵,珍贵的是你要创造的东西。” ...
+        - generic [ref=e416]:
+          - generic [ref=e417]:
+            - link "Claude版Manus只用10天搓出,代码全AI写的!网友:小扎140亿并购像冤大头..." [ref=e419] [cursor=pointer]:
+              - /url: https://blog.csdn.net/QbitAI/article/details/156957082
+              - generic [ref=e420]:
+                - emphasis [ref=e421]: Claude
+                - text: 版Manus只用10天搓出,代码全
+                - emphasis [ref=e422]: AI
+                - text: 写的!网友:小扎140亿并购像冤大头...
+            - generic [ref=e425]: 4-6
+          - 'link "这时有人提问,一个人如何同时管理8个AI对话。Felix表示这确实要花一点时间才能适应。 回到Cowork的开发流程: 对于原生代码,使用本地机器上的本地Git工作树。 对于较小的改动或仅涉及Web代码的改动,只需让Claude去实现即可。 当有人在Slack中报告bug时,我们通常直接@Claude并让他修复。" [ref=e427] [cursor=pointer]':
+            - /url: https://blog.csdn.net/QbitAI/article/details/156957082
+            - generic [ref=e428]:
+              - text: 这时有人提问,一个人如何同时管理8个
+              - emphasis [ref=e429]: AI
+              - text: 对话。Felix表示这确实要花一点时间才能适应。 回到
+              - emphasis [ref=e430]: Cowork
+              - text: "的开发流程: 对于原生代码,使用本地机器上的本地Git工作树。 对于较小的改动或仅涉及Web代码的改动,只需让"
+              - emphasis [ref=e431]: Claude
+              - text: 去实现即可。 当有人在Slack中报告bug时,我们通常直接@
+              - emphasis [ref=e432]: Claude
+              - text: 并让他修复。
+        - generic [ref=e434]:
+          - generic [ref=e435]:
+            - link "Claude Code 最佳实践和常用命令完整指南" [ref=e437] [cursor=pointer]:
+              - /url: https://devpress.csdn.net/v1/article/detail/156017431
+              - generic [ref=e438]:
+                - emphasis [ref=e439]: Claude
+                - emphasis [ref=e440]: Code
+                - text: 最佳实践和常用
+                - emphasis [ref=e441]: 命令
+                - text: 完整指南
+            - generic [ref=e442]:
+              - link "伟大的大威的博客" [ref=e444] [cursor=pointer]:
+                - /url: https://blog.csdn.net/u010026928
+                - generic [ref=e445]: 伟大的大威的博客
+              - generic [ref=e447]: "5165"
+          - link "自定义命令允许你定义经常使用的提示为 Markdown 文件。Model Context Protocol (MCP) 是一个开源标准，允许 Claude Code 连接到外部工具和数据源。MCP 服务器可以访问数百个工具。Hooks 是在 Claude Code 生命周期中特定点执行的自定义 shell 命令，提供对 Claude Code 行为的确定性控制。" [ref=e449] [cursor=pointer]:
+            - /url: https://devpress.csdn.net/v1/article/detail/156017431
+            - generic [ref=e450]:
+              - text: 自定义
+              - emphasis [ref=e451]: 命令
+              - text: 允许你定义经常使用的提示为 Markdown 文件。Model Context Protocol (MCP) 是一个开源标准，允许
+              - emphasis [ref=e452]: Claude
+              - emphasis [ref=e453]: Code
+              - text: 连接到外部工具和数据源。MCP 服务器可以
+              - emphasis [ref=e454]: 访问
+              - text: 数百个工具。Hooks 是在
+              - emphasis [ref=e455]: Claude
+              - emphasis [ref=e456]: Code
+              - text: 生命周期中特定点执行的自定义 shell
+              - emphasis [ref=e457]: 命令
+              - text: ，提供对
+              - emphasis [ref=e458]: Claude
+              - emphasis [ref=e459]: Code
+              - text: 行为的确定性控制。
+        - generic [ref=e461]:
+          - generic [ref=e462]:
+            - link "Claude Code 源码泄露之五：安全沙盒实现" [ref=e464] [cursor=pointer]:
+              - /url: https://devpress.csdn.net/v1/article/detail/159792696
+              - generic [ref=e465]:
+                - emphasis [ref=e466]: Claude
+                - emphasis [ref=e467]: Code
+                - text: 源码泄露之五：安全沙盒实现
+            - generic [ref=e468]:
+              - link "soso1968的博客" [ref=e470] [cursor=pointer]:
+                - /url: https://blog.csdn.net/segwy
+                - generic [ref=e471]: soso1968的博客
+              - generic [ref=e473]: "451"
+          - link "安全沙盒技术实现摘要 本文系统介绍了安全沙盒的设计目标与实现技术。沙盒设计围绕四大核心目标：隔离性（采用Docker容器、Linux命名空间、cgroups等技术）、透明性（通过UnionFS、OverlayFS等文件系统实现）、可控性（白名单机制、资源配额管理）和可审计性（eBPF监控、审计日志）。详细对比了Docker、gVisor、Kata Containers等主流沙盒技术，分析了各类方案在隔离级别、性能开销和安全评级的差异。最终推荐采用Docker+gVisor+eBPF的多层防护架构，在保证安全" [ref=e475] [cursor=pointer]:
+            - /url: https://devpress.csdn.net/v1/article/detail/159792696
+            - generic [ref=e476]:
+              - text: 安全沙盒技术实现摘要 本文系统介绍了安全沙盒的设计目标与实现技术。沙盒设计围绕四大核心目标：隔离性（采用Docker容器、Linux命名空间、cgroups等技术）、透明性（通过UnionFS、OverlayFS等文件系统实现）、可控性（白名单机制、资源配额管理）和可审计性（eBPF监控、审计日志）。详细对比了Docker、gVisor、Kata Cont
+              - emphasis [ref=e477]: ai
+              - text: ners等主流沙盒技术，分析了各类方案在隔离级别、性能开销和安全评级的差异。最终推荐采用Docker+gVisor+eBPF的多层防护架构，在保证安全
+        - generic [ref=e479]:
+          - generic [ref=e480]:
+            - link "Clawdbot技术架构深度解析:本地优先的Agent如何运转_clowdbot" [ref=e482] [cursor=pointer]:
+              - /url: https://blog.csdn.net/qq_60735796/article/details/157360404
+              - generic [ref=e483]: Clawdbot技术架构深度解析:本地优先的Agent如何运转_clowdbot
+            - generic [ref=e486]: 5-3
+          - 'link "(可选)\"fallbackModel\":\"anthropic/claude-sonnet-4-20250514\"},// 认证配置\"auth\":{\"anthropic\":{// 方式1:API Key(推荐生产环境)\"apiKey\":\"sk-ant-...\"// 方式2:OAuth(需要 Claude Pro/Max 订阅)// \"useOAuth\": true},\"openai\":{\"apiKey\":\"sk-...\"},\"local\":{\"provider\":\"ollama\",\"..." [ref=e488] [cursor=pointer]':
+            - /url: https://blog.csdn.net/qq_60735796/article/details/157360404
+            - generic [ref=e489]:
+              - text: (可选)"fallbackModel":"anthropic/
+              - emphasis [ref=e490]: claude
+              - text: "-sonnet-4-20250514\"},// 认证配置\"auth\":{\"anthropic\":{// 方式1:API Key(推荐生产环境)\"apiKey\":\"sk-ant-...\"// 方式2:OAuth(需要"
+              - emphasis [ref=e491]: Claude
+              - text: "Pro/Max 订阅)// \"useOAuth\": true},\"open"
+              - emphasis [ref=e492]: ai
+              - text: "\":{\"apiKey\":\"sk-...\"},\"local\":{\"provider\":\"ollama\",\"..."
+        - generic [ref=e494]:
+          - generic [ref=e495]:
+            - link "2026年必学的五大AI技术:LLM、RAG、Agent、MCP、Skill全面解析-CSDN..." [ref=e497] [cursor=pointer]:
+              - /url: https://blog.csdn.net/u011466469/article/details/160960544
+              - generic [ref=e498]:
+                - text: 2026年必学的五大
+                - emphasis [ref=e499]: AI
+                - text: 技术:LLM、RAG、Agent、MCP、Skill全面解析-CSDN...
+            - generic [ref=e502]: 5-10
+          - link "(大语言模型)— 智能基石 ││├─ 核心能力:语言理解与生成、多模态融合 ││├─ 2026代表:GPT-5.4、Claude Opus 4.7、Gemini 3.1 Pro │││ DeepSeek V4、GLM-5.1 ││└─ 关键突破:MoE架构、百万Token上下文、原生计算机使用 ││↓││ 第二层:RAG(检索增强生成)— 知识增强 ││├─ 三代演进:..." [ref=e504] [cursor=pointer]:
+            - /url: https://blog.csdn.net/u011466469/article/details/160960544
+            - generic [ref=e505]:
+              - text: (大语言模型)— 智能基石 ││├─ 核心能力:语言理解与生成、多模态融合 ││├─ 2026代表:GPT-5.4、
+              - emphasis [ref=e506]: Claude
+              - text: Opus 4.7、Gemini 3.1 Pro │││ DeepSeek V4、GLM-5.1 ││└─ 关键突破:MoE架构、百万Token上下文、原生计算机使用 ││↓││ 第二层:RAG(检索增强生成)— 知识增强 ││├─ 三代演进:...
+        - generic [ref=e508]:
+          - generic [ref=e509]:
+            - link "Qwen3.6-27B 本地私有化部署 + Claude Code 连接应用" [ref=e511] [cursor=pointer]:
+              - /url: https://xiaobichao.blog.csdn.net/article/details/160594919
+              - generic [ref=e512]:
+                - text: Qwen3.6-27B 本地私有化部署 +
+                - emphasis [ref=e513]: Claude
+                - emphasis [ref=e514]: Code
+                - text: 连接应用
+            - generic [ref=e515]:
+              - link "小毕超博客" [ref=e517] [cursor=pointer]:
+                - /url: https://blog.csdn.net/qq_43692950
+                - generic [ref=e518]: 小毕超博客
+              - generic [ref=e520]: "1170"
+          - link "Qwen3.6-27B 相比与上一代的 Qwen3.5-27B，在编程能力上有了大的飞跃，平常我们使用Claude Code做任务开发的时候，往往会消耗巨大的 Token 量，如果将一些常用重复性的开发任务使用 Qwen3.6-27B 来开发，不仅可以节省一些 Token 的使用量，还能提高响应效率。因此本文主要实现Qwen3.6-27B的本地私有化部署，以及Claude Code连接使用。" [ref=e522] [cursor=pointer]:
+            - /url: https://xiaobichao.blog.csdn.net/article/details/160594919
+            - generic [ref=e523]:
+              - text: Qwen3.6-27B 相比与上一代的 Qwen3.5-27B，在
+              - emphasis [ref=e524]: 编程
+              - text: 能力上有了大的飞跃，平常我们使用
+              - emphasis [ref=e525]: Claude
+              - emphasis [ref=e526]: Code
+              - text: 做任务开发的时候，往往会消耗巨大的 Token 量，如果将一些常用重复性的开发任务使用 Qwen3.6-27B 来开发，不仅可以节省一些 Token 的使用量，还能提高响应效率。因此本文主要实现Qwen3.6-27B的本地私有化部署，以及
+              - emphasis [ref=e527]: Claude
+              - emphasis [ref=e528]: Code
+              - text: 连接使用。
+        - generic [ref=e530]:
+          - generic [ref=e531]:
+            - link "Claude Code使用说明" [ref=e533] [cursor=pointer]:
+              - /url: https://blog.csdn.net/a1sd1/article/details/160115796
+              - generic [ref=e534]:
+                - emphasis [ref=e535]: Claude
+                - emphasis [ref=e536]: Code
+                - text: 使用说明
+            - generic [ref=e537]:
+              - link "奋斗小强的博客" [ref=e539] [cursor=pointer]:
+                - /url: https://blog.csdn.net/a1sd1
+                - generic [ref=e540]: 奋斗小强的博客
+              - generic [ref=e542]: "439"
+          - link "Claude Code是一款智能编程助手，主要功能包括代码阅读、编辑、调试和自动化任务处理。本文档提供了从安装到精通的全方位指南，包含24个核心章节，涵盖产品概述、安装配置、权限管理、技能系统等关键内容。新手指南推荐从基础功能开始，逐步掌握交互模式、核心命令和高级特性。系统支持终端、IDE和浏览器等多种平台，通过对话式编程实现代码修改、测试编写和Git操作等任务。安全方面采用默认只读模式，需要用户明确授权才能修改文件。文档还详细介绍了安装方法、快速入门步骤以及最佳实践，帮助开发者高效利用Claude Cod" [ref=e544] [cursor=pointer]:
+            - /url: https://blog.csdn.net/a1sd1/article/details/160115796
+            - generic [ref=e545]:
+              - emphasis [ref=e546]: Claude
+              - emphasis [ref=e547]: Code
+              - text: 是一款智能
+              - emphasis [ref=e548]: 编程
+              - text: 助手，主要功能包括代码阅读、编辑、调试和自动化任务处理。本文档提供了从安装到精通的全方位指南，包含24个核心章节，涵盖产品概述、安装配置、权限管理、技能系统等关键内容。新手指南推荐从基础功能开始，逐步掌握交互模式、核心
+              - emphasis [ref=e549]: 命令
+              - text: 和高级特性。系统支持终端、IDE和浏览器等多种平台，通过对话式
+              - emphasis [ref=e550]: 编程
+              - text: 实现代码修改、测试编写和Git操作等任务。安全方面采用默认只读模式，需要用户明确授权才能修改文件。文档还详细介绍了安装方法、快速入门步骤以及最佳实践，帮助开发者高效利用
+              - emphasis [ref=e551]: Claude
+              - text: Cod
+        - generic [ref=e553]:
+          - generic [ref=e554]:
+            - link "Claude Code 源码深度解析:Agentic AI 编程助手的技术架构揭秘_claude..." [ref=e556] [cursor=pointer]:
+              - /url: https://blog.csdn.net/caoyuan666/article/details/159712006
+              - generic [ref=e557]:
+                - emphasis [ref=e558]: Claude
+                - emphasis [ref=e559]: Code
+                - text: 源码深度解析:Agentic
+                - emphasis [ref=e560]: AI
+                - emphasis [ref=e561]: 编程
+                - text: 助手的技术架构揭秘_
+                - emphasis [ref=e562]: claude
+                - text: ...
+            - generic [ref=e565]: 5-5
+          - link "网址:https://github.com/anthropics/claude-code?tab=readme-ov-file gitee转码后的项目可参考:https://gitee.com/scriptfan/claude-code-source 项目概览 Claude Code 是 Anthropic 开发的AgenticAI 编程工具,它通过自然语言交互帮助开发者完成编码任务。从还原的源码来看,这是一个高度复杂的系统,包含了从终端UI到..." [ref=e567] [cursor=pointer]:
+            - /url: https://blog.csdn.net/caoyuan666/article/details/159712006
+            - generic [ref=e568]:
+              - text: 网址:https://github.com/anthropics/
+              - emphasis [ref=e569]: claude
+              - text: "-"
+              - emphasis [ref=e570]: code
+              - text: "?tab=readme-ov-file gitee转码后的项目可参考:https://gitee.com/scriptfan/"
+              - emphasis [ref=e571]: claude
+              - text: "-"
+              - emphasis [ref=e572]: code
+              - text: "-source 项目概览"
+              - emphasis [ref=e573]: Claude
+              - emphasis [ref=e574]: Code
+              - text: 是 Anthropic 开发的Agentic
+              - emphasis [ref=e575]: AI
+              - emphasis [ref=e576]: 编程
+              - text: 工具,它通过自然语言交互帮助开发者完成编码任务。从还原的源码来看,这是一个高度复杂的系统,包含了从终端UI到...
+        - generic [ref=e578]:
+          - link "Claude Code多层AI智能体架构深度解析：调度引擎、工具沙箱与实时Steering机制" [ref=e581] [cursor=pointer]:
+            - /url: https://wenku.csdn.net/doc/105cc8d2sg
+            - generic [ref=e582]:
+              - emphasis [ref=e583]: Claude
+              - emphasis [ref=e584]: Code
+              - text: 多层
+              - emphasis [ref=e585]: AI
+              - text: 智能体架构深度解析：调度引擎、工具
+              - emphasis [ref=e586]: 沙箱
+              - text: 与实时Steering机制
+          - link "Claude Code作为Anthropic公司推出的AI编程智能体系统，其架构曝光不仅标志着AI工程化实践的重大突破，更代表了当前AI智能体从单模型调用向多层协同、任务驱动、安全可控的复杂系统演进的关键里程碑。该系统并非传统..." [ref=e590] [cursor=pointer]:
+            - /url: https://wenku.csdn.net/doc/105cc8d2sg
+            - generic [ref=e591]:
+              - emphasis [ref=e592]: Claude
+              - emphasis [ref=e593]: Code
+              - text: 作为Anthropic公司推出的
+              - emphasis [ref=e594]: AI
+              - emphasis [ref=e595]: 编程
+              - text: 智能体系统，其架构曝光不仅标志着
+              - emphasis [ref=e596]: AI
+              - text: 工程化实践的重大突破，更代表了当前
+              - emphasis [ref=e597]: AI
+              - text: 智能体从单模型调用向多层协同、任务驱动、安全可控的复杂系统演进的关键里程碑。该系统并非传统...
+        - generic [ref=e599]:
+          - generic [ref=e600]:
+            - link "【AI编程干货】Vibe Coding 技巧（适用于AI编程IDE）" [ref=e602] [cursor=pointer]:
+              - /url: https://chengaoyi.blog.csdn.net/article/details/161024364
+              - generic [ref=e603]:
+                - text: 【
+                - emphasis [ref=e604]: AI
+                - emphasis [ref=e605]: 编程
+                - text: 干货】Vibe Coding 技巧（适用于
+                - emphasis [ref=e606]: AI
+                - emphasis [ref=e607]: 编程
+                - text: IDE）
+            - generic [ref=e608]:
+              - link "blues_C的博客" [ref=e610] [cursor=pointer]:
+                - /url: https://blog.csdn.net/weixin_48321392
+                - generic [ref=e611]: blues_C的博客
+              - generic [ref=e613]: "60"
+          - link "用 AI 写代码这件事门槛低，谁都能对着对话框输入几句话让它生成代码，但生成的东西能不能用、出了问题能不能兜住，这中间的差距比想象中大得多。 我从去年开始把 AI 编码工具作为主力开发手段，中间经历过项目失控、代码雪崩、反复返工，慢慢摸索出一套相对稳定的工作方式。这篇把核心的五个习惯拆开聊聊，都是实际项目里验证过的。" [ref=e615] [cursor=pointer]:
+            - /url: https://chengaoyi.blog.csdn.net/article/details/161024364
+            - generic [ref=e616]:
+              - text: 用
+              - emphasis [ref=e617]: AI
+              - text: 写代码这件事门槛低，谁都能对着对话框输入几句话让它生成代码，但生成的东西能不能用、出了问题能不能兜住，这中间的差距比想象中大得多。 我从去年开始把
+              - emphasis [ref=e618]: AI
+              - text: 编码工具作为主力开发手段，中间经历过项目失控、代码雪崩、反复返工，慢慢摸索出一套相对稳定的工作方式。这篇把核心的五个习惯拆开聊聊，都是实际项目里验证过的。
+        - generic [ref=e620]:
+          - generic [ref=e621]:
+            - link "Skills-manage：一站式管理所有 Skill，统一展示 Claude、Cursor、Gemini 等20+ AI编程工具的技能库" [ref=e623] [cursor=pointer]:
+              - /url: https://devpress.csdn.net/v1/article/detail/160923046
+              - generic [ref=e624]:
+                - text: Skills-manage：一站式管理所有 Skill，统一展示
+                - emphasis [ref=e625]: Claude
+                - text: 、Cursor、Gemini 等20+
+                - emphasis [ref=e626]: AI
+                - emphasis [ref=e627]: 编程
+                - text: 工具的技能库
+            - generic [ref=e628]:
+              - link "懿轩的技术小窝" [ref=e630] [cursor=pointer]:
+                - /url: https://blog.csdn.net/2301_80035882
+                - generic [ref=e631]: 懿轩的技术小窝
+              - generic [ref=e633]: "448"
+          - link "开源神器skills-manage v0.10.0发布，解决多AI工具技能管理难题。这款基于Tauri开发的工具通过中央技能库实现\"一次配置，多端生效\"，支持20+平台包括ClaudeCode、Cursor等。新版新增Obsidian支持、优化界面体验，并强化Linux兼容性。采用本地优先设计，确保数据隐私安全，提供技能扫描、收藏集等实用功能。Mac/Linux用户现可通过GitHub获取，是提升AI编程效率的利器。" [ref=e635] [cursor=pointer]:
+            - /url: https://devpress.csdn.net/v1/article/detail/160923046
+            - generic [ref=e636]:
+              - text: 开源神器skills-manage v0.10.0发布，解决多
+              - emphasis [ref=e637]: AI
+              - text: 工具技能管理难题。这款基于Tauri开发的工具通过中央技能库实现"一次配置，多端生效"，支持20+平台包括
+              - emphasis [ref=e638]: Claude
+              - emphasis [ref=e639]: Code
+              - text: 、Cursor等。新版新增Obsidian支持、优化界面体验，并强化Linux兼容性。采用本地优先设计，确保数据隐私安全，提供技能扫描、收藏集等实用功能。Mac/Linux用户现可通过GitHub获取，是提升
+              - emphasis [ref=e640]: AI
+              - emphasis [ref=e641]: 编程
+              - text: 效率的利器。
+        - generic [ref=e643]:
+          - generic [ref=e644]:
+            - link "AI编程 -- codex 最新发布" [ref=e646] [cursor=pointer]:
+              - /url: https://blog.csdn.net/sinat_32502451/article/details/161027452
+              - generic [ref=e647]:
+                - emphasis [ref=e648]: AI
+                - emphasis [ref=e649]: 编程
+                - text: "--"
+                - emphasis [ref=e650]: code
+                - text: x
+              - generic [ref=e651]: 最新发布
+            - generic [ref=e652]:
+              - link "Cyms,BgXmSfXtsj !!!! Battle Each Moment !!!!" [ref=e654] [cursor=pointer]:
+                - /url: https://blog.csdn.net/sinat_32502451
+                - generic [ref=e655]: Cyms,BgXmSfXtsj !!!! Battle Each Moment !!!!
+              - generic [ref=e657]: "332"
+          - link "详情见： https://blog.csdn.net/sinat_32502451/article/details/160869062。可以写个 .md (也就是 markdown) 文档，放到项目里面，让 AI 遵循文档内的规则去运行，这就是 Spec coding。：/代码审查，让 AI 对当前的代码变更进行自检，寻找潜在的 Bug 或性能瓶颈。在这个场景下，输入参数xx，结果会出现yy，处理一下，让输出结果变成 zz。AI 生成的代码，一分钟可以有几千行，人是不可能看得过来的。" [ref=e659] [cursor=pointer]:
+            - /url: https://blog.csdn.net/sinat_32502451/article/details/161027452
+            - generic [ref=e660]:
+              - text: 详情见： https://blog.csdn.net/sinat_32502451/article/det
+              - emphasis [ref=e661]: ai
+              - text: ls/160869062。可以写个 .md (也就是 markdown) 文档，放到项目里面，让
+              - emphasis [ref=e662]: AI
+              - text: 遵循文档内的规则去运行，这就是 Spec coding。：/代码审查，让
+              - emphasis [ref=e663]: AI
+              - text: 对当前的代码变更进行自检，寻找潜在的 Bug 或性能瓶颈。在这个场景下，输入参数xx，结果会出现yy，处理一下，让输出结果变成 zz。
+              - emphasis [ref=e664]: AI
+              - text: 生成的代码，一分钟可以有几千行，人是不可能看得过来的。
+        - generic [ref=e666]:
+          - generic [ref=e667]:
+            - link "2026年5月AI编程工具最新横评" [ref=e669] [cursor=pointer]:
+              - /url: https://devpress.csdn.net/v1/article/detail/160941309
+              - generic [ref=e670]:
+                - text: 2026年5月
+                - emphasis [ref=e671]: AI
+                - emphasis [ref=e672]: 编程
+                - text: 工具最新横评
+            - generic [ref=e673]:
+              - generic [ref=e674]:
+                - link:
+                  - /url: https://blog.csdn.net/qq350861146
+              - generic [ref=e676]: "392"
+          - link "<p><h2>摘要</h2></p> <p>本文基于2026年4-5月AtomGit开源社区、SegmentFault等平台的最新实测数据，覆盖当前市占率最高的5款主流AI编程工具，从功能、价格、适用场景三个维度拆解优劣，不管你是学生、职场开发者还是独立开发者，都能直接抄作业选到最适合自己的工具，避" [ref=e678] [cursor=pointer]:
+            - /url: https://devpress.csdn.net/v1/article/detail/160941309
+            - generic [ref=e679]:
+              - text: <p><h2>摘要</h2></p> <p>本文基于2026年4-5月AtomGit开源社区、SegmentFault等平台的最新实测数据，覆盖当前市占率最高的5款主流
+              - emphasis [ref=e680]: AI
+              - emphasis [ref=e681]: 编程
+              - text: 工具，从功能、价格、适用场景三个维度拆解优劣，不管你是学生、职场开发者还是独立开发者，都能直接抄作业选到最适合自己的工具，避
+        - generic [ref=e683]:
+          - generic [ref=e684]:
+            - link "AI编程时代Java语言的出路" [ref=e686] [cursor=pointer]:
+              - /url: https://devpress.csdn.net/v1/article/detail/160961959
+              - generic [ref=e687]:
+                - emphasis [ref=e688]: AI
+                - emphasis [ref=e689]: 编程
+                - text: 时代Java语言的出路
+            - generic [ref=e690]:
+              - link "yinghan2005的专栏" [ref=e692] [cursor=pointer]:
+                - /url: https://blog.csdn.net/yinghan2005
+                - generic [ref=e693]: yinghan2005的专栏
+              - generic [ref=e695]: "581"
+          - link "摘要： Java在AI时代展现出强劲的\"逆生长\"态势，凭借企业级稳定性、成熟生态（如Spring、Maven）及运维优势（JVM监控）保持竞争力。其与AI的融合路径包括\"Python训练+Java部署\"混合模式、SpringAI框架集成及原生工具（如Deeplearning4j）。技术迭代如虚拟线程（Java21）和云原生优化（GraalVM）显著提升性能，使Java在高并发AI场景中响应延迟低于Python47%。开发者转型方向聚焦AI工程化、安全合规及开源实践。未" [ref=e697] [cursor=pointer]:
+            - /url: https://devpress.csdn.net/v1/article/detail/160961959
+            - generic [ref=e698]:
+              - text: 摘要： Java在
+              - emphasis [ref=e699]: AI
+              - text: 时代展现出强劲的"逆生长"态势，凭借企业级稳定性、成熟生态（如Spring、Maven）及运维优势（JVM监控）保持竞争力。其与
+              - emphasis [ref=e700]: AI
+              - text: 的融合路径包括"Python训练+Java部署"混合模式、Spring
+              - emphasis [ref=e701]: AI
+              - text: 框架集成及原生工具（如Deeplearning4j）。技术迭代如虚拟线程（Java21）和云原生优化（GraalVM）显著提升性能，使Java在高并发
+              - emphasis [ref=e702]: AI
+              - text: 场景中响应延迟低于Python47%。开发者转型方向聚焦
+              - emphasis [ref=e703]: AI
+              - text: 工程化、安全合规及开源实践。未
+        - generic [ref=e705]:
+          - generic [ref=e706]:
+            - link "GitHub开源项目日报 · 2026年5月9日 · AI编程与智能体开发工具成焦点" [ref=e708] [cursor=pointer]:
+              - /url: https://blog.csdn.net/xiaoquqi/article/details/160941863
+              - generic [ref=e709]:
+                - text: GitHub开源项目日报 · 2026年5月9日 ·
+                - emphasis [ref=e710]: AI
+                - emphasis [ref=e711]: 编程
+                - text: 与智能体开发工具成焦点
+            - generic [ref=e712]:
+              - link "老孙正经胡说" [ref=e714] [cursor=pointer]:
+                - /url: https://blog.csdn.net/xiaoquqi
+                - generic [ref=e715]: 老孙正经胡说
+              - generic [ref=e717]: "428"
+          - link "本期榜单主要涵盖AI编程代理、智能体开发、浏览器自动化和编程学习等领域，涌现了一批面向不同场景的工具项目。本期超过10000星的项目有Hello-Agents、chrome-devtools-mcp、dive-into-llms、Agent Skills、UI-TARS-desktop、financial-services和Rowboat，这些项目涵盖了编程学习教程、浏览器调试工具、AI编码技能库和多模态Agent等多个方向，反映了当前AI开发工具的多元化发展趋势。其中chrome-devtoo" [ref=e719] [cursor=pointer]:
+            - /url: https://blog.csdn.net/xiaoquqi/article/details/160941863
+            - generic [ref=e720]:
+              - text: 本期榜单主要涵盖
+              - emphasis [ref=e721]: AI
+              - emphasis [ref=e722]: 编程
+              - text: 代理、智能体开发、浏览器自动化和
+              - emphasis [ref=e723]: 编程
+              - text: 学习等领域，涌现了一批面向不同场景的工具项目。本期超过10000星的项目有Hello-Agents、chrome-devtools-mcp、dive-into-llms、Agent Skills、UI-TARS-desktop、financial-services和Rowboat，这些项目涵盖了
+              - emphasis [ref=e724]: 编程
+              - text: 学习教程、浏览器调试工具、
+              - emphasis [ref=e725]: AI
+              - text: 编码技能库和多模态Agent等多个方向，反映了当前
+              - emphasis [ref=e726]: AI
+              - text: 开发工具的多元化发展趋势。其中chrome-devtoo
+        - generic [ref=e728]:
+          - generic [ref=e729]:
+            - link "国产算力突破、RISC-V车规生态成型、AI编程工具免费化浪潮" [ref=e731] [cursor=pointer]:
+              - /url: https://devpress.csdn.net/v1/article/detail/160881794
+              - generic [ref=e732]:
+                - text: 国产算力突破、RISC-V车规生态成型、
+                - emphasis [ref=e733]: AI
+                - emphasis [ref=e734]: 编程
+                - text: 工具免费化浪潮
+            - generic [ref=e735]:
+              - link "嵌入式小企鹅的博客" [ref=e737] [cursor=pointer]:
+                - /url: https://blog.csdn.net/qq_52305085
+                - generic [ref=e738]: 嵌入式小企鹅的博客
+              - generic [ref=e740]: "447"
+          - link "【24小时技术动态速览】国产AI与RISC-V生态双突破 1️⃣ 国产算力崛起：DeepSeek V4全栈适配华为昇腾，8家国产芯片厂商同步官宣支持，昇腾950PR推理性能达英伟达H20的2.87倍，美团万亿参数大模型完成国产算力训练。 2️⃣ RISC-V车规突破：SiFive与HighTec合作汽车安全软件工具链，烽火通信FuXi2360芯片通过ASIL-D认证并量产装车，IAR工具链新增车规级RISC-V核心支持。 3️⃣ 免费AI编程潮：DeepSeek-TUI终端工具登顶GitHub，Cortex" [ref=e742] [cursor=pointer]:
+            - /url: https://devpress.csdn.net/v1/article/detail/160881794
+            - generic [ref=e743]:
+              - text: 【24小时技术动态速览】国产
+              - emphasis [ref=e744]: AI
+              - text: 与RISC-V生态双突破 1️⃣ 国产算力崛起：DeepSeek V4全栈适配华为昇腾，8家国产芯片厂商同步官宣支持，昇腾950PR推理性能达英伟达H20的2.87倍，美团万亿参数大模型完成国产算力训练。 2️⃣ RISC-V车规突破：SiFive与HighTec合作汽车安全软件工具链，烽火通信FuXi2360芯片通过ASIL-D认证并量产装车，IAR工具链新增车规级RISC-V核心支持。 3️⃣ 免费
+              - emphasis [ref=e745]: AI
+              - emphasis [ref=e746]: 编程
+              - text: 潮：DeepSeek-TUI终端工具登顶GitHub，Cortex
+        - generic [ref=e748]:
+          - generic [ref=e749]:
+            - link "2026AI编程避坑实战指南" [ref=e751] [cursor=pointer]:
+              - /url: https://devpress.csdn.net/v1/article/detail/160875176
+              - generic [ref=e752]:
+                - text: "2026"
+                - emphasis [ref=e753]: AI
+                - emphasis [ref=e754]: 编程
+                - text: 避坑实战指南
+            - generic [ref=e755]:
+              - generic [ref=e756]:
+                - link:
+                  - /url: https://blog.csdn.net/qq350861146
+              - generic [ref=e758]: "342"
+          - link "<p><h2>摘要</h2></p> <p>2026年AI编程已经成为学生练手、独立开发者做产品、企业搭建内部研发系统的标配，但不少人踩了冤枉坑：API突然涨价亏到血本无归、做的通用工具没人用、核心代码泄露、上线就因合规问题被下架。本文结合最新行业数据和实战案例，整理了4个最高发的AI编程坑，附可直" [ref=e760] [cursor=pointer]:
+            - /url: https://devpress.csdn.net/v1/article/detail/160875176
+            - generic [ref=e761]:
+              - text: <p><h2>摘要</h2></p> <p>2026年
+              - emphasis [ref=e762]: AI
+              - emphasis [ref=e763]: 编程
+              - text: 已经成为学生练手、独立开发者做产品、企业搭建内部研发系统的标配，但不少人踩了冤枉坑：API突然涨价亏到血本无归、做的通用工具没人用、核心代码泄露、上线就因合规问题被下架。本文结合最新行业数据和实战案例，整理了4个最高发的
+              - emphasis [ref=e764]: AI
+              - emphasis [ref=e765]: 编程
+              - text: 坑，附可直
+      - generic [ref=e768]:
+        - list [ref=e769]:
+          - listitem [ref=e770]:
+            - link "关于我们" [ref=e771] [cursor=pointer]:
+              - /url: //www.csdn.net/company/index.html#about
+          - listitem [ref=e772]:
+            - link "招贤纳士" [ref=e773] [cursor=pointer]:
+              - /url: //www.csdn.net/company/index.html#recruit
+          - listitem [ref=e774]:
+            - link "商务合作" [ref=e775] [cursor=pointer]:
+              - /url: https://fsc-p05.txscrm.com/T8PN8SFII7W
+          - listitem [ref=e776]:
+            - link "寻求报道" [ref=e777] [cursor=pointer]:
+              - /url: //marketing.csdn.net/questions/Q2202181748074189855
+          - listitem [ref=e778]:
+            - generic [ref=e779]: 400-660-0108
+          - listitem [ref=e780]:
+            - link "kefu@csdn.net" [ref=e781] [cursor=pointer]:
+              - /url: mailto:webmaster@csdn.net
+          - listitem [ref=e782]:
+            - link "在线客服" [ref=e783] [cursor=pointer]:
+              - /url: https://csdn.s2.udesk.cn/im_client/?web_plugin_id=29181
+          - listitem [ref=e784]: 工作时间 8:30-22:00
+        - list [ref=e785]:
+          - listitem [ref=e786]:
+            - link "公安备案号11010502030143" [ref=e787] [cursor=pointer]:
+              - /url: http://www.beian.gov.cn/portal/registerSystemInfo?recordcode=11010502030143
+          - listitem [ref=e788]:
+            - link "京ICP备19004658号" [ref=e789] [cursor=pointer]:
+              - /url: http://beian.miit.gov.cn/publish/query/indexFirst.action
+          - listitem [ref=e790]:
+            - link "京网文〔2020〕1039-165号" [ref=e791] [cursor=pointer]:
+              - /url: https://csdnimg.cn/release/live_fe/culture_license.png
+          - listitem [ref=e792]:
+            - link "经营性网站备案信息" [ref=e793] [cursor=pointer]:
+              - /url: https://csdnimg.cn/cdn/content-toolbar/csdn-ICP.png
+          - listitem [ref=e794]:
+            - link "北京互联网违法和不良信息举报中心" [ref=e795] [cursor=pointer]:
+              - /url: http://www.bjjubao.org/
+          - listitem [ref=e796]:
+            - link "家长监护" [ref=e797] [cursor=pointer]:
+              - /url: https://download.csdn.net/tutelage/home
+          - listitem [ref=e798]:
+            - link "网络110报警服务" [ref=e799] [cursor=pointer]:
+              - /url: https://cyberpolice.mps.gov.cn/
+          - listitem [ref=e800]:
+            - link "中国互联网举报中心" [ref=e801] [cursor=pointer]:
+              - /url: http://www.12377.cn/
+          - listitem [ref=e802]:
+            - link "Chrome商店下载" [ref=e803] [cursor=pointer]:
+              - /url: https://chrome.google.com/webstore/detail/csdn%E5%BC%80%E5%8F%91%E8%80%85%E5%8A%A9%E6%89%8B/kfkdboecolemdjodhmhmcibjocfopejo?hl=zh-CN
+          - listitem [ref=e804]:
+            - link "账号管理规范" [ref=e805] [cursor=pointer]:
+              - /url: https://blog.csdn.net/blogdevteam/article/details/126135357
+          - listitem [ref=e806]:
+            - link "版权与免责声明" [ref=e807] [cursor=pointer]:
+              - /url: https://www.csdn.net/company/index.html#statement
+          - listitem [ref=e808]:
+            - link "版权申诉" [ref=e809] [cursor=pointer]:
+              - /url: https://blog.csdn.net/blogdevteam/article/details/90369522
+          - listitem [ref=e810]:
+            - link "出版物许可证" [ref=e811] [cursor=pointer]:
+              - /url: https://img-home.csdnimg.cn/images/20250103023206.png
+          - listitem [ref=e812]:
+            - link "营业执照" [ref=e813] [cursor=pointer]:
+              - /url: https://img-home.csdnimg.cn/images/20250103023201.png
+          - listitem [ref=e814]: ©1999-2026北京创新乐知网络技术有限公司
+    - complementary [ref=e815]:
+      - generic [ref=e816]:
+        - generic [ref=e817]:
+          - link [ref=e819] [cursor=pointer]:
+            - /url: https://blog.csdn.net/ljz0929
+            - img [ref=e820]
+          - generic [ref=e821]:
+            - link "大魔王爱学习" [ref=e823] [cursor=pointer]:
+              - /url: https://blog.csdn.net/ljz0929
+              - generic [ref=e824]: 大魔王爱学习
+            - generic [ref=e825]:
+              - paragraph [ref=e826]:
+                - text: 博客等级
+                - img [ref=e827]
+              - generic "已加入 CSDN 9年" [ref=e828]: 码龄9年
+        - generic [ref=e829]:
+          - link "34 原创" [ref=e831] [cursor=pointer]:
+            - /url: https://blog.csdn.net/ljz0929
+            - definition [ref=e832]: "34"
+            - term [ref=e833]: 原创
+          - generic "188" [ref=e834]:
+            - definition [ref=e835]: "188"
+            - term [ref=e836]: 点赞
+          - generic "562" [ref=e837]:
+            - definition [ref=e838]: "562"
+            - term [ref=e839]: 收藏
+          - generic "14" [ref=e840]:
+            - definition [ref=e841]: "14"
+            - term [ref=e842]: 粉丝
+        - generic [ref=e843]:
+          - generic [ref=e845] [cursor=pointer]: 关注
+          - link "私信" [ref=e847] [cursor=pointer]:
+            - /url: https://im.csdn.net/chat/ljz0929
+      - generic [ref=e848]:
+        - generic [ref=e849]:
+          - link [ref=e851] [cursor=pointer]:
+            - /url: https://mp.csdn.net/vip?utm_source=902253762
+          - link [ref=e853] [cursor=pointer]:
+            - /url: "https://taotoken.net/?utm_source=tt_blog_20a10 "
+          - link [ref=e855] [cursor=pointer]:
+            - /url: https://mp.csdn.net/vip?utm_source=902253762
+          - link [ref=e857] [cursor=pointer]:
+            - /url: "https://taotoken.net/?utm_source=tt_blog_20a10 "
+        - generic [ref=e858]:
+          - button "Go to slide 1" [ref=e859] [cursor=pointer]
+          - button "Go to slide 2" [ref=e860] [cursor=pointer]
+        - button "Previous slide" [ref=e861] [cursor=pointer]
+        - button "Next slide" [ref=e862] [cursor=pointer]
+      - generic [ref=e865]:
+        - generic [ref=e866]:
+          - link "万维广告联盟" [ref=e867] [cursor=pointer]:
+            - /url: https://wwads.cn/click/bundle?code=mji1AIkrQGjE69hnRYH9jcyzvIUD6Y
+            - img "万维广告联盟" [ref=e868]
+          - generic [ref=e869]:
+            - link "🔥码云GVP开源项目 16k star Uniapp + ElementUI 功能强大 支持多语言、二开方便" [ref=e870] [cursor=pointer]:
+              - /url: https://wwads.cn/click/bundle?code=mji1AIkrQGjE69hnRYH9jcyzvIUD6Y
+            - link "广告" [ref=e871] [cursor=pointer]:
+              - /url: https://wwads.cn/?utm_source=property-175&utm_medium=footer
+              - img [ref=e872]
+              - generic [ref=e873]: 广告
+          - generic "隐藏广告" [ref=e874] [cursor=pointer]:
+            - img [ref=e875]
+        - img
+      - generic [ref=e876]:
+        - heading "热门文章" [level=3] [ref=e877]
+        - list [ref=e879]:
+          - listitem [ref=e880]:
+            - link "git repo工具详细使用教程——彻底学会Android repo的使用 31331" [ref=e881] [cursor=pointer]:
+              - /url: https://blog.csdn.net/ljz0929/article/details/122928242
+          - listitem [ref=e882]:
+            - link "Joplin使用坚果云WebDAV同步存在的问题以及解决办法 16431" [ref=e883] [cursor=pointer]:
+              - /url: https://blog.csdn.net/ljz0929/article/details/124809906
+          - listitem [ref=e884]:
+            - link "python加密库crypto、pycrypto、pycrytodome区别 12928" [ref=e885] [cursor=pointer]:
+              - /url: https://blog.csdn.net/ljz0929/article/details/119535545
+          - listitem [ref=e886]:
+            - link "本地python环境快速迁移到另外一台电脑 10794" [ref=e887] [cursor=pointer]:
+              - /url: https://blog.csdn.net/ljz0929/article/details/119301194
+          - listitem [ref=e888]:
+            - link "ubuntu22.04 服务器 SSH 密钥登录失败 9205" [ref=e889] [cursor=pointer]:
+              - /url: https://blog.csdn.net/ljz0929/article/details/129759705
+      - generic [ref=e890]:
+        - heading "分类专栏" [level=3] [ref=e891]
+        - list [ref=e893]:
+          - listitem [ref=e894]:
+            - link "经验分享" [ref=e895] [cursor=pointer]:
+              - /url: https://blog.csdn.net/ljz0929/category_11822612.html
+              - generic [ref=e897]: 经验分享
+            - generic [ref=e898]: 2篇
+          - listitem [ref=e899]:
+            - link "Linux学习" [ref=e900] [cursor=pointer]:
+              - /url: https://blog.csdn.net/ljz0929/category_10752558.html
+              - generic [ref=e902]: Linux学习
+            - generic [ref=e903]: 6篇
+          - listitem [ref=e904]:
+            - link "python" [ref=e905] [cursor=pointer]:
+              - /url: https://blog.csdn.net/ljz0929/category_11253184.html
+              - generic [ref=e907]: python
+            - generic [ref=e908]: 10篇
+          - listitem [ref=e909]:
+            - link "C语言" [ref=e910] [cursor=pointer]:
+              - /url: https://blog.csdn.net/ljz0929/category_11580479.html
+              - generic [ref=e912]: C语言
+            - generic [ref=e913]: 1篇
+          - listitem [ref=e914]:
+            - link "Markdown" [ref=e915] [cursor=pointer]:
+              - /url: https://blog.csdn.net/ljz0929/category_10694896.html
+              - generic [ref=e917]: Markdown
+            - generic [ref=e918]: 2篇
+          - listitem [ref=e919]:
+            - link "单片机学习" [ref=e920] [cursor=pointer]:
+              - /url: https://blog.csdn.net/ljz0929/category_6986699.html
+              - generic [ref=e922]: 单片机学习
+            - generic [ref=e923]: 4篇
+          - listitem [ref=e924]:
+            - link "技能技巧" [ref=e925] [cursor=pointer]:
+              - /url: https://blog.csdn.net/ljz0929/category_6986703.html
+              - generic [ref=e927]: 技能技巧
+            - generic [ref=e928]: 14篇
+        - paragraph:
+          - generic [ref=e929] [cursor=pointer]: 展开全部
+      - generic [ref=e931]:
+        - term [ref=e932]: 上一篇：
+        - definition [ref=e933]:
+          - link "ubuntu22.04 服务器 SSH 密钥登录失败" [ref=e934] [cursor=pointer]:
+            - /url: https://blog.csdn.net/ljz0929/article/details/129759705
+      - generic [ref=e935]:
+        - heading "大家在看" [level=3] [ref=e936]
+        - list [ref=e938]:
+          - listitem [ref=e939]:
+            - link "端云协同架构下：AI 原生矩阵系统端侧推理与离线生产技术实践 267" [ref=e940] [cursor=pointer]:
+              - /url: https://blog.csdn.net/2601_95778313/article/details/161043130
+          - listitem [ref=e941]:
+            - link "口粮红茶推荐：六款日常饮茶的实测横评" [ref=e942] [cursor=pointer]:
+              - /url: https://blog.csdn.net/2609_96073596/article/details/161083299
+          - listitem [ref=e943]:
+            - link "稽查 / 审核类型术语" [ref=e944] [cursor=pointer]:
+              - /url: https://blog.csdn.net/beihai_kun/article/details/161083426
+          - listitem [ref=e945]:
+            - link "2026产业数据与人工智能服务商选型指南｜行业筛选标准+优质企业推荐" [ref=e946] [cursor=pointer]:
+              - /url: https://blog.csdn.net/2601_95435207/article/details/161083314
+          - listitem [ref=e947]:
+            - link "IPv6与IPv6+的主要区别" [ref=e948] [cursor=pointer]:
+              - /url: https://blog.csdn.net/movingcomm/article/details/161083300
+      - generic [ref=e949]:
+        - heading "最新文章" [level=3] [ref=e950]
+        - generic [ref=e951]:
+          - list [ref=e952]:
+            - listitem [ref=e953]:
+              - link "ubuntu22.04 服务器 SSH 密钥登录失败" [ref=e954] [cursor=pointer]:
+                - /url: https://blog.csdn.net/ljz0929/article/details/129759705
+            - listitem [ref=e955]:
+              - link "Joplin利用InfiniCloud（TeraCLOUD）进行WebDAV同步完美替代坚果云同步" [ref=e956] [cursor=pointer]:
+                - /url: https://blog.csdn.net/ljz0929/article/details/124955688
+            - listitem [ref=e957]:
+              - link "Joplin使用坚果云WebDAV同步存在的问题以及解决办法" [ref=e958] [cursor=pointer]:
+                - /url: https://blog.csdn.net/ljz0929/article/details/124809906
+          - generic [ref=e960]:
+            - link "2026年1篇" [ref=e962] [cursor=pointer]:
+              - /url: https://blog.csdn.net/ljz0929?type=blog&year=2026&month=03
+            - link "2023年1篇" [ref=e964] [cursor=pointer]:
+              - /url: https://blog.csdn.net/ljz0929?type=blog&year=2023&month=03
+            - link "2022年9篇" [ref=e966] [cursor=pointer]:
+              - /url: https://blog.csdn.net/ljz0929?type=blog&year=2022&month=05
+            - link "2021年17篇" [ref=e968] [cursor=pointer]:
+              - /url: https://blog.csdn.net/ljz0929?type=blog&year=2021&month=11
+            - link "2020年6篇" [ref=e970] [cursor=pointer]:
+              - /url: https://blog.csdn.net/ljz0929?type=blog&year=2020&month=12
+            - link "2018年2篇" [ref=e972] [cursor=pointer]:
+              - /url: https://blog.csdn.net/ljz0929?type=blog&year=2018&month=07
+      - generic [ref=e975]:
+        - insertion:
+          - generic:
+            - iframe
+        - img
+      - generic [ref=e977]:
+        - heading "目录" [level=3] [ref=e978]
+        - list [ref=e983]:
+          - listitem [ref=e984]:
+            - link "系统环境" [ref=e985] [cursor=pointer]:
+              - /url: "#t0"
+          - listitem [ref=e986]:
+            - link "问题现象" [ref=e987] [cursor=pointer]:
+              - /url: "#t1"
+          - listitem [ref=e988]:
+            - link "问题分析" [ref=e989] [cursor=pointer]:
+              - /url: "#t2"
+  - generic [ref=e990]:
+    - paragraph [ref=e991]: 登录后您可以享受以下权益：
+    - list [ref=e992]:
+      - listitem [ref=e993]: 免费复制代码
+      - listitem [ref=e994]: 和博主大V互动
+      - listitem [ref=e995]: 下载海量资源
+      - listitem [ref=e996]: 发动态/写文章/加入社区
+    - generic [ref=e997] [cursor=pointer]: ×
+    - button "立即登录" [ref=e998] [cursor=pointer]
+  - link [ref=e1000] [cursor=pointer]:
+    - /url: https://ai.csdn.net/chat?utm_source=cknow_pc_blogdetail&spm=1001.2101.3001.10583
+  - text: prev next
