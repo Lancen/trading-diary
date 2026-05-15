@@ -213,7 +213,6 @@ Phase N+2: 收尾                ← 手动完成
 | git commit | `pnpm install` |
 | 读取项目文件 | 启动应用服务 |
 | 搜索代码 | 浏览器测试（需 Playwright MCP） |
-| — | 读取主 session 的环境变量（`JAVA_HOME` 等需在 prompt 中显式设置） |
 
 ### 执行顺序原则
 
