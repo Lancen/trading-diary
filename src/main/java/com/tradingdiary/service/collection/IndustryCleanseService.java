@@ -3,8 +3,10 @@ package com.tradingdiary.service.collection;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tradingdiary.entity.ClassificationChangeLog;
 import com.tradingdiary.entity.Industry;
 import com.tradingdiary.entity.StockIndustry;
+import com.tradingdiary.mapper.ClassificationChangeLogMapper;
 import com.tradingdiary.mapper.IndustryMapper;
 import com.tradingdiary.mapper.StockIndustryMapper;
 import org.slf4j.Logger;
@@ -14,6 +16,8 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class IndustryCleanseService {
@@ -22,13 +26,16 @@ public class IndustryCleanseService {
 
     private final IndustryMapper industryMapper;
     private final StockIndustryMapper stockIndustryMapper;
+    private final ClassificationChangeLogMapper classificationChangeLogMapper;
     private final ObjectMapper objectMapper;
 
     public IndustryCleanseService(IndustryMapper industryMapper,
                                   StockIndustryMapper stockIndustryMapper,
+                                  ClassificationChangeLogMapper classificationChangeLogMapper,
                                   ObjectMapper objectMapper) {
         this.industryMapper = industryMapper;
         this.stockIndustryMapper = stockIndustryMapper;
+        this.classificationChangeLogMapper = classificationChangeLogMapper;
         this.objectMapper = objectMapper;
     }
 
@@ -64,38 +71,67 @@ public class IndustryCleanseService {
 
     /**
      * Cleanse constituent list for ONE industry from stock_board_industry_cons_em response.
-     * For now, simple saveOrUpdate. Change detection will be added in Phase 6.
+     * Compares today's data with DB records to detect ADD and REMOVE changes,
+     * logging each change to classification_change_log.
      *
      * @param rawJson      raw JSON from stock_board_industry_cons_em API
      * @param industryCode the industry board code
      * @param snapDate     the snapshot date
-     * @return number of stock-industry relations saved
+     * @return number of changes (adds + removals)
      */
     public int cleanseCons(String rawJson, String industryCode, LocalDate snapDate) {
-        List<StockIndustry> relations = parseStockIndustryList(rawJson, industryCode, snapDate);
-        if (relations.isEmpty()) {
+        List<StockIndustry> todayRelations = parseStockIndustryList(rawJson, industryCode, snapDate);
+        if (todayRelations.isEmpty()) {
             log.info("No constituents parsed for industry {}", industryCode);
             return 0;
         }
 
-        int count = 0;
-        for (StockIndustry relation : relations) {
-            StockIndustry existing = stockIndustryMapper.selectOne(
-                    new LambdaQueryWrapper<StockIndustry>()
-                            .eq(StockIndustry::getStockCode, relation.getStockCode())
-                            .eq(StockIndustry::getIndustryCode, relation.getIndustryCode())
-            );
-            if (existing != null) {
-                relation.setId(existing.getId());
-                stockIndustryMapper.updateById(relation);
-            } else {
+        Set<String> todayStockCodes = todayRelations.stream()
+                .map(StockIndustry::getStockCode)
+                .collect(Collectors.toSet());
+
+        List<StockIndustry> dbRelations = stockIndustryMapper.selectList(
+                new LambdaQueryWrapper<StockIndustry>()
+                        .eq(StockIndustry::getIndustryCode, industryCode)
+                        .eq(StockIndustry::getIsDeleted, false)
+        );
+        Set<String> dbStockCodes = dbRelations.stream()
+                .map(StockIndustry::getStockCode)
+                .collect(Collectors.toSet());
+
+        int changeCount = 0;
+
+        // ADD: stocks in today's data but not in DB
+        for (StockIndustry relation : todayRelations) {
+            if (!dbStockCodes.contains(relation.getStockCode())) {
                 stockIndustryMapper.insert(relation);
+                insertChangeLog(relation.getStockCode(), "INDUSTRY", industryCode, "ADD", snapDate);
+                changeCount++;
             }
-            count++;
         }
 
-        log.info("Industry cons cleanse complete: {} constituents for {}", count, industryCode);
-        return count;
+        // REMOVE: stocks in DB but not in today's data
+        for (StockIndustry dbRel : dbRelations) {
+            if (!todayStockCodes.contains(dbRel.getStockCode())) {
+                dbRel.setIsDeleted(true);
+                stockIndustryMapper.updateById(dbRel);
+                insertChangeLog(dbRel.getStockCode(), "INDUSTRY", industryCode, "REMOVE", snapDate);
+                changeCount++;
+            }
+        }
+
+        log.info("Industry cons cleanse complete: {} changes for {}", changeCount, industryCode);
+        return changeCount;
+    }
+
+    private void insertChangeLog(String stockCode, String type, String sectorCode, String action, LocalDate snapDate) {
+        ClassificationChangeLog logEntry = new ClassificationChangeLog();
+        logEntry.setStockCode(stockCode);
+        logEntry.setClassificationType(type);
+        logEntry.setSectorCode(sectorCode);
+        logEntry.setAction(action);
+        logEntry.setSnapDate(snapDate);
+        classificationChangeLogMapper.insert(logEntry);
     }
 
     private List<Industry> parseIndustryNames(String rawJson) {

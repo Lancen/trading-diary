@@ -3,8 +3,10 @@ package com.tradingdiary.service.collection;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tradingdiary.entity.ClassificationChangeLog;
 import com.tradingdiary.entity.Concept;
 import com.tradingdiary.entity.StockConcept;
+import com.tradingdiary.mapper.ClassificationChangeLogMapper;
 import com.tradingdiary.mapper.ConceptMapper;
 import com.tradingdiary.mapper.StockConceptMapper;
 import org.slf4j.Logger;
@@ -14,6 +16,8 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class ConceptCleanseService {
@@ -22,13 +26,16 @@ public class ConceptCleanseService {
 
     private final ConceptMapper conceptMapper;
     private final StockConceptMapper stockConceptMapper;
+    private final ClassificationChangeLogMapper classificationChangeLogMapper;
     private final ObjectMapper objectMapper;
 
     public ConceptCleanseService(ConceptMapper conceptMapper,
                                  StockConceptMapper stockConceptMapper,
+                                 ClassificationChangeLogMapper classificationChangeLogMapper,
                                  ObjectMapper objectMapper) {
         this.conceptMapper = conceptMapper;
         this.stockConceptMapper = stockConceptMapper;
+        this.classificationChangeLogMapper = classificationChangeLogMapper;
         this.objectMapper = objectMapper;
     }
 
@@ -64,38 +71,67 @@ public class ConceptCleanseService {
 
     /**
      * Cleanse constituent list for ONE concept from stock_board_concept_cons_em response.
-     * For now, simple saveOrUpdate. Change detection will be added in Phase 6.
+     * Compares today's data with DB records to detect ADD and REMOVE changes,
+     * logging each change to classification_change_log.
      *
      * @param rawJson     raw JSON from stock_board_concept_cons_em API
      * @param conceptCode the concept board code
      * @param snapDate    the snapshot date
-     * @return number of stock-concept relations saved
+     * @return number of changes (adds + removals)
      */
     public int cleanseCons(String rawJson, String conceptCode, LocalDate snapDate) {
-        List<StockConcept> relations = parseStockConceptList(rawJson, conceptCode, snapDate);
-        if (relations.isEmpty()) {
+        List<StockConcept> todayRelations = parseStockConceptList(rawJson, conceptCode, snapDate);
+        if (todayRelations.isEmpty()) {
             log.info("No constituents parsed for concept {}", conceptCode);
             return 0;
         }
 
-        int count = 0;
-        for (StockConcept relation : relations) {
-            StockConcept existing = stockConceptMapper.selectOne(
-                    new LambdaQueryWrapper<StockConcept>()
-                            .eq(StockConcept::getStockCode, relation.getStockCode())
-                            .eq(StockConcept::getConceptCode, relation.getConceptCode())
-            );
-            if (existing != null) {
-                relation.setId(existing.getId());
-                stockConceptMapper.updateById(relation);
-            } else {
+        Set<String> todayStockCodes = todayRelations.stream()
+                .map(StockConcept::getStockCode)
+                .collect(Collectors.toSet());
+
+        List<StockConcept> dbRelations = stockConceptMapper.selectList(
+                new LambdaQueryWrapper<StockConcept>()
+                        .eq(StockConcept::getConceptCode, conceptCode)
+                        .eq(StockConcept::getIsDeleted, false)
+        );
+        Set<String> dbStockCodes = dbRelations.stream()
+                .map(StockConcept::getStockCode)
+                .collect(Collectors.toSet());
+
+        int changeCount = 0;
+
+        // ADD: stocks in today's data but not in DB
+        for (StockConcept relation : todayRelations) {
+            if (!dbStockCodes.contains(relation.getStockCode())) {
                 stockConceptMapper.insert(relation);
+                insertChangeLog(relation.getStockCode(), "CONCEPT", conceptCode, "ADD", snapDate);
+                changeCount++;
             }
-            count++;
         }
 
-        log.info("Concept cons cleanse complete: {} constituents for {}", count, conceptCode);
-        return count;
+        // REMOVE: stocks in DB but not in today's data
+        for (StockConcept dbRel : dbRelations) {
+            if (!todayStockCodes.contains(dbRel.getStockCode())) {
+                dbRel.setIsDeleted(true);
+                stockConceptMapper.updateById(dbRel);
+                insertChangeLog(dbRel.getStockCode(), "CONCEPT", conceptCode, "REMOVE", snapDate);
+                changeCount++;
+            }
+        }
+
+        log.info("Concept cons cleanse complete: {} changes for {}", changeCount, conceptCode);
+        return changeCount;
+    }
+
+    private void insertChangeLog(String stockCode, String type, String sectorCode, String action, LocalDate snapDate) {
+        ClassificationChangeLog logEntry = new ClassificationChangeLog();
+        logEntry.setStockCode(stockCode);
+        logEntry.setClassificationType(type);
+        logEntry.setSectorCode(sectorCode);
+        logEntry.setAction(action);
+        logEntry.setSnapDate(snapDate);
+        classificationChangeLogMapper.insert(logEntry);
     }
 
     private List<Concept> parseConceptNames(String rawJson) {

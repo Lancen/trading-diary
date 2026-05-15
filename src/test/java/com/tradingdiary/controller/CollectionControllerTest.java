@@ -1,8 +1,10 @@
 package com.tradingdiary.controller;
 
 import com.tradingdiary.collection.controller.CollectionController;
+import com.tradingdiary.collection.model.BackfillRequest;
 import com.tradingdiary.collection.model.CollectionStatusVO;
 import com.tradingdiary.collection.model.GapReportVO;
+import com.tradingdiary.collection.orchestrator.CollectionOrchestrator;
 import com.tradingdiary.entity.DataCollectionLog;
 import com.tradingdiary.mapper.DataCollectionLogMapper;
 import com.tradingdiary.model.ApiResponse;
@@ -23,6 +25,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -33,6 +36,9 @@ class CollectionControllerTest {
 
     @Mock
     private GapDetectionService gapDetectionService;
+
+    @Mock
+    private CollectionOrchestrator collectionOrchestrator;
 
     @InjectMocks
     private CollectionController collectionController;
@@ -154,6 +160,84 @@ class CollectionControllerTest {
         ApiResponse<GapReportVO> response = collectionController.gaps(start, end, "SSE");
 
         assertThat(response.getCode()).isEqualTo(200);
+    }
+
+    @Test
+    void shouldTriggerOrchestrationForValidDataType() {
+        when(collectionOrchestrator.orchestrate(eq("STOCK_INFO"), any()))
+                .thenReturn("success");
+
+        ApiResponse<String> response = collectionController.trigger("STOCK_INFO");
+
+        assertThat(response.getCode()).isEqualTo(200);
+        assertThat(response.getData()).isEqualTo("success");
+        verify(collectionOrchestrator).orchestrate(eq("STOCK_INFO"), any());
+    }
+
+    @Test
+    void shouldReturnErrorForInvalidDataTypeOnTrigger() {
+        ApiResponse<String> response = collectionController.trigger("UNKNOWN_TYPE");
+
+        assertThat(response.getCode()).isEqualTo(400);
+        assertThat(response.getMessage()).contains("Unknown data type");
+    }
+
+    @Test
+    void shouldBackfillWithValidRequest() {
+        BackfillRequest request = new BackfillRequest();
+        request.setDataType("MARGIN_DAILY_SSE");
+        request.setExchange("SSE");
+        request.setStartDate(LocalDate.of(2026, 5, 4));
+        request.setEndDate(LocalDate.of(2026, 5, 8));
+
+        when(collectionOrchestrator.backfillMarginByWeek(any(BackfillRequest.class)))
+                .thenReturn("Backfill complete: 5 dates processed");
+
+        ApiResponse<String> response = collectionController.backfill(request);
+
+        assertThat(response.getCode()).isEqualTo(200);
+        assertThat(response.getData()).contains("Backfill complete");
+        verify(collectionOrchestrator).backfillMarginByWeek(any(BackfillRequest.class));
+    }
+
+    @Test
+    void shouldReturnErrorForMissingDataTypeOnBackfill() {
+        BackfillRequest request = new BackfillRequest();
+        request.setExchange("SSE");
+        request.setStartDate(LocalDate.of(2026, 5, 4));
+        request.setEndDate(LocalDate.of(2026, 5, 8));
+
+        ApiResponse<String> response = collectionController.backfill(request);
+
+        assertThat(response.getCode()).isEqualTo(400);
+        assertThat(response.getMessage()).contains("dataType");
+    }
+
+    @Test
+    void shouldReturnErrorForMissingStartDateOnBackfill() {
+        BackfillRequest request = new BackfillRequest();
+        request.setDataType("MARGIN_DAILY_SSE");
+        request.setExchange("SSE");
+        request.setEndDate(LocalDate.of(2026, 5, 8));
+
+        ApiResponse<String> response = collectionController.backfill(request);
+
+        assertThat(response.getCode()).isEqualTo(400);
+        assertThat(response.getMessage()).contains("startDate");
+    }
+
+    @Test
+    void shouldReturnErrorForEndDateBeforeStartDateOnBackfill() {
+        BackfillRequest request = new BackfillRequest();
+        request.setDataType("MARGIN_DAILY_SSE");
+        request.setExchange("SSE");
+        request.setStartDate(LocalDate.of(2026, 5, 8));
+        request.setEndDate(LocalDate.of(2026, 5, 4));
+
+        ApiResponse<String> response = collectionController.backfill(request);
+
+        assertThat(response.getCode()).isEqualTo(400);
+        assertThat(response.getMessage()).contains("endDate");
     }
 
     private DataCollectionLog buildLog(String dataType, String jobType, String status, int recordCount) {

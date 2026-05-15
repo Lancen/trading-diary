@@ -1,14 +1,17 @@
 package com.tradingdiary.collection.orchestrator;
 
 import com.tradingdiary.collection.client.AKToolsClient;
+import com.tradingdiary.collection.model.BackfillRequest;
 import com.tradingdiary.entity.DataCollectionLog;
 import com.tradingdiary.entity.Industry;
 import com.tradingdiary.entity.Concept;
 import com.tradingdiary.entity.RawData;
+import com.tradingdiary.entity.TradeCalendar;
 import com.tradingdiary.mapper.ConceptMapper;
 import com.tradingdiary.mapper.DataCollectionLogMapper;
 import com.tradingdiary.mapper.IndustryMapper;
 import com.tradingdiary.mapper.RawDataMapper;
+import com.tradingdiary.mapper.TradeCalendarMapper;
 import com.tradingdiary.service.collection.ConceptCleanseService;
 import com.tradingdiary.service.collection.IndustryCleanseService;
 import com.tradingdiary.service.collection.MarginCleanseService;
@@ -21,7 +24,11 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.WeekFields;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
@@ -45,6 +52,7 @@ public class CollectionOrchestrator {
     private final ConceptCleanseService conceptCleanseService;
     private final MarginCleanseService marginCleanseService;
     private final TradeCalendarService tradeCalendarService;
+    private final TradeCalendarMapper tradeCalendarMapper;
     private final IndustryMapper industryMapper;
     private final ConceptMapper conceptMapper;
 
@@ -57,6 +65,7 @@ public class CollectionOrchestrator {
                                   ConceptCleanseService conceptCleanseService,
                                   MarginCleanseService marginCleanseService,
                                   TradeCalendarService tradeCalendarService,
+                                  TradeCalendarMapper tradeCalendarMapper,
                                   IndustryMapper industryMapper,
                                   ConceptMapper conceptMapper) {
         this.aktoolsClient = aktoolsClient;
@@ -68,6 +77,7 @@ public class CollectionOrchestrator {
         this.conceptCleanseService = conceptCleanseService;
         this.marginCleanseService = marginCleanseService;
         this.tradeCalendarService = tradeCalendarService;
+        this.tradeCalendarMapper = tradeCalendarMapper;
         this.industryMapper = industryMapper;
         this.conceptMapper = conceptMapper;
     }
@@ -366,6 +376,75 @@ public class CollectionOrchestrator {
             }
         }
         return count;
+    }
+
+    /**
+     * Backfill margin data for a date range, grouped by ISO week.
+     * Skips weeks where all trading dates already have SUCCESS FETCH + CLEANSE logs.
+     *
+     * @param request backfill parameters (dataType, exchange, date range)
+     * @return summary message
+     */
+    public String backfillMarginByWeek(BackfillRequest request) {
+        String dataType = request.getDataType();
+        LocalDate startDate = request.getStartDate();
+        LocalDate endDate = request.getEndDate();
+
+        log.info("Starting backfill: dataType={}, start={}, end={}", dataType, startDate, endDate);
+
+        List<TradeCalendar> tradingDays = tradeCalendarMapper.selectTradingDays(startDate, endDate);
+
+        if (tradingDays.isEmpty()) {
+            log.info("No trading days found in range: {} to {}", startDate, endDate);
+            return "No trading days in range";
+        }
+
+        WeekFields weekFields = WeekFields.of(Locale.getDefault());
+        Map<Integer, List<TradeCalendar>> weeks = new LinkedHashMap<>();
+
+        for (TradeCalendar day : tradingDays) {
+            int isoWeek = day.getTradeDate().get(weekFields.weekOfWeekBasedYear());
+            int weekYear = day.getTradeDate().get(weekFields.weekBasedYear());
+            int weekKey = weekYear * 100 + isoWeek;
+            weeks.computeIfAbsent(weekKey, k -> new ArrayList<>()).add(day);
+        }
+
+        int totalWeeks = weeks.size();
+        int processedDates = 0;
+        int skippedWeeks = 0;
+
+        for (Map.Entry<Integer, List<TradeCalendar>> entry : weeks.entrySet()) {
+            List<TradeCalendar> weekDays = entry.getValue();
+            boolean allComplete = weekDays.stream().allMatch(day -> isDateComplete(dataType, day.getTradeDate()));
+
+            if (allComplete) {
+                log.debug("Skipping week {} — all {} dates already complete", entry.getKey(), weekDays.size());
+                skippedWeeks++;
+            } else {
+                for (TradeCalendar day : weekDays) {
+                    if (!isDateComplete(dataType, day.getTradeDate())) {
+                        orchestrate(dataType, day.getTradeDate());
+                        processedDates++;
+                    }
+                }
+            }
+        }
+
+        int orchestratedWeeks = totalWeeks - skippedWeeks;
+        String result = String.format("Backfill complete: %d dates processed across %d weeks, %d weeks skipped (already complete)",
+                processedDates, orchestratedWeeks, skippedWeeks);
+        log.info(result);
+        return result;
+    }
+
+    /**
+     * Check if a given date already has SUCCESS logs for both FETCH and CLEANSE.
+     */
+    private boolean isDateComplete(String dataType, LocalDate tradeDate) {
+        DataCollectionLog fetchLog = logMapper.selectLatestByDataTypeAndJobTypeAndTradeDate(dataType, "FETCH", tradeDate);
+        DataCollectionLog cleanseLog = logMapper.selectLatestByDataTypeAndJobTypeAndTradeDate(dataType, "CLEANSE", tradeDate);
+        return fetchLog != null && "SUCCESS".equals(fetchLog.getStatus())
+                && cleanseLog != null && "SUCCESS".equals(cleanseLog.getStatus());
     }
 
     private static class Result {

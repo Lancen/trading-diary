@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 interface JobStatus {
   status: string;
@@ -52,6 +53,8 @@ export default function CollectionPage() {
   const [logs, setLogs] = useState<CollectionLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [logsLoading, setLogsLoading] = useState(false);
+  const [triggering, setTriggering] = useState<Set<string>>(new Set());
+  const toast = useToast((s) => s.toast);
 
   useEffect(() => { fetchStatus(); }, []);
 
@@ -78,6 +81,27 @@ export default function CollectionPage() {
     else { setExpandedType(dataType); fetchLogs(dataType); }
   }
 
+  async function handleTrigger(dataType: string) {
+    setTriggering((prev) => new Set(prev).add(dataType));
+    try {
+      const res = await api.post(`api/v1/admin/collection/trigger/${dataType}`).json<{ code: number; msg?: string }>();
+      if (res.code === 200) {
+        toast(`采集已触发: ${dataType}`, "success");
+        fetchStatus();
+      } else {
+        toast(`触发失败: ${res.msg || "未知错误"}`, "error");
+      }
+    } catch (e) {
+      toast(`触发请求失败: ${dataType}`, "error");
+    } finally {
+      setTriggering((prev) => {
+        const next = new Set(prev);
+        next.delete(dataType);
+        return next;
+      });
+    }
+  }
+
   const runningCount = statusList.filter(s => s.lastFetch?.status === "RUNNING" || s.lastCleanse?.status === "RUNNING").length;
   const successCount = statusList.filter(s => s.lastFetch?.status === "SUCCESS" && (!s.lastCleanse || s.lastCleanse.status === "SUCCESS")).length;
   const failedCount = statusList.filter(s => s.lastFetch?.status === "FAILED" || s.lastCleanse?.status === "FAILED").length;
@@ -98,6 +122,7 @@ export default function CollectionPage() {
           {statusList.map((item) => {
             const isExpanded = expandedType === item.dataType;
             const hasError = item.lastFetch?.errorMsg || item.lastCleanse?.errorMsg;
+            const isTriggering = triggering.has(item.dataType);
             return (
               <div key={item.dataType}>
                 <div onClick={() => toggleExpand(item.dataType)} className={"cursor-pointer rounded-lg border p-4 transition-shadow hover:shadow-md " + (hasError ? "border-red-300 bg-red-50" : "bg-white")}>
@@ -109,7 +134,13 @@ export default function CollectionPage() {
                   </div>
                   {hasError && <div className="mt-2 text-xs text-red-600">{item.lastFetch?.errorMsg || item.lastCleanse?.errorMsg}</div>}
                   <div className="mt-2 flex gap-2">
-                    <button onClick={(e) => { e.stopPropagation(); alert("Coming soon"); }} className="rounded bg-gray-100 px-3 py-1 text-xs hover:bg-gray-200">Re-collect</button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleTrigger(item.dataType); }}
+                      disabled={isTriggering}
+                      className="rounded bg-primary px-3 py-1 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                    >
+                      {isTriggering ? "采集中..." : "重新采集"}
+                    </button>
                   </div>
                 </div>
                 {isExpanded && (

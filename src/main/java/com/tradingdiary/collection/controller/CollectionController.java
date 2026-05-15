@@ -1,13 +1,18 @@
 package com.tradingdiary.collection.controller;
 
+import com.tradingdiary.collection.model.BackfillRequest;
 import com.tradingdiary.collection.model.CollectionStatusVO;
 import com.tradingdiary.collection.model.GapReportVO;
+import com.tradingdiary.collection.orchestrator.CollectionOrchestrator;
 import com.tradingdiary.entity.DataCollectionLog;
 import com.tradingdiary.mapper.DataCollectionLogMapper;
 import com.tradingdiary.model.ApiResponse;
 import com.tradingdiary.service.GapDetectionService;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -39,11 +44,14 @@ public class CollectionController {
 
     private final DataCollectionLogMapper logMapper;
     private final GapDetectionService gapDetectionService;
+    private final CollectionOrchestrator orchestrator;
 
     public CollectionController(DataCollectionLogMapper logMapper,
-                                 GapDetectionService gapDetectionService) {
+                                 GapDetectionService gapDetectionService,
+                                 CollectionOrchestrator orchestrator) {
         this.logMapper = logMapper;
         this.gapDetectionService = gapDetectionService;
+        this.orchestrator = orchestrator;
     }
 
     @GetMapping("/status")
@@ -83,6 +91,33 @@ public class CollectionController {
             @RequestParam(defaultValue = "SSE") String exchange) {
         GapReportVO report = gapDetectionService.getGaps(start, end, exchange);
         return ApiResponse.ok(report);
+    }
+
+    @PostMapping("/trigger/{dataType}")
+    public ApiResponse<String> trigger(@PathVariable String dataType) {
+        if (!DATA_TYPE_LABELS.containsKey(dataType)) {
+            return ApiResponse.fail(400, "Unknown data type: " + dataType);
+        }
+        String result = orchestrator.orchestrate(dataType, LocalDate.now());
+        return ApiResponse.ok(result);
+    }
+
+    @PostMapping("/backfill")
+    public ApiResponse<String> backfill(@RequestBody BackfillRequest request) {
+        if (request.getDataType() == null || request.getDataType().isBlank()) {
+            return ApiResponse.fail(400, "dataType is required");
+        }
+        if (request.getStartDate() == null) {
+            return ApiResponse.fail(400, "startDate is required");
+        }
+        if (request.getEndDate() == null) {
+            return ApiResponse.fail(400, "endDate is required");
+        }
+        if (request.getEndDate().isBefore(request.getStartDate())) {
+            return ApiResponse.fail(400, "endDate must be on or after startDate");
+        }
+        String result = orchestrator.backfillMarginByWeek(request);
+        return ApiResponse.ok(result);
     }
 
     private CollectionStatusVO.JobStatus buildJobStatus(DataCollectionLog log) {

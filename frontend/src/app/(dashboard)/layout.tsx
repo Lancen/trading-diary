@@ -12,6 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Toaster } from "@/components/ui/toast";
 
 export default function DashboardLayout({
   children,
@@ -120,6 +121,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 
         <main className="flex-1 p-6">{children}</main>
       </div>
+      <Toaster />
     </div>
   );
 }
