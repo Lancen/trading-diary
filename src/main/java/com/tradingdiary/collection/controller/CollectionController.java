@@ -116,7 +116,12 @@ public class CollectionController {
         if (request.getEndDate().isBefore(request.getStartDate())) {
             return ApiResponse.fail(400, "endDate must be on or after startDate");
         }
-        String result = orchestrator.backfillMarginByWeek(request);
+        String result;
+        if ("STOCK_DAILY".equals(request.getDataType())) {
+            result = orchestrator.backfillStockDaily(request.getStartDate(), request.getEndDate());
+        } else {
+            result = orchestrator.backfillMarginByWeek(request);
+        }
         return ApiResponse.ok(result);
     }
 

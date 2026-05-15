@@ -8,6 +8,7 @@ import com.tradingdiary.mapper.ConceptMapper;
 import com.tradingdiary.mapper.DataCollectionLogMapper;
 import com.tradingdiary.mapper.IndustryMapper;
 import com.tradingdiary.mapper.RawDataMapper;
+import com.tradingdiary.mapper.StockInfoMapper;
 import com.tradingdiary.mapper.TradeCalendarMapper;
 import com.tradingdiary.service.collection.ConceptCleanseService;
 import com.tradingdiary.service.collection.IndustryCleanseService;
@@ -57,13 +58,15 @@ class CollectionOrchestratorTest {
         TradeCalendarService tradeCalendarService = mock(TradeCalendarService.class);
         IndustryMapper industryMapper = mock(IndustryMapper.class);
         ConceptMapper conceptMapper = mock(ConceptMapper.class);
+        StockInfoMapper stockInfoMapper = mock(StockInfoMapper.class);
 
         CollectionOrchestrator real = new CollectionOrchestrator(
                 aktoolsClient, dataCollectionLogMapper, rawDataMapper,
                 stockInfoCleanseService, stockDailyCleanseService,
                 industryCleanseService, conceptCleanseService,
                 marginCleanseService, tradeCalendarService,
-                tradeCalendarMapper, industryMapper, conceptMapper
+                tradeCalendarMapper, industryMapper, conceptMapper,
+                stockInfoMapper
         );
         orchestrator = spy(real);
     }

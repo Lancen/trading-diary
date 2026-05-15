@@ -6,11 +6,13 @@ import com.tradingdiary.entity.DataCollectionLog;
 import com.tradingdiary.entity.Industry;
 import com.tradingdiary.entity.Concept;
 import com.tradingdiary.entity.RawData;
+import com.tradingdiary.entity.StockInfo;
 import com.tradingdiary.entity.TradeCalendar;
 import com.tradingdiary.mapper.ConceptMapper;
 import com.tradingdiary.mapper.DataCollectionLogMapper;
 import com.tradingdiary.mapper.IndustryMapper;
 import com.tradingdiary.mapper.RawDataMapper;
+import com.tradingdiary.mapper.StockInfoMapper;
 import com.tradingdiary.mapper.TradeCalendarMapper;
 import com.tradingdiary.service.collection.ConceptCleanseService;
 import com.tradingdiary.service.collection.IndustryCleanseService;
@@ -55,6 +57,7 @@ public class CollectionOrchestrator {
     private final TradeCalendarMapper tradeCalendarMapper;
     private final IndustryMapper industryMapper;
     private final ConceptMapper conceptMapper;
+    private final StockInfoMapper stockInfoMapper;
 
     public CollectionOrchestrator(AKToolsClient aktoolsClient,
                                   DataCollectionLogMapper logMapper,
@@ -67,7 +70,8 @@ public class CollectionOrchestrator {
                                   TradeCalendarService tradeCalendarService,
                                   TradeCalendarMapper tradeCalendarMapper,
                                   IndustryMapper industryMapper,
-                                  ConceptMapper conceptMapper) {
+                                  ConceptMapper conceptMapper,
+                                  StockInfoMapper stockInfoMapper) {
         this.aktoolsClient = aktoolsClient;
         this.logMapper = logMapper;
         this.rawDataMapper = rawDataMapper;
@@ -80,6 +84,7 @@ public class CollectionOrchestrator {
         this.tradeCalendarMapper = tradeCalendarMapper;
         this.industryMapper = industryMapper;
         this.conceptMapper = conceptMapper;
+        this.stockInfoMapper = stockInfoMapper;
     }
 
     /**
@@ -433,6 +438,49 @@ public class CollectionOrchestrator {
         int orchestratedWeeks = totalWeeks - skippedWeeks;
         String result = String.format("Backfill complete: %d dates processed across %d weeks, %d weeks skipped (already complete)",
                 processedDates, orchestratedWeeks, skippedWeeks);
+        log.info(result);
+        return result;
+    }
+
+    /**
+     * Backfill historical stock daily data for all stocks in a date range.
+     * Iterates through each stock, calls stock_zh_a_hist API, and cleanses into stock_daily.
+     *
+     * @param startDate start date (inclusive)
+     * @param endDate   end date (inclusive)
+     * @return summary message
+     */
+    public String backfillStockDaily(LocalDate startDate, LocalDate endDate) {
+        String start = startDate.toString();
+        String end = endDate.toString();
+        log.info("Starting stock daily backfill: {} to {}", start, end);
+
+        List<StockInfo> stocks = stockInfoMapper.selectList(null);
+        if (stocks.isEmpty()) {
+            return "No stocks in stock_info table — run STOCK_INFO collection first";
+        }
+
+        int success = 0;
+        int failed = 0;
+        for (StockInfo stock : stocks) {
+            String code = stock.getCode();
+            if (code == null || code.isBlank()) {
+                continue;
+            }
+            try {
+                String rawJson = aktoolsClient.fetchStockDaily(code, start, end);
+                int records = stockDailyCleanseService.cleanseHistJson(rawJson, code);
+                log.debug("Stock {} backfilled: {} records", code, records);
+                success++;
+            } catch (Exception e) {
+                log.error("Failed to backfill stock {}", code, e);
+                failed++;
+            }
+            aktoolsClient.sleepBetweenCalls();
+        }
+
+        String result = String.format("Stock daily backfill complete: %d stocks succeeded, %d failed (of %d total)",
+                success, failed, stocks.size());
         log.info(result);
         return result;
     }

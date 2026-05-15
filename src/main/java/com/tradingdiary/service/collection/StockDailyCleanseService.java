@@ -85,6 +85,90 @@ public class StockDailyCleanseService {
         return count;
     }
 
+    /**
+     * Cleanse stock_zh_a_hist JSON for a single stock (historical OHLCV data).
+     * The hist JSON has "日期" field per record but no "代码" — code provided as parameter.
+     *
+     * @param rawJson   raw JSON array from stock_zh_a_hist API
+     * @param stockCode the stock code
+     * @return number of records inserted/updated
+     */
+    public int cleanseHistJson(String rawJson, String stockCode) {
+        List<StockDaily> entities = parseHistStockDailyList(rawJson, stockCode);
+        if (entities.isEmpty()) {
+            log.debug("No hist records parsed for {}", stockCode);
+            return 0;
+        }
+
+        int count = 0;
+        for (StockDaily entity : entities) {
+            List<StockDaily> existing = stockDailyMapper.selectList(
+                    new LambdaQueryWrapper<StockDaily>()
+                            .eq(StockDaily::getStockCode, entity.getStockCode())
+                            .eq(StockDaily::getTradeDate, entity.getTradeDate())
+            );
+            if (!existing.isEmpty()) {
+                entity.setId(existing.get(0).getId());
+                stockDailyMapper.updateById(entity);
+            } else {
+                try {
+                    stockDailyMapper.insert(entity);
+                } catch (DuplicateKeyException e) {
+                    StockDaily race = stockDailyMapper.selectOne(
+                            new LambdaQueryWrapper<StockDaily>()
+                                    .eq(StockDaily::getStockCode, entity.getStockCode())
+                                    .eq(StockDaily::getTradeDate, entity.getTradeDate())
+                    );
+                    if (race != null) {
+                        entity.setId(race.getId());
+                        stockDailyMapper.updateById(entity);
+                    }
+                }
+            }
+            count++;
+        }
+
+        log.debug("StockDaily hist cleanse: {} records for {}", count, stockCode);
+        return count;
+    }
+
+    private List<StockDaily> parseHistStockDailyList(String rawJson, String stockCode) {
+        List<StockDaily> result = new ArrayList<>();
+        try {
+            JsonNode root = objectMapper.readTree(rawJson);
+            if (!root.isArray()) {
+                log.warn("Expected JSON array for stock hist, got: {}", root.getNodeType());
+                return result;
+            }
+
+            for (JsonNode node : root) {
+                StockDaily daily = new StockDaily();
+                daily.setStockCode(stockCode);
+                String dateStr = safeText(node, "日期");
+                if (dateStr == null || dateStr.isEmpty()) {
+                    continue;
+                }
+                try {
+                    daily.setTradeDate(LocalDate.parse(dateStr));
+                } catch (Exception e) {
+                    log.debug("Failed to parse trade date: {}", dateStr);
+                    continue;
+                }
+                daily.setOpen(safeDecimal(node, "开盘"));
+                daily.setHigh(safeDecimal(node, "最高"));
+                daily.setLow(safeDecimal(node, "最低"));
+                daily.setClose(safeDecimal(node, "收盘"));
+                daily.setVolume(safeLong(node, "成交量"));
+                daily.setAmount(safeDecimal(node, "成交额"));
+                result.add(daily);
+            }
+        } catch (Exception e) {
+            log.error("Failed to parse stock hist JSON for {}", stockCode, e);
+            throw new RuntimeException("Failed to parse stock hist data: " + e.getMessage(), e);
+        }
+        return result;
+    }
+
     private List<StockDaily> parseStockDailyList(String rawJson, LocalDate tradeDate) {
         List<StockDaily> result = new ArrayList<>();
         try {

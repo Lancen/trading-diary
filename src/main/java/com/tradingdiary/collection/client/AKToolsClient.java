@@ -153,7 +153,7 @@ public class AKToolsClient {
     /**
      * Sleep between calls for rate limiting when doing sequential batch operations.
      */
-    void sleepBetweenCalls() {
+    public void sleepBetweenCalls() {
         // rateLimit() in get() already handles per-call delay,
         // this ensures inter-call spacing in batch loops
         try {
