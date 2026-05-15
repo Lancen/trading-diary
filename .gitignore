@@ -38,3 +38,4 @@ Thumbs.db
 # Playwright
 .playwright-mcp/
 page-snapshot.md
+test-results/
