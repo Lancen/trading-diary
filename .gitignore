@@ -1,3 +1,6 @@
+# Git hooks (local only)
+.githooks/
+
 # Gradle
 .gradle/
 build/
