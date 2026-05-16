@@ -30,16 +30,22 @@
                              quickstart.md
                                           │
                                           ▼
-┌──────────────────────────────────────────────────────────────────────────┐
-│ 7. 执行 ── 循环审查门禁                                                   │
-│                                                                          │
-│  tasks.md 按 Phase 拆批 → 每批: 派发实现 agent → TDD → Spec审查 → 代码审查  │
-│                                                                          │
-│  全部 Phase 通过 → 收尾审查 → finishing-a-development-branch              │
-└──────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│ 7. 执行 ── 循环审查门禁                                           │
+│                                                                  │
+│  tasks.md 按 Phase 拆批 → 每批: TDD → 双审查                      │
+│                                                                  │
+│  全部 Phase 通过 → verify（AC 验收）→ 收尾审查                     │
+└──────────────────────────────────────────────────────────────────┘
                                           │
                                           ▼
-                                     可交付代码
+┌──────────┐
+│8. 归档    │
+│archive   │
+└──────────┘
+     │
+     ▼
+ 可交付代码 + 归档 spec
 ```
 
 ## 步骤速查
@@ -53,8 +59,10 @@
 | 5. 检查 | `/speckit-analyze` | spec.md + plan.md + tasks.md | 分析报告 + 修复提交 | [step-05](workflow-steps/step-05-analyze.md) |
 | 6. 准备 | `scripts/check-env.sh` | tasks.md | 编译通过、依赖安装 | [step-06](workflow-steps/step-06-environment.md) |
 | 7. 执行 | `/superpowers:subagent-driven-development` | tasks.md + 编译通过 | 可交付代码 | [step-07](workflow-steps/step-07-execution.md) |
+| 8. 归档 | `/superpowers:finishing-a-development-branch` | 步骤 7 全部通过 | 归档 spec + 合并 PR | [step-08](workflow-steps/step-08-archive.md) |
 
 **AI 规则**: 收到开发指令后，匹配上表确定当前步骤，**只加载对应步骤的详细文件**。不确定当前步骤时加载精简版（本文档）即可。
+步骤完成后，提示当前产物并主动列出下一个可用命令。流程结束时更新 `specs/_feature-status.md`。
 
 ## 接口契约
 

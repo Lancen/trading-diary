@@ -194,6 +194,40 @@ Implementer 实现 + commit
 - **每批结束后主 session MUST 自检**：本批是否走了两道审查？实现文件数与 tasks.md 任务数是否匹配？有 client 方法无 orchestrator 调用等"孤岛"代码？
 - **审查 agent 的 prompt MUST 包含 design doc 路径**，代码与 spec 不一致时先查 design doc 再判定
 
+## 验证（verify）
+
+全部批通过后、收尾审查前，主 session 执行 spec 维度的 AC 验收：
+
+| 检查项 | 方法 |
+|--------|------|
+| 每一条 AC（验收场景）是否通过 | 对照 spec.md 逐条确认，必须实际运行验证 |
+| 每个 FR（功能需求）是否满足 | 对照 spec.md FR 清单检查 |
+| 每个 SC（成功标准）是否达标 | 实测或 benchmark 验证 |
+| 测试覆盖率 | `./gradlew test jacocoTestReport`，关键路径 ≥ 80% |
+| 遗漏检查 | 对照 design doc "功能描述" 确认无遗漏功能 |
+
+**AC 验收报告格式**：
+
+```
+## Verify Report
+- [ ] AC-001: ... — ✅ 通过 / ❌ 未通过（原因）
+- [ ] AC-002: ... — ✅ 通过
+...
+- 覆盖率: XX%（关键路径）
+- 遗漏: 无 / 有（列出）
+```
+
+任一 AC 未通过或覆盖率不达标 → 返回修复 → 重新 verify。
+
+### 与审查的区别
+
+| | 审查（review） | 验证（verify） |
+|------|------|------|
+| 维度 | 代码质量、架构、风格 | 功能完整性、需求覆盖 |
+| 对象 | 代码实现 | spec 的 AC/FR/SC |
+| 时机 | 每批完成时 | 全部批完成后 |
+| 执行者 | 独立 subagent | 主 session（可直接运行测试） |
+
 ## 收尾审查
 
 全部批完成后，派发**最终代码审查 subagent** 检查整体实现：
@@ -214,4 +248,4 @@ Implementer 实现 + commit
 
 **关键规则**：代码与 spec 不一致时，**先查 design doc 再判断**。design doc 明确允许的偏离不算 bug。
 
-收尾审查通过后，执行 `/superpowers:finishing-a-development-branch`。
+收尾审查通过后，进入步骤 8（归档）。

@@ -228,9 +228,4 @@ npx playwright test --headed    # 有头模式调试
 
 技术实现规范（代码标准、数据库、API、安全、事务、日志、测试、部署、监控）见 `docs/standards/technical-standards.md`。
 
-<!-- SPECKIT START -->
-**Current feature**: [003-data-collection](specs/003-data-collection/)
-- Spec: [spec.md](specs/003-data-collection/spec.md)
-- Plan: [plan.md](specs/003-data-collection/plan.md)
-- Tasks: (pending `/speckit-tasks`)
-<!-- SPECKIT END -->
+当前 feature 状态见 `specs/_feature-status.md`。
