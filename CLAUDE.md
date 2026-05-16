@@ -169,6 +169,24 @@ trading-diary — 交易日记应用。项目处于初始化阶段（2026-05-08 
 
 **为什么**: 003-data-collection 开发中每批审查门禁被跳过，导致全量回填遗漏直到收尾审查才发现。规则 #7 写了"不可跳过"但缺少执行检查点。这条规则将自检动作嵌入对话流——每次批完成时必须暴露审查状态，未通过无法绕过。
 
+### 11. 派发 agent 前验证环境
+
+**派发任何实现 agent 之前，MUST 运行以下检查，确认全部通过：**
+
+| 检查项 | 命令 | 预期 |
+|--------|------|------|
+| Java 版本 | `java -version` | 17+ |
+| 后端端口 | `lsof -ti:8080` | 空闲或已有后端 |
+| AKTools | `curl -s -o /dev/null -w '%{http_code}' http://localhost:8081/version` | 200（如需 AKTools） |
+| 前端端口 | `lsof -ti:3000` | 空闲或已有前端 |
+| 编译通过 | `JAVA_HOME=... ./gradlew compileJava` | BUILD SUCCESSFUL |
+| MySQL | 读 `.env` 确认连接信息 | 有配置 |
+| 全部测试通过 | `JAVA_HOME=... ./gradlew test` | BUILD SUCCESSFUL |
+
+**任何一项不满足 → 修复环境 → 再派发 agent。不要在不可用的环境上加代码。**
+
+**为什么**: 003 开发中 JDK 版本反复排查、AKTools 端口与后端冲突、MySQL 连接假设错误，每次修复都打断实现流程。环境验证前置可以把这些问题压缩到第一步。
+
 ```text
 # 后端（详细结构见 docs/standards/technical-standards.md §1.1）
 src/main/java/com/tradingdiary/
