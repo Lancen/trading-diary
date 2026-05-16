@@ -224,7 +224,7 @@ npx playwright test --headed    # 有头模式调试
 3. **防御式编程** — 所有外部输入验证，所有异常处理
 4. **渐进式优化** — 先正确，再优化，量化数据驱动
 
-**当前阶段：Phase 0**（项目初始化）。宪法合规检查清单见宪法 Governance 章节。
+**当前阶段：Phase 1**（业务开发）。宪法合规检查清单见宪法 Governance 章节。
 
 技术实现规范（代码标准、数据库、API、安全、事务、日志、测试、部署、监控）见 `docs/standards/technical-standards.md`。
 
