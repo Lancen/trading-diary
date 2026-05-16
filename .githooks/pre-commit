@@ -1,0 +1,52 @@
+#!/bin/sh
+# Prevent accidental commit of temporary research files, logs, and large artifacts
+# Run from repo root: .githooks/pre-commit
+
+STAGED=$(git diff --cached --name-only)
+WARNINGS=0
+
+for file in $STAGED; do
+    # Flag root-level files that look like research dumps or temporary notes
+    case "$file" in
+        # Large research/dump files at project root (not in docs/ or specs/)
+        csdn-*|\
+        sandboxing-*|\
+        *-implementer.md|\
+        *-agents-repo.md|\
+        *.log.*|\
+        *.tmp)
+            echo "WARNING: Suspicious file staged: $file"
+            WARNINGS=$((WARNINGS + 1))
+            ;;
+        # Large images at project root
+        *-diagram*.png|\
+        *-diagram*.jpg)
+            echo "WARNING: Diagram image at root: $file. Move to docs/ if it belongs to the project."
+            WARNINGS=$((WARNINGS + 1))
+            ;;
+    esac
+
+    # Flag files > 100KB in project root
+    if [ -f "$file" ]; then
+        SIZE=$(ls -s "$file" 2>/dev/null | cut -d' ' -f1)
+        DIR=$(dirname "$file")
+        if [ "$DIR" = "." ] && [ "$SIZE" -gt 100 ]; then
+            case "$file" in
+                package-lock.json|pnpm-lock.yaml|yarn.lock|gradle-wrapper.jar) ;;  # allowed
+                *)
+                    echo "WARNING: Large file ($SIZE KB) at project root: $file"
+                    WARNINGS=$((WARNINGS + 1))
+                    ;;
+            esac
+        fi
+    fi
+done
+
+if [ "$WARNINGS" -gt 0 ]; then
+    echo ""
+    echo "Found $WARNINGS suspicious staging(s). Review the files above."
+    echo "If these are intentional, bypass with: git commit --no-verify"
+    exit 1
+fi
+
+exit 0
