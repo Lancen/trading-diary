@@ -119,6 +119,8 @@ public class Trade {
 - 时间字段：`created_at`、`updated_at`，`datetime` 类型
 - 金额字段：`decimal(20,8)`，见宪法领域约束 §1
 - 所有业务表 MUST 包含 `user_id`（`bigint`，索引）、`is_deleted`（`tinyint(1)`，默认 0）
+- 纯日志表（如 `data_collection_log`）可只含 `created_at`，不需要 `updated_at` 和 `is_deleted`
+- 原始数据暂存表（如 `raw_data`）同理，按实际场景判断
 - 禁止使用数据库保留字作为字段名
 - 所有表 MUST 有 `COMMENT`，格式：`COMMENT='表名_业务场景；生命周期说明'`
 - 所有字段 MUST 有 `COMMENT`，格式：内联在列定义末尾 `COMMENT '字段名_业务含义说明'`
