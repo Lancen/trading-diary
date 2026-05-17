@@ -143,8 +143,8 @@ public class ConceptCleanseService {
                 return result;
             }
             for (JsonNode node : root) {
-                String code = safeText(node, "板块代码");
-                String name = safeText(node, "板块名称");
+                String code = safeText(node, "code");
+                String name = safeText(node, "name");
                 if (code != null && !code.isEmpty() && name != null && !name.isEmpty()) {
                     Concept concept = new Concept();
                     concept.setCode(code);

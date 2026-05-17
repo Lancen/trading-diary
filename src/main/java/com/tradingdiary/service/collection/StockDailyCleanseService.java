@@ -86,15 +86,16 @@ public class StockDailyCleanseService {
     }
 
     /**
-     * Cleanse stock_zh_a_hist JSON for a single stock (historical OHLCV data).
-     * The hist JSON has "日期" field per record but no "代码" — code provided as parameter.
+     * Cleanse stock_zh_a_hist_tx JSON for a single stock (腾讯历史 OHLCV 数据).
+     * The TX API uses English field names: date, open, close, high, low, amount.
+     * Note: TX API does not return volume (成交量) — set to null.
      *
-     * @param rawJson   raw JSON array from stock_zh_a_hist API
+     * @param rawJson   raw JSON array from stock_zh_a_hist_tx API
      * @param stockCode the stock code
      * @return number of records inserted/updated
      */
     public int cleanseHistJson(String rawJson, String stockCode) {
-        List<StockDaily> entities = parseHistStockDailyList(rawJson, stockCode);
+        List<StockDaily> entities = parseHistStockDailyListTx(rawJson, stockCode);
         if (entities.isEmpty()) {
             log.debug("No hist records parsed for {}", stockCode);
             return 0;
@@ -132,7 +133,7 @@ public class StockDailyCleanseService {
         return count;
     }
 
-    private List<StockDaily> parseHistStockDailyList(String rawJson, String stockCode) {
+    private List<StockDaily> parseHistStockDailyListTx(String rawJson, String stockCode) {
         List<StockDaily> result = new ArrayList<>();
         try {
             JsonNode root = objectMapper.readTree(rawJson);
@@ -144,27 +145,29 @@ public class StockDailyCleanseService {
             for (JsonNode node : root) {
                 StockDaily daily = new StockDaily();
                 daily.setStockCode(stockCode);
-                String dateStr = safeText(node, "日期");
+                // 腾讯 API: "date" field in ISO format "2026-05-06T00:00:00.000"
+                String dateStr = safeText(node, "date");
                 if (dateStr == null || dateStr.isEmpty()) {
                     continue;
                 }
                 try {
-                    daily.setTradeDate(LocalDate.parse(dateStr));
+                    daily.setTradeDate(LocalDate.parse(dateStr.substring(0, 10)));
                 } catch (Exception e) {
                     log.debug("Failed to parse trade date: {}", dateStr);
                     continue;
                 }
-                daily.setOpen(safeDecimal(node, "开盘"));
-                daily.setHigh(safeDecimal(node, "最高"));
-                daily.setLow(safeDecimal(node, "最低"));
-                daily.setClose(safeDecimal(node, "收盘"));
-                daily.setVolume(safeLong(node, "成交量"));
-                daily.setAmount(safeDecimal(node, "成交额"));
+                daily.setOpen(safeDecimal(node, "open"));
+                daily.setHigh(safeDecimal(node, "high"));
+                daily.setLow(safeDecimal(node, "low"));
+                daily.setClose(safeDecimal(node, "close"));
+                // 腾讯 API 不含成交量字段
+                daily.setVolume(safeLong(node, "volume"));
+                daily.setAmount(safeDecimal(node, "amount"));
                 result.add(daily);
             }
         } catch (Exception e) {
             log.error("Failed to parse stock hist JSON for {}", stockCode, e);
-            throw new RuntimeException("Failed to parse stock hist data: " + e.getMessage(), e);
+            throw new RuntimeException("解析个股历史日线数据失败: " + e.getMessage(), e);
         }
         return result;
     }

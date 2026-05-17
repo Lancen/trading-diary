@@ -47,34 +47,42 @@ public class AKToolsClient {
     }
 
     public String fetchStockSpot() {
-        log.info("Fetching stock spot data from AKTools");
-        return get("/api/public/stock_zh_a_spot_em");
+        log.info("Fetching stock spot data from AKTools (新浪)");
+        return get("/api/public/stock_zh_a_spot");
     }
 
     public String fetchStockDaily(String symbol, String startDate, String endDate) {
-        log.info("Fetching stock daily data: symbol={}, startDate={}, endDate={}", symbol, startDate, endDate);
-        return get("/api/public/stock_zh_a_hist?symbol={symbol}&period=daily&start_date={startDate}&end_date={endDate}&adjust=qfq",
+        log.info("Fetching stock daily data (腾讯): symbol={}, startDate={}, endDate={}", symbol, startDate, endDate);
+        return get("/api/public/stock_zh_a_hist_tx?symbol={symbol}&start_date={startDate}&end_date={endDate}",
                 symbol, startDate, endDate);
     }
 
     public String fetchIndustryNames() {
-        log.info("Fetching industry board names");
-        return get("/api/public/stock_board_industry_name_em");
+        log.info("Fetching industry board names (同花顺)");
+        return get("/api/public/stock_board_industry_name_ths");
     }
 
+    /**
+     * @deprecated 东方财富接口被封，行业成分股改用同花顺 Playwright 抓取
+     */
+    @Deprecated
     public String fetchIndustryCons(String symbol) {
-        log.info("Fetching industry constituents: symbol={}", symbol);
-        return get("/api/public/stock_board_industry_cons_em?symbol={symbol}", symbol);
+        log.warn("fetchIndustryCons is deprecated — 行业成分股已改为 Playwright 抓取同花顺");
+        return "[]";
     }
 
     public String fetchConceptNames() {
-        log.info("Fetching concept board names");
-        return get("/api/public/stock_board_concept_name_em");
+        log.info("Fetching concept board names (同花顺)");
+        return get("/api/public/stock_board_concept_name_ths");
     }
 
+    /**
+     * @deprecated 东方财富接口被封，概念成分股改用同花顺 Playwright 抓取
+     */
+    @Deprecated
     public String fetchConceptCons(String symbol) {
-        log.info("Fetching concept constituents: symbol={}", symbol);
-        return get("/api/public/stock_board_concept_cons_em?symbol={symbol}", symbol);
+        log.warn("fetchConceptCons is deprecated — 概念成分股已改为 Playwright 抓取同花顺");
+        return "[]";
     }
 
     public String fetchTradeCalendar() {
@@ -93,32 +101,27 @@ public class AKToolsClient {
     }
 
     /**
-     * Fetch industry constituents for a batch of symbols with rate limiting between calls.
-     * Iterates through each symbol, calling fetchIndustryCons individually with delays.
-     *
-     * @param symbols list of industry board symbols
-     * @return list of raw JSON responses, one per symbol
+     * @deprecated 东方财富接口被封，改用同花顺 Playwright 抓取
      */
+    @Deprecated
     public List<String> fetchIndustryConsBatch(List<String> symbols) {
+        log.warn("fetchIndustryConsBatch is deprecated");
         List<String> results = new ArrayList<>();
-        for (String symbol : symbols) {
-            results.add(fetchIndustryCons(symbol));
-            sleepBetweenCalls();
+        for (int i = 0; i < symbols.size(); i++) {
+            results.add("[]");
         }
         return results;
     }
 
     /**
-     * Fetch concept constituents for a batch of symbols with rate limiting between calls.
-     *
-     * @param symbols list of concept board symbols
-     * @return list of raw JSON responses, one per symbol
+     * @deprecated 东方财富接口被封，改用同花顺 Playwright 抓取
      */
+    @Deprecated
     public List<String> fetchConceptConsBatch(List<String> symbols) {
+        log.warn("fetchConceptConsBatch is deprecated");
         List<String> results = new ArrayList<>();
-        for (String symbol : symbols) {
-            results.add(fetchConceptCons(symbol));
-            sleepBetweenCalls();
+        for (int i = 0; i < symbols.size(); i++) {
+            results.add("[]");
         }
         return results;
     }
