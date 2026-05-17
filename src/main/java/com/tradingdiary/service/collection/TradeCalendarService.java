@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -72,15 +71,15 @@ public class TradeCalendarService {
         List<LocalDate> dates = new ArrayList<>();
         try {
             JsonNode root = objectMapper.readTree(responseJson);
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
             if (root.isArray()) {
                 for (JsonNode node : root) {
                     JsonNode dateNode = node.get("trade_date");
                     if (dateNode != null && !dateNode.isNull()) {
                         String dateStr = dateNode.asText();
+                        // 兼容两种格式: "yyyy-MM-dd" 和 "yyyy-MM-ddTHH:mm:ss.SSS"
                         try {
-                            dates.add(LocalDate.parse(dateStr, formatter));
+                            dates.add(LocalDate.parse(dateStr.substring(0, 10)));
                         } catch (Exception e) {
                             log.warn("Failed to parse trade date: {}", dateStr);
                         }
