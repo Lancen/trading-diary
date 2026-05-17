@@ -79,6 +79,39 @@ public class StockDailyCleanseService {
         return count;
     }
 
+    /**
+     * 批量清洗多只股票的历史日线数据，所有写入共用同一个 BATCH SqlSession。
+     */
+    @Transactional
+    public int cleanseHistBatch(List<String> rawJsonList, List<String> stockCodes) {
+        try (SqlSession session = sqlSessionFactory.openSession(ExecutorType.BATCH)) {
+            StockDailyMapper mapper = session.getMapper(StockDailyMapper.class);
+            int total = 0;
+            for (int i = 0; i < rawJsonList.size(); i++) {
+                List<StockDaily> entities = parseHistStockDailyListTx(rawJsonList.get(i), stockCodes.get(i));
+                for (StockDaily e : entities) {
+                    List<StockDaily> existing = mapper.selectList(
+                            new LambdaQueryWrapper<StockDaily>()
+                                    .eq(StockDaily::getStockCode, e.getStockCode())
+                                    .eq(StockDaily::getTradeDate, e.getTradeDate())
+                    );
+                    if (!existing.isEmpty()) {
+                        e.setId(existing.get(0).getId());
+                        mapper.updateById(e);
+                    } else {
+                        mapper.insert(e);
+                    }
+                    total++;
+                }
+                if (total > 0 && total % 500 == 0) {
+                    session.flushStatements();
+                }
+            }
+            session.flushStatements();
+            return total;
+        }
+    }
+
     @Transactional
     public int cleanseHistJson(String rawJson, String stockCode) {
         List<StockDaily> entities = parseHistStockDailyListTx(rawJson, stockCode);

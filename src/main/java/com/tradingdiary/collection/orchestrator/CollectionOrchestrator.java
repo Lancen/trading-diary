@@ -483,21 +483,35 @@ public class CollectionOrchestrator {
 
         int success = 0;
         int failed = 0;
+        // 每 50 只股票 API 调用后批量写一次 DB
+        List<String> batchCodes = new ArrayList<>();
+        List<String> batchJson = new ArrayList<>();
+
         for (StockInfo stock : stocks) {
             String code = stock.getCode();
-            if (code == null || code.isBlank()) {
-                continue;
-            }
+            if (code == null || code.isBlank()) continue;
+
             try {
                 String rawJson = aktoolsClient.fetchStockDaily(code, start, end);
-                int records = stockDailyCleanseService.cleanseHistJson(rawJson, code);
-                log.debug("Stock {} backfilled: {} records", code, records);
+                batchCodes.add(code);
+                batchJson.add(rawJson);
                 success++;
+
+                if (batchCodes.size() >= 50) {
+                    stockDailyCleanseService.cleanseHistBatch(batchJson, batchCodes);
+                    batchCodes.clear();
+                    batchJson.clear();
+                }
             } catch (Exception e) {
                 log.error("Failed to backfill stock {}", code, e);
                 failed++;
             }
             aktoolsClient.sleepBetweenCalls();
+        }
+
+        // 处理剩余不足 50 只的
+        if (!batchCodes.isEmpty()) {
+            stockDailyCleanseService.cleanseHistBatch(batchJson, batchCodes);
         }
 
         String result = String.format("股票日线补采完成: 成功 %d 只，失败 %d 只（共 %d 只）",
