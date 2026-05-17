@@ -230,8 +230,10 @@ public class CollectionOrchestrator {
         throw new RuntimeException("所有采集尝试已用尽");
     }
 
+    private static final java.time.format.DateTimeFormatter YMD = java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd");
+
     private String dispatchFetch(String dataType, LocalDate tradeDate) {
-        String dateStr = tradeDate != null ? tradeDate.toString() : "";
+        String dateStr = tradeDate != null ? tradeDate.format(YMD) : "";
         switch (dataType) {
             case "STOCK_INFO":
                 return aktoolsClient.fetchStockSpot();

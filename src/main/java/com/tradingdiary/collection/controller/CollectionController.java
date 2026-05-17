@@ -5,7 +5,9 @@ import com.tradingdiary.collection.model.CollectionStatusVO;
 import com.tradingdiary.collection.model.GapReportVO;
 import com.tradingdiary.collection.orchestrator.CollectionOrchestrator;
 import com.tradingdiary.entity.DataCollectionLog;
+import com.tradingdiary.entity.TradeCalendar;
 import com.tradingdiary.mapper.DataCollectionLogMapper;
+import com.tradingdiary.mapper.TradeCalendarMapper;
 import com.tradingdiary.model.ApiResponse;
 import com.tradingdiary.service.GapDetectionService;
 import com.tradingdiary.service.collection.ConstituentImportService;
@@ -44,15 +46,18 @@ public class CollectionController {
     private final GapDetectionService gapDetectionService;
     private final CollectionOrchestrator orchestrator;
     private final ConstituentImportService constituentImportService;
+    private final TradeCalendarMapper tradeCalendarMapper;
 
     public CollectionController(DataCollectionLogMapper logMapper,
                                  GapDetectionService gapDetectionService,
                                  CollectionOrchestrator orchestrator,
-                                 ConstituentImportService constituentImportService) {
+                                 ConstituentImportService constituentImportService,
+                                 TradeCalendarMapper tradeCalendarMapper) {
         this.logMapper = logMapper;
         this.gapDetectionService = gapDetectionService;
         this.orchestrator = orchestrator;
         this.constituentImportService = constituentImportService;
+        this.tradeCalendarMapper = tradeCalendarMapper;
     }
 
     @GetMapping("/status")
@@ -99,13 +104,24 @@ public class CollectionController {
         if (!DATA_TYPE_LABELS.containsKey(dataType)) {
             return ApiResponse.fail(400, "未知数据类型: " + dataType);
         }
-        // 异步执行：新线程后台处理，API 立即返回
-        LocalDate today = LocalDate.now();
+        // 取最近交易日（非交易日无数据）
+        LocalDate tradeDate = getLatestTradeDate();
         new Thread(() -> {
-            String result = orchestrator.orchestrate(dataType, today);
-            log.info("异步采集完成: {} {} → {}", dataType, today, result);
+            String result = orchestrator.orchestrate(dataType, tradeDate);
+            log.info("异步采集完成: {} {} → {}", dataType, tradeDate, result);
         }, "collection-" + dataType).start();
-        return ApiResponse.ok("任务已提交，正在后台执行");
+        return ApiResponse.ok("任务已提交（交易日: " + tradeDate + "），正在后台执行");
+    }
+
+    private LocalDate getLatestTradeDate() {
+        TradeCalendar cal = tradeCalendarMapper.selectOne(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<TradeCalendar>()
+                        .eq(TradeCalendar::getIsTradingDay, 1)
+                        .le(TradeCalendar::getTradeDate, LocalDate.now())
+                        .orderByDesc(TradeCalendar::getTradeDate)
+                        .last("LIMIT 1")
+        );
+        return cal != null ? cal.getTradeDate() : LocalDate.now();
     }
 
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(CollectionController.class);
