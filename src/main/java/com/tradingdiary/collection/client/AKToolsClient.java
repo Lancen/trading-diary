@@ -128,10 +128,14 @@ public class AKToolsClient {
 
     private String get(String path, Object... uriVariables) {
         rateLimit();
-        return restClient.get()
-                .uri(path, uriVariables)
-                .retrieve()
-                .body(String.class);
+        try {
+            return restClient.get()
+                    .uri(path, uriVariables)
+                    .retrieve()
+                    .body(String.class);
+        } catch (Exception e) {
+            throw new RuntimeException("AKTools 请求失败 " + path + ": " + e.getMessage(), e);
+        }
     }
 
     /**

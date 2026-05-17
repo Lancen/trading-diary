@@ -222,7 +222,8 @@ public class CollectionOrchestrator {
                     }
                     backoffMs *= 2;
                 } else {
-                    throw new RuntimeException("共 " + MAX_RETRIES + " 次采集尝试全部失败", e);
+                    String rootCause = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+                    throw new RuntimeException("共 " + MAX_RETRIES + " 次采集尝试全部失败，错误: " + rootCause, e);
                 }
             }
         }
