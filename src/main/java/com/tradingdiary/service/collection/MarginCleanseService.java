@@ -112,6 +112,7 @@ public class MarginCleanseService {
             if (!existingByCode.containsKey(code)) {
                 MarginStock ms = new MarginStock();
                 ms.setStockCode(code);
+                ms.setStockName(code);
                 ms.setExchange(exchange);
                 ms.setSnapDate(tradeDate);
                 toInsert.add(ms);
@@ -165,7 +166,10 @@ public class MarginCleanseService {
 
             for (JsonNode node : root) {
                 MarginDaily daily = new MarginDaily();
-                daily.setStockCode(safeText(node, "标的证券代码"));
+                // SSE 用 "标的证券代码"，SZSE 用 "证券代码"
+                String code = safeText(node, "标的证券代码");
+                if (code == null) code = safeText(node, "证券代码");
+                daily.setStockCode(code);
                 daily.setTradeDate(tradeDate);
                 daily.setExchange(exchange);
                 daily.setMarginBalance(safeDecimal(node, "融资余额"));
