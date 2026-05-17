@@ -102,9 +102,16 @@ public class CollectionController {
         if (!DATA_TYPE_LABELS.containsKey(dataType)) {
             return ApiResponse.fail(400, "未知数据类型: " + dataType);
         }
-        String result = orchestrator.orchestrate(dataType, LocalDate.now());
-        return ApiResponse.ok(result);
+        // 异步执行：新线程后台处理，API 立即返回
+        LocalDate today = LocalDate.now();
+        new Thread(() -> {
+            String result = orchestrator.orchestrate(dataType, today);
+            log.info("异步采集完成: {} {} → {}", dataType, today, result);
+        }, "collection-" + dataType).start();
+        return ApiResponse.ok("任务已提交，正在后台执行");
     }
+
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(CollectionController.class);
 
     @PostMapping("/backfill")
     public ApiResponse<String> backfill(@RequestBody BackfillRequest request) {
@@ -120,13 +127,26 @@ public class CollectionController {
         if (request.getEndDate().isBefore(request.getStartDate())) {
             return ApiResponse.fail(400, "endDate 不能早于 startDate");
         }
-        String result;
-        if ("STOCK_DAILY".equals(request.getDataType())) {
-            result = orchestrator.backfillStockDaily(request.getStartDate(), request.getEndDate());
-        } else {
-            result = orchestrator.backfillMarginByWeek(request);
-        }
-        return ApiResponse.ok(result);
+        // 异步执行补采（耗时可能很长）
+        final String dt = request.getDataType();
+        final String exchange = request.getExchange();
+        final LocalDate start = request.getStartDate();
+        final LocalDate end = request.getEndDate();
+        new Thread(() -> {
+            String result;
+            if ("STOCK_DAILY".equals(dt)) {
+                result = orchestrator.backfillStockDaily(start, end);
+            } else {
+                com.tradingdiary.collection.model.BackfillRequest req = new com.tradingdiary.collection.model.BackfillRequest();
+                req.setDataType(dt);
+                req.setExchange(exchange);
+                req.setStartDate(start);
+                req.setEndDate(end);
+                result = orchestrator.backfillMarginByWeek(req);
+            }
+            log.info("异步补采完成: {} {}~{} → {}", dt, start, end, result);
+        }, "backfill-" + dt).start();
+        return ApiResponse.ok("补采任务已提交，正在后台执行");
     }
 
     @GetMapping("/constituents/files")

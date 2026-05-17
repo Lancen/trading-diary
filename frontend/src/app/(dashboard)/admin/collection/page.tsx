@@ -114,10 +114,12 @@ export default function CollectionPage() {
   async function handleTrigger(dataType: string) {
     setTriggering((prev) => new Set(prev).add(dataType));
     try {
-      const res = await api.post(`api/v1/admin/collection/trigger/${dataType}`).json<{ code: number; msg?: string }>();
+      const res = await api.post(`api/v1/admin/collection/trigger/${dataType}`).json<{ code: number; data?: string; msg?: string }>();
       if (res.code === 200) {
-        toast(`采集已触发: ${dataType}`, "success");
-        fetchStatus();
+        toast(`任务已提交: ${dataType}`, "success");
+        // 异步执行，延迟刷新状态
+        setTimeout(() => fetchStatus(), 3000);
+        setTimeout(() => fetchStatus(), 8000);
       } else {
         toast(`触发失败: ${res.msg || "未知错误"}`, "error");
       }

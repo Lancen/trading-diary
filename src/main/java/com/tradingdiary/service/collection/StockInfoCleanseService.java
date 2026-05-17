@@ -7,7 +7,6 @@ import com.tradingdiary.entity.StockInfo;
 import com.tradingdiary.mapper.StockInfoMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -55,34 +54,26 @@ public class StockInfoCleanseService {
         Map<String, StockInfo> existingByCode = existing.stream()
                 .collect(Collectors.toMap(StockInfo::getCode, e -> e, (a, b) -> a));
 
-        int count = 0;
+        List<StockInfo> toInsert = new ArrayList<>();
+        List<StockInfo> toUpdate = new ArrayList<>();
+
         for (StockInfo entity : entities) {
             StockInfo existingEntity = existingByCode.get(entity.getCode());
             if (existingEntity != null) {
                 entity.setId(existingEntity.getId());
-                stockInfoMapper.updateById(entity);
+                toUpdate.add(entity);
             } else {
-                try {
-                    stockInfoMapper.insert(entity);
-                } catch (DuplicateKeyException e) {
-                    // Race condition: another thread inserted, query and update
-                    StockInfo race = stockInfoMapper.selectOne(
-                            new LambdaQueryWrapper<StockInfo>()
-                                    .eq(StockInfo::getCode, entity.getCode())
-                                    .eq(StockInfo::getSnapshotDate, snapshotDate)
-                    );
-                    if (race != null) {
-                        entity.setId(race.getId());
-                        stockInfoMapper.updateById(entity);
-                    } else {
-                        throw e;
-                    }
-                }
+                toInsert.add(entity);
             }
-            count++;
         }
 
-        log.info("StockInfo cleanse complete: {} records for {}", count, snapshotDate);
+        // 分批写入，每 500 条提交一次
+        int count = 0;
+        count += batchInsert(toInsert, 500);
+        count += batchUpdate(toUpdate, 500);
+
+        log.info("StockInfo cleanse complete: {} records for {} (insert={}, update={})",
+                count, snapshotDate, toInsert.size(), toUpdate.size());
         return count;
     }
 
@@ -155,5 +146,29 @@ public class StockInfoCleanseService {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private int batchInsert(List<StockInfo> list, int batchSize) {
+        int count = 0;
+        for (int i = 0; i < list.size(); i += batchSize) {
+            int end = Math.min(i + batchSize, list.size());
+            for (int j = i; j < end; j++) {
+                stockInfoMapper.insert(list.get(j));
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private int batchUpdate(List<StockInfo> list, int batchSize) {
+        int count = 0;
+        for (int i = 0; i < list.size(); i += batchSize) {
+            int end = Math.min(i + batchSize, list.size());
+            for (int j = i; j < end; j++) {
+                stockInfoMapper.updateById(list.get(j));
+                count++;
+            }
+        }
+        return count;
     }
 }
