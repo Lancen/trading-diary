@@ -8,6 +8,7 @@ import com.tradingdiary.entity.DataCollectionLog;
 import com.tradingdiary.mapper.DataCollectionLogMapper;
 import com.tradingdiary.model.ApiResponse;
 import com.tradingdiary.service.GapDetectionService;
+import com.tradingdiary.service.collection.ConstituentImportService;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -45,13 +46,16 @@ public class CollectionController {
     private final DataCollectionLogMapper logMapper;
     private final GapDetectionService gapDetectionService;
     private final CollectionOrchestrator orchestrator;
+    private final ConstituentImportService constituentImportService;
 
     public CollectionController(DataCollectionLogMapper logMapper,
                                  GapDetectionService gapDetectionService,
-                                 CollectionOrchestrator orchestrator) {
+                                 CollectionOrchestrator orchestrator,
+                                 ConstituentImportService constituentImportService) {
         this.logMapper = logMapper;
         this.gapDetectionService = gapDetectionService;
         this.orchestrator = orchestrator;
+        this.constituentImportService = constituentImportService;
     }
 
     @GetMapping("/status")
@@ -121,6 +125,24 @@ public class CollectionController {
             result = orchestrator.backfillStockDaily(request.getStartDate(), request.getEndDate());
         } else {
             result = orchestrator.backfillMarginByWeek(request);
+        }
+        return ApiResponse.ok(result);
+    }
+
+    @GetMapping("/constituents/files")
+    public ApiResponse<List<Map<String, Object>>> constituentFiles() {
+        return ApiResponse.ok(constituentImportService.listFiles());
+    }
+
+    @PostMapping("/constituents/import")
+    public ApiResponse<Map<String, Object>> importConstituents(@RequestBody Map<String, String> body) {
+        String filename = body.get("filename");
+        if (filename == null || filename.isBlank()) {
+            return ApiResponse.fail(400, "filename 不能为空");
+        }
+        Map<String, Object> result = constituentImportService.importFromFile(filename);
+        if ("failed".equals(result.get("status"))) {
+            return ApiResponse.fail(500, "导入失败: " + result.get("error"));
         }
         return ApiResponse.ok(result);
     }

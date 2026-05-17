@@ -27,8 +27,9 @@
 import argparse
 import asyncio
 import json
+import os
 import sys
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 try:
     from playwright.async_api import async_playwright
@@ -139,6 +140,7 @@ async def main():
 
     result = {
         "fetched_at": datetime.now(timezone.utc).isoformat(),
+        "fetched_date": date.today().isoformat(),
         "source": "同花顺 (10jqka.com.cn)",
         "industries": [],
         "concepts": [],
@@ -199,14 +201,19 @@ async def main():
     print(f"\n✅ 完成: {len(result['industries'])} 个行业({ind_total} 条), "
           f"{len(result['concepts'])} 个概念({con_total} 条)")
 
-    # 输出
+    # 输出（默认保存到 data/constituents/ 目录，文件名含日期）
+    today = date.today().isoformat()
+    out_dir = "data/constituents"
+    out_file = args.output or os.path.join(out_dir, f"constituents-{today}.json")
+    os.makedirs(os.path.dirname(out_file), exist_ok=True)
+
     output = json.dumps(result, ensure_ascii=False, indent=2)
-    if args.output:
-        with open(args.output, "w", encoding="utf-8") as f:
-            f.write(output)
-        print(f"已保存到 {args.output}")
-    else:
-        print(output)
+    with open(out_file, "w", encoding="utf-8") as f:
+        f.write(output)
+
+    print(f"已保存到 {out_file}")
+    print(f"  行业: {len(result['industries'])} 个板块, {ind_total} 条成分股关系")
+    print(f"  概念: {len(result['concepts'])} 个板块, {con_total} 条成分股关系")
 
 
 if __name__ == "__main__":

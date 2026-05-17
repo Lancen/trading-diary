@@ -54,9 +54,39 @@ export default function CollectionPage() {
   const [loading, setLoading] = useState(true);
   const [logsLoading, setLogsLoading] = useState(false);
   const [triggering, setTriggering] = useState<Set<string>>(new Set());
+  const [constituentFiles, setConstituentFiles] = useState<any[]>([]);
+  const [filesLoading, setFilesLoading] = useState(false);
+  const [importingFile, setImportingFile] = useState<string | null>(null);
   const toast = useToast((s) => s.toast);
 
-  useEffect(() => { fetchStatus(); }, []);
+  useEffect(() => { fetchStatus(); fetchConstituentFiles(); }, []);
+
+  async function fetchConstituentFiles() {
+    setFilesLoading(true);
+    try {
+      const res = await api.get("api/v1/admin/collection/constituents/files").json<{ code: number; data: any[] }>();
+      setConstituentFiles(res.data || []);
+    } catch (e) { console.error(e); }
+    finally { setFilesLoading(false); }
+  }
+
+  async function handleImportConstituents(filename: string) {
+    setImportingFile(filename);
+    try {
+      const res = await api.post("api/v1/admin/collection/constituents/import", {
+        json: { filename },
+      }).json<{ code: number; data?: any; msg?: string }>();
+      if (res.code === 200) {
+        toast(`成分股导入成功: ${res.data?.industryRelations || 0} 行业 + ${res.data?.conceptRelations || 0} 概念`, "success");
+      } else {
+        toast(`导入失败: ${res.msg || "未知错误"}`, "error");
+      }
+    } catch (e) {
+      toast("导入请求失败", "error");
+    } finally {
+      setImportingFile(null);
+    }
+  }
 
   async function fetchStatus() {
     setLoading(true);
@@ -168,6 +198,55 @@ export default function CollectionPage() {
           })}
         </div>
       )}
+
+      {/* 成分股数据文件 */}
+      <div className="rounded-lg border bg-white p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold">成分股数据</h2>
+          <button onClick={fetchConstituentFiles} disabled={filesLoading} className="text-sm text-primary hover:underline">
+            {filesLoading ? "加载中..." : "刷新"}
+          </button>
+        </div>
+        <p className="text-xs text-gray-500 mb-2">数据来源: Playwright 抓取同花顺，存放在 data/constituents/ 目录。选择文件导入到数据库。</p>
+        {constituentFiles.length === 0 ? (
+          <div className="text-sm text-gray-400 py-4 text-center">暂无成分股数据文件</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-gray-500">
+                  <th className="py-2 pr-4 font-medium">文件名</th>
+                  <th className="py-2 pr-4 font-medium">采集日期</th>
+                  <th className="py-2 pr-4 font-medium">行业</th>
+                  <th className="py-2 pr-4 font-medium">概念</th>
+                  <th className="py-2 pr-4 font-medium">关系总数</th>
+                  <th className="py-2 font-medium">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {constituentFiles.map((f: any) => (
+                  <tr key={f.filename} className="border-b last:border-0">
+                    <td className="py-2 pr-4 font-mono text-xs">{f.filename}</td>
+                    <td className="py-2 pr-4">{f.fetchedDate || "-"}</td>
+                    <td className="py-2 pr-4">{f.industryCount ?? "-"}</td>
+                    <td className="py-2 pr-4">{f.conceptCount ?? "-"}</td>
+                    <td className="py-2 pr-4">{f.totalRelations ?? "-"}</td>
+                    <td className="py-2">
+                      <button
+                        onClick={() => handleImportConstituents(f.filename)}
+                        disabled={importingFile === f.filename}
+                        className="rounded bg-primary px-3 py-1 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                      >
+                        {importingFile === f.filename ? "导入中..." : "导入"}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
