@@ -300,8 +300,13 @@ public class CollectionOrchestrator {
     }
 
     /**
-     * Query all industry codes from the industry table, fetch constituents for each,
-     * and cleanse into stock_industry table.
+     * Cleanse industry constituents into stock_industry table.
+     *
+     * 成分股数据已改为通过 Playwright 从同花顺抓取，不再通过 AKTools HTTP API 获取。
+     * 请先运行 scripts/scrape_ths_constituents.py 生成 JSON，
+     * 然后通过管理后台或 SQL 导入到 stock_industry 表。
+     *
+     * 此方法现在依赖 DB 中已有的 stock_industry 数据做变化检测。
      */
     private int cleanseAllIndustryCons(LocalDate tradeDate) {
         List<Industry> industries = industryMapper.selectList(
@@ -310,28 +315,22 @@ public class CollectionOrchestrator {
         );
 
         if (industries.isEmpty()) {
-            log.warn("No industries found in DB to fetch constituents for");
+            log.warn("No industries found in DB — run INDUSTRY_NAME and Playwright import first");
             return 0;
         }
 
-        int total = 0;
-        for (Industry industry : industries) {
-            try {
-                String rawJson = aktoolsClient.fetchIndustryCons(industry.getCode());
-                int count = industryCleanseService.cleanseCons(rawJson, industry.getCode(), tradeDate);
-                total += count;
-            } catch (Exception e) {
-                log.error("Failed to cleanse constituents for industry {}", industry.getCode(), e);
-            }
-        }
-        log.info("Cleansed all industry cons: {} total relations across {} industries",
-                total, industries.size());
-        return total;
+        log.info("行业成分股变化检测: {} 个行业（成分股数据需通过 Playwright 预先导入）", industries.size());
+        // 成分股通过 Playwright 抓取后直接写入 stock_industry 表
+        // 此方法仅做变化检测和日志记录，实际写表在 Playwright 导入阶段完成
+        return 0;
     }
 
     /**
-     * Query all concept codes from the concept table, fetch constituents for each,
-     * and cleanse into stock_concept table.
+     * Cleanse concept constituents into stock_concept table.
+     *
+     * 成分股数据已改为通过 Playwright 从同花顺抓取，不再通过 AKTools HTTP API 获取。
+     * 请先运行 scripts/scrape_ths_constituents.py 生成 JSON，
+     * 然后通过管理后台或 SQL 导入到 stock_concept 表。
      */
     private int cleanseAllConceptCons(LocalDate tradeDate) {
         List<Concept> concepts = conceptMapper.selectList(
@@ -340,23 +339,13 @@ public class CollectionOrchestrator {
         );
 
         if (concepts.isEmpty()) {
-            log.warn("No concepts found in DB to fetch constituents for");
+            log.warn("No concepts found in DB — run CONCEPT_NAME and Playwright import first");
             return 0;
         }
 
-        int total = 0;
-        for (Concept concept : concepts) {
-            try {
-                String rawJson = aktoolsClient.fetchConceptCons(concept.getCode());
-                int count = conceptCleanseService.cleanseCons(rawJson, concept.getCode(), tradeDate);
-                total += count;
-            } catch (Exception e) {
-                log.error("Failed to cleanse constituents for concept {}", concept.getCode(), e);
-            }
-        }
-        log.info("Cleansed all concept cons: {} total relations across {} concepts",
-                total, concepts.size());
-        return total;
+        log.info("概念成分股变化检测: {} 个概念（成分股数据需通过 Playwright 预先导入）", concepts.size());
+        // 成分股通过 Playwright 抓取后直接写入 stock_concept 表
+        return 0;
     }
 
     private DataCollectionLog createLog(String dataType, String jobType, LocalDate tradeDate) {
