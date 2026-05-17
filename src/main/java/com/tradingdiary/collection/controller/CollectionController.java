@@ -40,6 +40,8 @@ public class CollectionController {
         DATA_TYPE_LABELS.put("CONCEPT_NAME", "概念板块分类");
         DATA_TYPE_LABELS.put("MARGIN_DAILY_SSE", "两融明细(沪市)");
         DATA_TYPE_LABELS.put("MARGIN_DAILY_SZSE", "两融明细(深市)");
+        DATA_TYPE_LABELS.put("MARGIN_MACRO_SSE", "两融总量(沪市)");
+        DATA_TYPE_LABELS.put("MARGIN_MACRO_SZSE", "两融总量(深市)");
     }
 
     private final DataCollectionLogMapper logMapper;

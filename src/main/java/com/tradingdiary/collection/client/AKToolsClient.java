@@ -85,6 +85,16 @@ public class AKToolsClient {
         return "[]";
     }
 
+    public String fetchMacroMarginSh() {
+        log.info("Fetching macro margin SSE");
+        return get("/api/public/macro_china_market_margin_sh");
+    }
+
+    public String fetchMacroMarginSz() {
+        log.info("Fetching macro margin SZSE");
+        return get("/api/public/macro_china_market_margin_sz");
+    }
+
     public String fetchTradeCalendar() {
         log.info("Fetching trade calendar");
         return get("/api/public/tool_trade_date_hist_sina");

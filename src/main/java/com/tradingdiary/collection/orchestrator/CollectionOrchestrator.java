@@ -18,6 +18,7 @@ import com.tradingdiary.mapper.TradeCalendarMapper;
 import com.tradingdiary.service.collection.ConceptCleanseService;
 import com.tradingdiary.service.collection.IndustryCleanseService;
 import com.tradingdiary.service.collection.MarginCleanseService;
+import com.tradingdiary.service.collection.MarginMacroCleanseService;
 import com.tradingdiary.service.collection.StockDailyCleanseService;
 import com.tradingdiary.service.collection.StockInfoCleanseService;
 import com.tradingdiary.service.collection.TradeCalendarService;
@@ -54,6 +55,7 @@ public class CollectionOrchestrator {
     private final IndustryCleanseService industryCleanseService;
     private final ConceptCleanseService conceptCleanseService;
     private final MarginCleanseService marginCleanseService;
+    private final MarginMacroCleanseService marginMacroCleanseService;
     private final TradeCalendarService tradeCalendarService;
     private final TradeCalendarMapper tradeCalendarMapper;
     private final IndustryMapper industryMapper;
@@ -68,6 +70,7 @@ public class CollectionOrchestrator {
                                   IndustryCleanseService industryCleanseService,
                                   ConceptCleanseService conceptCleanseService,
                                   MarginCleanseService marginCleanseService,
+                                  MarginMacroCleanseService marginMacroCleanseService,
                                   TradeCalendarService tradeCalendarService,
                                   TradeCalendarMapper tradeCalendarMapper,
                                   IndustryMapper industryMapper,
@@ -81,6 +84,7 @@ public class CollectionOrchestrator {
         this.industryCleanseService = industryCleanseService;
         this.conceptCleanseService = conceptCleanseService;
         this.marginCleanseService = marginCleanseService;
+        this.marginMacroCleanseService = marginMacroCleanseService;
         this.tradeCalendarService = tradeCalendarService;
         this.tradeCalendarMapper = tradeCalendarMapper;
         this.industryMapper = industryMapper;
@@ -258,6 +262,10 @@ public class CollectionOrchestrator {
                 return aktoolsClient.fetchMarginDetailSse(dateStr);
             case "MARGIN_DAILY_SZSE":
                 return aktoolsClient.fetchMarginDetailSzse(dateStr);
+            case "MARGIN_MACRO_SSE":
+                return aktoolsClient.fetchMacroMarginSh();
+            case "MARGIN_MACRO_SZSE":
+                return aktoolsClient.fetchMacroMarginSz();
             default:
                 throw new IllegalArgumentException("未知数据类型: " + dataType);
         }
@@ -323,6 +331,12 @@ public class CollectionOrchestrator {
                 break;
             case "TRADE_CALENDAR":
                 recordCount = tradeCalendarService.syncTradeCalendar();
+                break;
+            case "MARGIN_MACRO_SSE":
+                recordCount = marginMacroCleanseService.cleanse(rawJson, "SSE");
+                break;
+            case "MARGIN_MACRO_SZSE":
+                recordCount = marginMacroCleanseService.cleanse(rawJson, "SZSE");
                 break;
             default:
                 throw new IllegalArgumentException("未知数据类型: " + dataType);
