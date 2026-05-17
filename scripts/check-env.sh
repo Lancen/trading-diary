@@ -16,9 +16,10 @@ fi
 
 # 后端端口 8080
 echo -n "[port:8080] "
-if lsof -ti:8080 >/dev/null 2>&1; then
+if lsof -ti :8080 -sTCP:LISTEN >/dev/null 2>&1; then
     echo "⚠️  已占用（可能是后端运行中）"
 else
+  
     echo "✅ 空闲"
 fi
 
@@ -33,7 +34,7 @@ fi
 
 # 前端端口 3000
 echo -n "[port:3000] "
-if lsof -ti:3000 >/dev/null 2>&1; then
+if lsof -ti :3000 -sTCP:LISTEN >/dev/null 2>&1; then
     echo "⚠️  已占用（可能是前端运行中）"
 else
     echo "✅ 空闲"

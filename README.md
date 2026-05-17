@@ -23,11 +23,20 @@
 # 环境检查
 scripts/check-env.sh
 
+# AKTools（行情数据源，需先 pip3 install aktools）
+python3 -m aktools --host 127.0.0.1 --port 8081 &
+
 # 后端
 ./gradlew bootRun --args='--spring.profiles.active=dev'
 
 # 前端
 cd frontend && pnpm install && pnpm dev
+```
+
+AKTools 提供 1000+ 行情数据接口，是数据采集模块的依赖。启动后验证：
+
+```bash
+curl http://localhost:8081/version
 ```
 
 ## 项目结构
