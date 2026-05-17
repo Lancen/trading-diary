@@ -22,9 +22,9 @@ interface GapReport {
 }
 
 function statusEmoji(status: string): string {
-  if (status === "COMPLETE") return "COMPLETE";
-  if (status === "PARTIAL") return "PARTIAL";
-  if (status === "MISSING") return "MISSING";
+  if (status === "COMPLETE") return "完整";
+  if (status === "PARTIAL") return "部分缺失";
+  if (status === "MISSING") return "未采集";
   return status;
 }
 
@@ -98,8 +98,8 @@ function BackfillDialog({
               onChange={(e) => setDataType(e.target.value)}
               className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
             >
-              <option value="MARGIN_DAILY_SSE">MARGIN_DAILY_SSE</option>
-              <option value="MARGIN_DAILY_SZSE">MARGIN_DAILY_SZSE</option>
+              <option value="MARGIN_DAILY_SSE">上交所两融</option>
+              <option value="MARGIN_DAILY_SZSE">深交所两融</option>
             </select>
           </div>
 
@@ -110,8 +110,8 @@ function BackfillDialog({
               onChange={(e) => setExchange(e.target.value)}
               className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
             >
-              <option value="SSE">SSE</option>
-              <option value="SZSE">SZSE</option>
+              <option value="SSE">上交所</option>
+              <option value="SZSE">深交所</option>
             </select>
           </div>
 
@@ -199,7 +199,7 @@ export default function MarginPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Margin Data Completeness</h1>
+        <h1 className="text-2xl font-bold">两融数据完整性</h1>
         <button
           onClick={() => openBackfillDialog()}
           className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
@@ -210,44 +210,44 @@ export default function MarginPage() {
 
       <div className="flex flex-wrap items-end gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700">Start Date</label>
+          <label className="block text-sm font-medium text-gray-700">开始日期</label>
           <input type="date" value={start} onChange={(e) => setStart(e.target.value)} className="mt-1 rounded-lg border px-3 py-2 text-sm" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">End Date</label>
+          <label className="block text-sm font-medium text-gray-700">结束日期</label>
           <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} className="mt-1 rounded-lg border px-3 py-2 text-sm" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">Exchange</label>
+          <label className="block text-sm font-medium text-gray-700">交易所</label>
           <select value={exchange} onChange={(e) => setExchange(e.target.value)} className="mt-1 rounded-lg border px-3 py-2 text-sm">
-            <option value="SSE">SSE</option>
-            <option value="SZSE">SZSE</option>
+            <option value="SSE">上交所</option>
+            <option value="SZSE">深交所</option>
           </select>
         </div>
         <button onClick={fetchGaps} disabled={loading} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
-          {loading ? "Checking..." : "Check Gaps"}
+          {loading ? "检查中..." : "检测缺口"}
         </button>
       </div>
 
       {report && (
         <div className="space-y-4">
           <div className="flex gap-4">
-            <div className="rounded-lg border bg-green-50 px-4 py-2 text-sm">Complete: {report.completeWeeks}</div>
-            <div className="rounded-lg border bg-yellow-50 px-4 py-2 text-sm">Partial: {report.partialWeeks}</div>
-            <div className="rounded-lg border bg-red-50 px-4 py-2 text-sm">Missing: {report.missingWeeks}</div>
+            <div className="rounded-lg border bg-green-50 px-4 py-2 text-sm">完整: {report.completeWeeks}</div>
+            <div className="rounded-lg border bg-yellow-50 px-4 py-2 text-sm">部分缺失: {report.partialWeeks}</div>
+            <div className="rounded-lg border bg-red-50 px-4 py-2 text-sm">未采集: {report.missingWeeks}</div>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full border text-sm">
               <thead>
                 <tr className="bg-gray-50">
-                  <th className="border px-3 py-2 text-left">Week</th>
-                  <th className="border px-3 py-2 text-left">Exchange</th>
-                  <th className="border px-3 py-2 text-right">Expected</th>
-                  <th className="border px-3 py-2 text-right">Collected</th>
-                  <th className="border px-3 py-2 text-left">Missing Dates</th>
-                  <th className="border px-3 py-2 text-center">Status</th>
-                  <th className="border px-3 py-2 text-center">Action</th>
+                  <th className="border px-3 py-2 text-left">周</th>
+                  <th className="border px-3 py-2 text-left">交易所</th>
+                  <th className="border px-3 py-2 text-right">应采</th>
+                  <th className="border px-3 py-2 text-right">已采</th>
+                  <th className="border px-3 py-2 text-left">缺失日期</th>
+                  <th className="border px-3 py-2 text-center">状态</th>
+                  <th className="border px-3 py-2 text-center">操作</th>
                 </tr>
               </thead>
               <tbody>
@@ -280,7 +280,7 @@ export default function MarginPage() {
                   );
                 })}
                 {report.weeks.length === 0 && (
-                  <tr><td colSpan={7} className="border px-3 py-4 text-center text-gray-400">No trading days in range</td></tr>
+                  <tr><td colSpan={7} className="border px-3 py-4 text-center text-gray-400">此范围无交易日</td></tr>
                 )}
               </tbody>
             </table>
