@@ -57,12 +57,12 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
                 : "text-gray-700 hover:bg-gray-200"
             }`}
           >
-            Dashboard
+            控制台
           </Link>
 
           <div className="pt-4">
             <div className="mb-1 px-3 text-xs font-semibold uppercase text-gray-400">
-              Data Collection
+              数据采集
             </div>
             <Link
               href="/admin/collection"
@@ -72,7 +72,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
                   : "text-gray-700 hover:bg-gray-200"
               }`}
             >
-              Collection Status
+              采集状态
             </Link>
             <Link
               href="/admin/collection/margin"
@@ -82,7 +82,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
                   : "text-gray-700 hover:bg-gray-200"
               }`}
             >
-              Margin Completeness
+              两融完整性
             </Link>
           </div>
         </nav>
@@ -92,7 +92,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
           className="w-full"
           onClick={handleLogout}
         >
-          Logout
+          退出登录
         </Button>
       </aside>
 
@@ -113,7 +113,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={handleLogout}>
-                Logout
+                退出登录
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
