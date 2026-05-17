@@ -11,7 +11,7 @@
 
 | 日期 | 说明 | 文档 |
 |------|------|------|
-| 2026-05-17 | 数据源紧急迁移（东方财富→新浪/腾讯/同花顺） | [CHANGELOG.md](_archive/003-data-collection-2026-05-17/CHANGELOG.md) |
+| 2026-05-17 | 数据源迁移 + 采集流程优化 | [CHANGELOG.md](_archive/003-data-collection-2026-05-17/CHANGELOG.md) |
 
 ## 进行中
 

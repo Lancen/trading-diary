@@ -57,3 +57,28 @@
 2. 还原 `AKToolsClient.java` 中的 API 端点（`git revert` 相关 commit）
 3. 还原 CleanseService 字段名
 4. 取消 `@Scheduled` 注释恢复定时任务
+
+---
+
+## 2026-05-17：采集流程优化
+
+**触发原因**：全量采集 5516 条记录耗时过长，STOCK_INFO/STOCK_DAILY 重复调用同一 API。
+
+**变更类型**：性能优化
+
+### 变更内容
+
+| 项 | 原方案 | 新方案 |
+|----|--------|--------|
+| 股票行情+日线触发 | 两个独立按钮，各自 FETCH | 合并为"股票行情（含日线）"，一次 FETCH → 两张表 CLEANSE |
+| 采集执行方式 | 同步 HTTP 阻塞等待（2-5 分钟） | 异步后台线程，API 立即返回"任务已提交" |
+| STOCK_INFO CLEANSE | 5516 条逐条 SQL | 分类后按 500 条分批写入 |
+| FETCH 复用 | 每次触发重新调 API | CLEANSE 失败后重试不重复 FETCH，复用已有 raw_data |
+| 行业/概念成分股触发 | 按钮可用但空转 | 按钮移除，数据只通过 Playwright 导入 |
+| 两融 CLEANSE 事务 | 两张表各自提交 | `@Transactional` 原子写入 |
+
+### 影响
+
+- 前端采集按钮从 9 个减为 6 个
+- STOCK_INFO 触发后自动联动 STOCK_DAILY，无需单独操作
+- 异步执行解决 HTTP 超时导致的"采集成功但显示失败"问题
