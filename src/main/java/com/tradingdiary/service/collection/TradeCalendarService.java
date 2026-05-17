@@ -37,6 +37,9 @@ public class TradeCalendarService {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * 同步交易日历数据
+     */
     public int syncTradeCalendar() {
         log.info("Starting trade calendar sync");
 

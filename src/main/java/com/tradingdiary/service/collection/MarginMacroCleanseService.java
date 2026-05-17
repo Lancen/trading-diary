@@ -32,6 +32,9 @@ public class MarginMacroCleanseService {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * 清洗两融总量数据
+     */
     @Transactional
     public int cleanse(String rawJson, String exchange) {
         List<MarginMacro> entities = parse(rawJson, exchange);

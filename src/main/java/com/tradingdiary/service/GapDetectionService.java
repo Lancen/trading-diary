@@ -32,6 +32,9 @@ public class GapDetectionService {
         this.marginDailyMapper = marginDailyMapper;
     }
 
+    /**
+     * 检测指定日期范围内的数据缺口
+     */
     public GapReportVO getGaps(LocalDate start, LocalDate end, String exchange) {
         List<TradeCalendar> tradingDays = tradeCalendarMapper.selectTradingDays(start, end);
         Set<LocalDate> expectedDates = tradingDays.stream()

@@ -33,6 +33,9 @@ public class StockDailyCleanseService {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * 清洗股票日线数据
+     */
     @Transactional
     public int cleanse(String rawJson, LocalDate tradeDate) {
         List<StockDaily> entities = parseStockDailyList(rawJson, tradeDate);
@@ -75,6 +78,9 @@ public class StockDailyCleanseService {
         return count;
     }
 
+    /**
+     * 批量清洗历史股票日线数据
+     */
     @Transactional
     public int cleanseHistBatch(List<String> rawJsonList, List<String> stockCodes) {
         List<StockDaily> allEntities = new ArrayList<>();
@@ -108,6 +114,9 @@ public class StockDailyCleanseService {
         return total;
     }
 
+    /**
+     * 清洗单只股票的历史日线数据
+     */
     @Transactional
     public int cleanseHistJson(String rawJson, String stockCode) {
         List<StockDaily> entities = parseHistStockDailyListTx(rawJson, stockCode);

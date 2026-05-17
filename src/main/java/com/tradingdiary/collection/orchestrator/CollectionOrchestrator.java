@@ -93,11 +93,7 @@ public class CollectionOrchestrator {
     }
 
     /**
-     * Orchestrate the FETCH → CLEANSE lifecycle for a given data type and trade date.
-     *
-     * @param dataType  the data type to collect (e.g. STOCK_SPOT, TRADE_CALENDAR)
-     * @param tradeDate the trade date to collect for
-     * @return execution result message
+     * 编排执行数据采集和清洗流程
      */
     public String orchestrate(String dataType, LocalDate tradeDate) {
         String lockKey = dataType + "_" + tradeDate;
@@ -420,11 +416,7 @@ public class CollectionOrchestrator {
     }
 
     /**
-     * Backfill margin data for a date range, grouped by ISO week.
-     * Skips weeks where all trading dates already have SUCCESS FETCH + CLEANSE logs.
-     *
-     * @param request backfill parameters (dataType, exchange, date range)
-     * @return summary message
+     * 按周补采两融数据
      */
     public String backfillMarginByWeek(BackfillRequest request) {
         String dataType = request.getDataType();
@@ -479,12 +471,7 @@ public class CollectionOrchestrator {
     }
 
     /**
-     * Backfill historical stock daily data for all stocks in a date range.
-     * Iterates through each stock, calls stock_zh_a_hist API, and cleanses into stock_daily.
-     *
-     * @param startDate start date (inclusive)
-     * @param endDate   end date (inclusive)
-     * @return summary message
+     * 补采股票日线历史数据
      */
     public String backfillStockDaily(LocalDate startDate, LocalDate endDate) {
         String start = startDate.toString();

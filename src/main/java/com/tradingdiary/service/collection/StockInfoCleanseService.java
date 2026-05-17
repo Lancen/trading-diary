@@ -33,6 +33,9 @@ public class StockInfoCleanseService {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * 清洗股票基础信息数据
+     */
     @Transactional
     public int cleanse(String rawJson, LocalDate snapshotDate) {
         List<StockInfo> entities = parseStockInfoList(rawJson, snapshotDate);

@@ -40,6 +40,9 @@ public class MarginCleanseService {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * 清洗两融明细数据
+     */
     @Transactional
     public int cleanse(String rawJson, String exchange, LocalDate tradeDate) {
         List<MarginDaily> dailyList = parseMarginDailyList(rawJson, exchange, tradeDate);
