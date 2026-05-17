@@ -31,10 +31,10 @@ interface CollectionLog {
 }
 
 function StatusIcon({ status }: { status: string | null }) {
-  if (!status) return <span className="text-gray-400">NOT_TRIGGERED</span>;
-  if (status === "SUCCESS") return <span className="text-green-600">SUCCESS</span>;
-  if (status === "FAILED") return <span className="text-red-600">FAILED</span>;
-  if (status === "RUNNING") return <span className="text-blue-600">RUNNING</span>;
+  if (!status) return <span className="text-gray-400">未触发</span>;
+  if (status === "SUCCESS") return <span className="text-green-600">成功</span>;
+  if (status === "FAILED") return <span className="text-red-600">失败</span>;
+  if (status === "RUNNING") return <span className="text-blue-600">运行中</span>;
   return <span className="text-gray-500">{status}</span>;
 }
 
@@ -109,15 +109,15 @@ export default function CollectionPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Collection Status</h1>
-        <button onClick={fetchStatus} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">Refresh</button>
+        <h1 className="text-2xl font-bold">采集状态</h1>
+        <button onClick={fetchStatus} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">刷新</button>
       </div>
       <div className="flex gap-4">
-        <div className="rounded-lg border bg-green-50 px-4 py-3"><div className="text-sm text-gray-600">Success</div><div className="text-2xl font-bold text-green-700">{successCount}</div></div>
-        <div className="rounded-lg border bg-red-50 px-4 py-3"><div className="text-sm text-gray-600">Failed</div><div className="text-2xl font-bold text-red-700">{failedCount}</div></div>
-        <div className="rounded-lg border bg-blue-50 px-4 py-3"><div className="text-sm text-gray-600">Running</div><div className="text-2xl font-bold text-blue-700">{runningCount}</div></div>
+        <div className="rounded-lg border bg-green-50 px-4 py-3"><div className="text-sm text-gray-600">成功</div><div className="text-2xl font-bold text-green-700">{successCount}</div></div>
+        <div className="rounded-lg border bg-red-50 px-4 py-3"><div className="text-sm text-gray-600">失败</div><div className="text-2xl font-bold text-red-700">{failedCount}</div></div>
+        <div className="rounded-lg border bg-blue-50 px-4 py-3"><div className="text-sm text-gray-600">运行中</div><div className="text-2xl font-bold text-blue-700">{runningCount}</div></div>
       </div>
-      {loading ? <div className="py-8 text-center text-gray-500">Loading...</div> : (
+      {loading ? <div className="py-8 text-center text-gray-500">加载中...</div> : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {statusList.map((item) => {
             const isExpanded = expandedType === item.dataType;
@@ -128,9 +128,9 @@ export default function CollectionPage() {
                 <div onClick={() => toggleExpand(item.dataType)} className={"cursor-pointer rounded-lg border p-4 transition-shadow hover:shadow-md " + (hasError ? "border-red-300 bg-red-50" : "bg-white")}>
                   <h3 className="font-semibold">{item.dataTypeLabel}</h3>
                   <div className="mt-2 space-y-1 text-sm">
-                    <div><span className="text-gray-500">FETCH: </span><StatusIcon status={item.lastFetch?.status || null} /></div>
-                    <div><span className="text-gray-500">CLEANSE: </span><StatusIcon status={item.lastCleanse?.status || null} /></div>
-                    {item.lastFetch && <div className="text-xs text-gray-400">Last: {formatTime(item.lastFetch.completedAt)} | {item.lastFetch.recordCount ?? 0} records</div>}
+                    <div><span className="text-gray-500">采集: </span><StatusIcon status={item.lastFetch?.status || null} /></div>
+                    <div><span className="text-gray-500">清洗: </span><StatusIcon status={item.lastCleanse?.status || null} /></div>
+                    {item.lastFetch && <div className="text-xs text-gray-400">最近: {formatTime(item.lastFetch.completedAt)} | {item.lastFetch.recordCount ?? 0} 条</div>}
                   </div>
                   {hasError && <div className="mt-2 text-xs text-red-600">{item.lastFetch?.errorMsg || item.lastCleanse?.errorMsg}</div>}
                   <div className="mt-2 flex gap-2">
@@ -145,8 +145,8 @@ export default function CollectionPage() {
                 </div>
                 {isExpanded && (
                   <div className="mt-2 rounded-lg border bg-gray-50 p-3">
-                    <h4 className="mb-2 text-sm font-medium">Recent 5 Logs</h4>
-                    {logsLoading ? <div className="text-xs text-gray-400">Loading...</div> : logs.length === 0 ? <div className="text-xs text-gray-400">No logs</div> : (
+                    <h4 className="mb-2 text-sm font-medium">最近 5 条日志</h4>
+                    {logsLoading ? <div className="text-xs text-gray-400">加载中...</div> : logs.length === 0 ? <div className="text-xs text-gray-400">无日志</div> : (
                       <div className="space-y-2">
                         {logs.map((log) => (
                           <div key={log.id} className="rounded bg-white px-3 py-2 text-xs">
