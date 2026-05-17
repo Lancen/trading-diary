@@ -96,7 +96,7 @@ public class CollectionController {
     @PostMapping("/trigger/{dataType}")
     public ApiResponse<String> trigger(@PathVariable String dataType) {
         if (!DATA_TYPE_LABELS.containsKey(dataType)) {
-            return ApiResponse.fail(400, "Unknown data type: " + dataType);
+            return ApiResponse.fail(400, "未知数据类型: " + dataType);
         }
         String result = orchestrator.orchestrate(dataType, LocalDate.now());
         return ApiResponse.ok(result);
@@ -105,16 +105,16 @@ public class CollectionController {
     @PostMapping("/backfill")
     public ApiResponse<String> backfill(@RequestBody BackfillRequest request) {
         if (request.getDataType() == null || request.getDataType().isBlank()) {
-            return ApiResponse.fail(400, "dataType is required");
+            return ApiResponse.fail(400, "dataType 不能为空");
         }
         if (request.getStartDate() == null) {
-            return ApiResponse.fail(400, "startDate is required");
+            return ApiResponse.fail(400, "startDate 不能为空");
         }
         if (request.getEndDate() == null) {
-            return ApiResponse.fail(400, "endDate is required");
+            return ApiResponse.fail(400, "endDate 不能为空");
         }
         if (request.getEndDate().isBefore(request.getStartDate())) {
-            return ApiResponse.fail(400, "endDate must be on or after startDate");
+            return ApiResponse.fail(400, "endDate 不能早于 startDate");
         }
         String result;
         if ("STOCK_DAILY".equals(request.getDataType())) {

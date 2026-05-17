@@ -190,16 +190,16 @@ public class CollectionOrchestrator {
                         Thread.sleep(backoffMs);
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
-                        throw new RuntimeException("Retry interrupted", ie);
+                        throw new RuntimeException("重试被中断", ie);
                     }
                     backoffMs *= 2;
                 } else {
-                    throw new RuntimeException("All " + MAX_RETRIES + " fetch attempts failed", e);
+                    throw new RuntimeException("共 " + MAX_RETRIES + " 次采集尝试全部失败", e);
                 }
             }
         }
 
-        throw new RuntimeException("Unreachable: all fetch attempts exhausted");
+        throw new RuntimeException("所有采集尝试已用尽");
     }
 
     private String dispatchFetch(String dataType, LocalDate tradeDate) {
@@ -226,7 +226,7 @@ public class CollectionOrchestrator {
             case "MARGIN_DAILY_SZSE":
                 return aktoolsClient.fetchMarginDetailSzse(dateStr);
             default:
-                throw new IllegalArgumentException("Unknown data type: " + dataType);
+                throw new IllegalArgumentException("未知数据类型: " + dataType);
         }
     }
 
@@ -292,7 +292,7 @@ public class CollectionOrchestrator {
                 recordCount = tradeCalendarService.syncTradeCalendar();
                 break;
             default:
-                throw new IllegalArgumentException("Unknown data type: " + dataType);
+                throw new IllegalArgumentException("未知数据类型: " + dataType);
         }
 
         log.info("Cleanse dispatch complete: dataType={}, records={}", dataType, recordCount);
@@ -401,7 +401,7 @@ public class CollectionOrchestrator {
 
         if (tradingDays.isEmpty()) {
             log.info("No trading days found in range: {} to {}", startDate, endDate);
-            return "No trading days in range";
+            return "此范围无交易日";
         }
 
         WeekFields weekFields = WeekFields.of(Locale.getDefault());
@@ -436,7 +436,7 @@ public class CollectionOrchestrator {
         }
 
         int orchestratedWeeks = totalWeeks - skippedWeeks;
-        String result = String.format("Backfill complete: %d dates processed across %d weeks, %d weeks skipped (already complete)",
+        String result = String.format("补采完成: %d 个日期已处理（共 %d 周），%d 周已跳过（数据完整）",
                 processedDates, orchestratedWeeks, skippedWeeks);
         log.info(result);
         return result;
@@ -457,7 +457,7 @@ public class CollectionOrchestrator {
 
         List<StockInfo> stocks = stockInfoMapper.selectList(null);
         if (stocks.isEmpty()) {
-            return "No stocks in stock_info table — run STOCK_INFO collection first";
+            return "stock_info 表无数据 — 请先采集 STOCK_INFO";
         }
 
         int success = 0;
@@ -479,7 +479,7 @@ public class CollectionOrchestrator {
             aktoolsClient.sleepBetweenCalls();
         }
 
-        String result = String.format("Stock daily backfill complete: %d stocks succeeded, %d failed (of %d total)",
+        String result = String.format("股票日线补采完成: 成功 %d 只，失败 %d 只（共 %d 只）",
                 success, failed, stocks.size());
         log.info(result);
         return result;
