@@ -3,12 +3,9 @@ package com.tradingdiary.service.collection;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tradingdiary.collection.CollectionConstants;
 import com.tradingdiary.entity.StockInfo;
 import com.tradingdiary.mapper.StockInfoMapper;
-import org.apache.ibatis.session.ExecutorType;
-import org.apache.ibatis.session.SqlSession;
-import org.apache.ibatis.session.SqlSessionFactory;
+import com.tradingdiary.util.BatchSqlRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -26,14 +23,14 @@ public class StockInfoCleanseService {
 
     private static final Logger log = LoggerFactory.getLogger(StockInfoCleanseService.class);
     private final StockInfoMapper stockInfoMapper;
+    private final BatchSqlRunner batchSqlRunner;
     private final ObjectMapper objectMapper;
-    private final SqlSessionFactory sqlSessionFactory;
 
-    public StockInfoCleanseService(StockInfoMapper stockInfoMapper, ObjectMapper objectMapper,
-                                    SqlSessionFactory sqlSessionFactory) {
+    public StockInfoCleanseService(StockInfoMapper stockInfoMapper, BatchSqlRunner batchSqlRunner,
+                                    ObjectMapper objectMapper) {
         this.stockInfoMapper = stockInfoMapper;
+        this.batchSqlRunner = batchSqlRunner;
         this.objectMapper = objectMapper;
-        this.sqlSessionFactory = sqlSessionFactory;
     }
 
     @Transactional
@@ -67,35 +64,15 @@ public class StockInfoCleanseService {
 
         int count = 0;
         if (!toInsert.isEmpty()) {
-            count += executeBatch(toInsert, CollectionConstants.DB_BATCH_SIZE, (mapper, e) -> mapper.insert(e));
+            count += batchSqlRunner.batchInsert(toInsert);
         }
         if (!toUpdate.isEmpty()) {
-            count += executeBatch(toUpdate, CollectionConstants.DB_BATCH_SIZE, (mapper, e) -> mapper.updateById(e));
+            count += batchSqlRunner.batchUpdate(toUpdate);
         }
 
         log.info("StockInfo cleanse complete: {} records (insert={}, update={})",
                 count, toInsert.size(), toUpdate.size());
         return count;
-    }
-
-    /**
-     * 使用 MyBatis BATCH 模式执行批处理，配合 rewriteBatchedStatements=true 实现真正的 JDBC 批量写入。
-     */
-    private int executeBatch(List<StockInfo> list, int batchSize,
-                              java.util.function.BiConsumer<StockInfoMapper, StockInfo> operation) {
-        try (SqlSession session = sqlSessionFactory.openSession(ExecutorType.BATCH)) {
-            StockInfoMapper mapper = session.getMapper(StockInfoMapper.class);
-            int count = 0;
-            for (int i = 0; i < list.size(); i++) {
-                operation.accept(mapper, list.get(i));
-                count++;
-                if ((i + 1) % batchSize == 0) {
-                    session.flushStatements();
-                }
-            }
-            session.flushStatements();
-            return count;
-        }
     }
 
     private List<StockInfo> parseStockInfoList(String rawJson, LocalDate snapshotDate) {

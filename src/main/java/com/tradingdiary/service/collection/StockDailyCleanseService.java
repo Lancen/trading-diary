@@ -3,12 +3,9 @@ package com.tradingdiary.service.collection;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tradingdiary.collection.CollectionConstants;
 import com.tradingdiary.entity.StockDaily;
 import com.tradingdiary.mapper.StockDailyMapper;
-import org.apache.ibatis.session.ExecutorType;
-import org.apache.ibatis.session.SqlSession;
-import org.apache.ibatis.session.SqlSessionFactory;
+import com.tradingdiary.util.BatchSqlRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -26,14 +23,14 @@ public class StockDailyCleanseService {
 
     private static final Logger log = LoggerFactory.getLogger(StockDailyCleanseService.class);
     private final StockDailyMapper stockDailyMapper;
+    private final BatchSqlRunner batchSqlRunner;
     private final ObjectMapper objectMapper;
-    private final SqlSessionFactory sqlSessionFactory;
 
-    public StockDailyCleanseService(StockDailyMapper stockDailyMapper, ObjectMapper objectMapper,
-                                     SqlSessionFactory sqlSessionFactory) {
+    public StockDailyCleanseService(StockDailyMapper stockDailyMapper, BatchSqlRunner batchSqlRunner,
+                                     ObjectMapper objectMapper) {
         this.stockDailyMapper = stockDailyMapper;
+        this.batchSqlRunner = batchSqlRunner;
         this.objectMapper = objectMapper;
-        this.sqlSessionFactory = sqlSessionFactory;
     }
 
     @Transactional
@@ -67,10 +64,10 @@ public class StockDailyCleanseService {
 
         int count = 0;
         if (!toInsert.isEmpty()) {
-            count += executeBatch(toInsert, (mapper, e) -> mapper.insert(e));
+            count += batchSqlRunner.batchInsert(toInsert);
         }
         if (!toUpdate.isEmpty()) {
-            count += executeBatch(toUpdate, (mapper, e) -> mapper.updateById(e));
+            count += batchSqlRunner.batchUpdate(toUpdate);
         }
 
         log.info("StockDaily cleanse complete: {} records (insert={}, update={})",
@@ -78,37 +75,37 @@ public class StockDailyCleanseService {
         return count;
     }
 
-    /**
-     * 批量清洗多只股票的历史日线数据，所有写入共用同一个 BATCH SqlSession。
-     */
     @Transactional
     public int cleanseHistBatch(List<String> rawJsonList, List<String> stockCodes) {
-        try (SqlSession session = sqlSessionFactory.openSession(ExecutorType.BATCH)) {
-            StockDailyMapper mapper = session.getMapper(StockDailyMapper.class);
-            int total = 0;
-            for (int i = 0; i < rawJsonList.size(); i++) {
-                List<StockDaily> entities = parseHistStockDailyListTx(rawJsonList.get(i), stockCodes.get(i));
-                for (StockDaily e : entities) {
-                    List<StockDaily> existing = mapper.selectList(
-                            new LambdaQueryWrapper<StockDaily>()
-                                    .eq(StockDaily::getStockCode, e.getStockCode())
-                                    .eq(StockDaily::getTradeDate, e.getTradeDate())
-                    );
-                    if (!existing.isEmpty()) {
-                        e.setId(existing.get(0).getId());
-                        mapper.updateById(e);
-                    } else {
-                        mapper.insert(e);
-                    }
-                    total++;
-                }
-                if (total > 0 && total % CollectionConstants.DB_BATCH_SIZE == 0) {
-                    session.flushStatements();
-                }
-            }
-            session.flushStatements();
-            return total;
+        List<StockDaily> allEntities = new ArrayList<>();
+        for (int i = 0; i < rawJsonList.size(); i++) {
+            allEntities.addAll(parseHistStockDailyListTx(rawJsonList.get(i), stockCodes.get(i)));
         }
+
+        List<String> uniqueCodes = stockCodes.stream().distinct().toList();
+        List<StockDaily> existing = stockDailyMapper.selectList(
+                new LambdaQueryWrapper<StockDaily>().in(StockDaily::getStockCode, uniqueCodes));
+        Map<String, StockDaily> existingMap = existing.stream()
+                .collect(Collectors.toMap(
+                        e -> e.getStockCode() + "|" + e.getTradeDate(), e -> e, (a, b) -> a));
+
+        List<StockDaily> toInsert = new ArrayList<>();
+        List<StockDaily> toUpdate = new ArrayList<>();
+        for (StockDaily e : allEntities) {
+            String key = e.getStockCode() + "|" + e.getTradeDate();
+            StockDaily exist = existingMap.get(key);
+            if (exist != null) {
+                e.setId(exist.getId());
+                toUpdate.add(e);
+            } else {
+                toInsert.add(e);
+            }
+        }
+
+        int total = 0;
+        if (!toInsert.isEmpty()) total += batchSqlRunner.batchInsert(toInsert);
+        if (!toUpdate.isEmpty()) total += batchSqlRunner.batchUpdate(toUpdate);
+        return total;
     }
 
     @Transactional
@@ -119,36 +116,26 @@ public class StockDailyCleanseService {
             return 0;
         }
 
-        return executeBatch(entities, (mapper, e) -> {
-            List<StockDaily> existing = mapper.selectList(
-                    new LambdaQueryWrapper<StockDaily>()
-                            .eq(StockDaily::getStockCode, e.getStockCode())
-                            .eq(StockDaily::getTradeDate, e.getTradeDate())
-            );
-            if (!existing.isEmpty()) {
-                e.setId(existing.get(0).getId());
-                mapper.updateById(e);
-            } else {
-                mapper.insert(e);
-            }
-        });
-    }
+        Map<LocalDate, StockDaily> existingMap = stockDailyMapper.selectList(
+                new LambdaQueryWrapper<StockDaily>().eq(StockDaily::getStockCode, stockCode))
+                .stream().collect(Collectors.toMap(StockDaily::getTradeDate, e -> e, (a, b) -> a));
 
-    private int executeBatch(List<StockDaily> list,
-                              java.util.function.BiConsumer<StockDailyMapper, StockDaily> operation) {
-        try (SqlSession session = sqlSessionFactory.openSession(ExecutorType.BATCH)) {
-            StockDailyMapper mapper = session.getMapper(StockDailyMapper.class);
-            int count = 0;
-            for (int i = 0; i < list.size(); i++) {
-                operation.accept(mapper, list.get(i));
-                count++;
-                if ((i + 1) % CollectionConstants.DB_BATCH_SIZE == 0) {
-                    session.flushStatements();
-                }
+        List<StockDaily> toInsert = new ArrayList<>();
+        List<StockDaily> toUpdate = new ArrayList<>();
+        for (StockDaily e : entities) {
+            StockDaily exist = existingMap.get(e.getTradeDate());
+            if (exist != null) {
+                e.setId(exist.getId());
+                toUpdate.add(e);
+            } else {
+                toInsert.add(e);
             }
-            session.flushStatements();
-            return count;
         }
+
+        int total = 0;
+        if (!toInsert.isEmpty()) total += batchSqlRunner.batchInsert(toInsert);
+        if (!toUpdate.isEmpty()) total += batchSqlRunner.batchUpdate(toUpdate);
+        return total;
     }
 
     private List<StockDaily> parseHistStockDailyListTx(String rawJson, String stockCode) {

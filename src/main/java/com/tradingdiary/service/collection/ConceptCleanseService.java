@@ -9,6 +9,7 @@ import com.tradingdiary.entity.StockConcept;
 import com.tradingdiary.mapper.ClassificationChangeLogMapper;
 import com.tradingdiary.mapper.ConceptMapper;
 import com.tradingdiary.mapper.StockConceptMapper;
+import com.tradingdiary.util.BatchSqlRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -27,15 +28,18 @@ public class ConceptCleanseService {
     private final ConceptMapper conceptMapper;
     private final StockConceptMapper stockConceptMapper;
     private final ClassificationChangeLogMapper classificationChangeLogMapper;
+    private final BatchSqlRunner batchSqlRunner;
     private final ObjectMapper objectMapper;
 
     public ConceptCleanseService(ConceptMapper conceptMapper,
                                  StockConceptMapper stockConceptMapper,
                                  ClassificationChangeLogMapper classificationChangeLogMapper,
+                                 BatchSqlRunner batchSqlRunner,
                                  ObjectMapper objectMapper) {
         this.conceptMapper = conceptMapper;
         this.stockConceptMapper = stockConceptMapper;
         this.classificationChangeLogMapper = classificationChangeLogMapper;
+        this.batchSqlRunner = batchSqlRunner;
         this.objectMapper = objectMapper;
     }
 
@@ -53,17 +57,15 @@ public class ConceptCleanseService {
             return 0;
         }
 
-        int count = 0;
-        for (Concept concept : concepts) {
-            Long exists = conceptMapper.selectCount(
-                    new LambdaQueryWrapper<Concept>()
-                            .eq(Concept::getCode, concept.getCode())
-            );
-            if (exists == 0) {
-                conceptMapper.insert(concept);
-                count++;
-            }
-        }
+        List<String> codes = concepts.stream().map(Concept::getCode).toList();
+        Set<String> existingCodes = conceptMapper.selectList(
+                new LambdaQueryWrapper<Concept>().in(Concept::getCode, codes))
+                .stream().map(Concept::getCode).collect(Collectors.toSet());
+
+        List<Concept> toInsert = concepts.stream()
+                .filter(c -> !existingCodes.contains(c.getCode()))
+                .toList();
+        int count = batchSqlRunner.batchInsert(toInsert);
 
         log.info("Concept names cleanse complete: {} new concepts inserted", count);
         return count;
@@ -100,25 +102,29 @@ public class ConceptCleanseService {
                 .collect(Collectors.toSet());
 
         int changeCount = 0;
+        List<StockConcept> toInsert = new ArrayList<>();
+        List<StockConcept> toUpdate = new ArrayList<>();
 
         // ADD: stocks in today's data but not in DB
         for (StockConcept relation : todayRelations) {
             if (!dbStockCodes.contains(relation.getStockCode())) {
-                stockConceptMapper.insert(relation);
+                toInsert.add(relation);
                 insertChangeLog(relation.getStockCode(), "CONCEPT", conceptCode, "ADD", snapDate);
                 changeCount++;
             }
         }
+        batchSqlRunner.batchInsert(toInsert);
 
         // REMOVE: stocks in DB but not in today's data
         for (StockConcept dbRel : dbRelations) {
             if (!todayStockCodes.contains(dbRel.getStockCode())) {
                 dbRel.setIsDeleted(true);
-                stockConceptMapper.updateById(dbRel);
+                toUpdate.add(dbRel);
                 insertChangeLog(dbRel.getStockCode(), "CONCEPT", conceptCode, "REMOVE", snapDate);
                 changeCount++;
             }
         }
+        batchSqlRunner.batchUpdate(toUpdate);
 
         log.info("Concept cons cleanse complete: {} changes for {}", changeCount, conceptCode);
         return changeCount;

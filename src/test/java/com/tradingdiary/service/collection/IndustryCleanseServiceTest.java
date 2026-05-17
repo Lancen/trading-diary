@@ -6,6 +6,7 @@ import com.tradingdiary.entity.StockIndustry;
 import com.tradingdiary.mapper.ClassificationChangeLogMapper;
 import com.tradingdiary.mapper.IndustryMapper;
 import com.tradingdiary.mapper.StockIndustryMapper;
+import com.tradingdiary.util.BatchSqlRunner;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,6 +35,7 @@ class IndustryCleanseServiceTest {
     private IndustryMapper industryMapper;
     private StockIndustryMapper stockIndustryMapper;
     private ClassificationChangeLogMapper changeLogMapper;
+    private BatchSqlRunner batchSqlRunner;
     private ObjectMapper objectMapper;
     private IndustryCleanseService service;
 
@@ -42,9 +44,10 @@ class IndustryCleanseServiceTest {
         industryMapper = mock(IndustryMapper.class);
         stockIndustryMapper = mock(StockIndustryMapper.class);
         changeLogMapper = mock(ClassificationChangeLogMapper.class);
+        batchSqlRunner = mock(BatchSqlRunner.class);
         objectMapper = new ObjectMapper();
         service = new IndustryCleanseService(
-                industryMapper, stockIndustryMapper, changeLogMapper, objectMapper);
+                industryMapper, stockIndustryMapper, changeLogMapper, batchSqlRunner, objectMapper);
     }
 
     // ──────────────────────────────────────────────

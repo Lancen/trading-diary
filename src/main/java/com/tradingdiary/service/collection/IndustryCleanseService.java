@@ -9,6 +9,7 @@ import com.tradingdiary.entity.StockIndustry;
 import com.tradingdiary.mapper.ClassificationChangeLogMapper;
 import com.tradingdiary.mapper.IndustryMapper;
 import com.tradingdiary.mapper.StockIndustryMapper;
+import com.tradingdiary.util.BatchSqlRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -27,15 +28,18 @@ public class IndustryCleanseService {
     private final IndustryMapper industryMapper;
     private final StockIndustryMapper stockIndustryMapper;
     private final ClassificationChangeLogMapper classificationChangeLogMapper;
+    private final BatchSqlRunner batchSqlRunner;
     private final ObjectMapper objectMapper;
 
     public IndustryCleanseService(IndustryMapper industryMapper,
                                   StockIndustryMapper stockIndustryMapper,
                                   ClassificationChangeLogMapper classificationChangeLogMapper,
+                                  BatchSqlRunner batchSqlRunner,
                                   ObjectMapper objectMapper) {
         this.industryMapper = industryMapper;
         this.stockIndustryMapper = stockIndustryMapper;
         this.classificationChangeLogMapper = classificationChangeLogMapper;
+        this.batchSqlRunner = batchSqlRunner;
         this.objectMapper = objectMapper;
     }
 
@@ -53,17 +57,15 @@ public class IndustryCleanseService {
             return 0;
         }
 
-        int count = 0;
-        for (Industry industry : industries) {
-            Long exists = industryMapper.selectCount(
-                    new LambdaQueryWrapper<Industry>()
-                            .eq(Industry::getCode, industry.getCode())
-            );
-            if (exists == 0) {
-                industryMapper.insert(industry);
-                count++;
-            }
-        }
+        List<String> codes = industries.stream().map(Industry::getCode).toList();
+        Set<String> existingCodes = industryMapper.selectList(
+                new LambdaQueryWrapper<Industry>().in(Industry::getCode, codes))
+                .stream().map(Industry::getCode).collect(Collectors.toSet());
+
+        List<Industry> toInsert = industries.stream()
+                .filter(i -> !existingCodes.contains(i.getCode()))
+                .toList();
+        int count = batchSqlRunner.batchInsert(toInsert);
 
         log.info("Industry names cleanse complete: {} new industries inserted", count);
         return count;
@@ -100,25 +102,29 @@ public class IndustryCleanseService {
                 .collect(Collectors.toSet());
 
         int changeCount = 0;
+        List<StockIndustry> toInsert = new ArrayList<>();
+        List<StockIndustry> toUpdate = new ArrayList<>();
 
         // ADD: stocks in today's data but not in DB
         for (StockIndustry relation : todayRelations) {
             if (!dbStockCodes.contains(relation.getStockCode())) {
-                stockIndustryMapper.insert(relation);
+                toInsert.add(relation);
                 insertChangeLog(relation.getStockCode(), "INDUSTRY", industryCode, "ADD", snapDate);
                 changeCount++;
             }
         }
+        batchSqlRunner.batchInsert(toInsert);
 
         // REMOVE: stocks in DB but not in today's data
         for (StockIndustry dbRel : dbRelations) {
             if (!todayStockCodes.contains(dbRel.getStockCode())) {
                 dbRel.setIsDeleted(true);
-                stockIndustryMapper.updateById(dbRel);
+                toUpdate.add(dbRel);
                 insertChangeLog(dbRel.getStockCode(), "INDUSTRY", industryCode, "REMOVE", snapDate);
                 changeCount++;
             }
         }
+        batchSqlRunner.batchUpdate(toUpdate);
 
         log.info("Industry cons cleanse complete: {} changes for {}", changeCount, industryCode);
         return changeCount;

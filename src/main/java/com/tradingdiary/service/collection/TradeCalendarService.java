@@ -3,13 +3,10 @@ package com.tradingdiary.service.collection;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tradingdiary.collection.CollectionConstants;
 import com.tradingdiary.collection.client.AKToolsClient;
 import com.tradingdiary.entity.TradeCalendar;
 import com.tradingdiary.mapper.TradeCalendarMapper;
-import org.apache.ibatis.session.ExecutorType;
-import org.apache.ibatis.session.SqlSession;
-import org.apache.ibatis.session.SqlSessionFactory;
+import com.tradingdiary.util.BatchSqlRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -27,17 +24,17 @@ public class TradeCalendarService {
 
     private final AKToolsClient aktoolsClient;
     private final TradeCalendarMapper tradeCalendarMapper;
+    private final BatchSqlRunner batchSqlRunner;
     private final ObjectMapper objectMapper;
-    private final SqlSessionFactory sqlSessionFactory;
 
     public TradeCalendarService(AKToolsClient aktoolsClient,
                                 TradeCalendarMapper tradeCalendarMapper,
-                                ObjectMapper objectMapper,
-                                SqlSessionFactory sqlSessionFactory) {
+                                BatchSqlRunner batchSqlRunner,
+                                ObjectMapper objectMapper) {
         this.aktoolsClient = aktoolsClient;
         this.tradeCalendarMapper = tradeCalendarMapper;
+        this.batchSqlRunner = batchSqlRunner;
         this.objectMapper = objectMapper;
-        this.sqlSessionFactory = sqlSessionFactory;
     }
 
     public int syncTradeCalendar() {
@@ -65,16 +62,7 @@ public class TradeCalendarService {
         }
 
         if (!newEntries.isEmpty()) {
-            try (SqlSession session = sqlSessionFactory.openSession(ExecutorType.BATCH)) {
-                TradeCalendarMapper mapper = session.getMapper(TradeCalendarMapper.class);
-                for (int i = 0; i < newEntries.size(); i++) {
-                    mapper.insert(newEntries.get(i));
-                    if ((i + 1) % CollectionConstants.DB_BATCH_SIZE == 0) {
-                        session.flushStatements();
-                    }
-                }
-                session.flushStatements();
-            }
+            batchSqlRunner.batchInsert(newEntries);
         }
 
         log.info("Trade calendar sync complete: {} new dates added", newEntries.size());

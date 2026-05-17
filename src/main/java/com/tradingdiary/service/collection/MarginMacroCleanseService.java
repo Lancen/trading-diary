@@ -3,12 +3,9 @@ package com.tradingdiary.service.collection;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tradingdiary.collection.CollectionConstants;
 import com.tradingdiary.entity.MarginMacro;
 import com.tradingdiary.mapper.MarginMacroMapper;
-import org.apache.ibatis.session.ExecutorType;
-import org.apache.ibatis.session.SqlSession;
-import org.apache.ibatis.session.SqlSessionFactory;
+import com.tradingdiary.util.BatchSqlRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -25,14 +22,14 @@ public class MarginMacroCleanseService {
     private static final Logger log = LoggerFactory.getLogger(MarginMacroCleanseService.class);
 
     private final MarginMacroMapper mapper;
+    private final BatchSqlRunner batchSqlRunner;
     private final ObjectMapper objectMapper;
-    private final SqlSessionFactory sqlSessionFactory;
 
-    public MarginMacroCleanseService(MarginMacroMapper mapper, ObjectMapper objectMapper,
-                                      SqlSessionFactory sqlSessionFactory) {
+    public MarginMacroCleanseService(MarginMacroMapper mapper, BatchSqlRunner batchSqlRunner,
+                                      ObjectMapper objectMapper) {
         this.mapper = mapper;
+        this.batchSqlRunner = batchSqlRunner;
         this.objectMapper = objectMapper;
-        this.sqlSessionFactory = sqlSessionFactory;
     }
 
     @Transactional
@@ -43,29 +40,28 @@ public class MarginMacroCleanseService {
             return 0;
         }
 
-        int count = 0;
-        try (SqlSession session = sqlSessionFactory.openSession(ExecutorType.BATCH)) {
-            MarginMacroMapper bm = session.getMapper(MarginMacroMapper.class);
-            for (int i = 0; i < entities.size(); i++) {
-                MarginMacro e = entities.get(i);
-                List<MarginMacro> existing = bm.selectList(
-                        new LambdaQueryWrapper<MarginMacro>()
-                                .eq(MarginMacro::getTradeDate, e.getTradeDate())
-                                .eq(MarginMacro::getExchange, e.getExchange())
-                );
-                if (!existing.isEmpty()) {
-                    e.setId(existing.get(0).getId());
-                    bm.updateById(e);
-                } else {
-                    bm.insert(e);
-                }
-                count++;
-                if ((i + 1) % CollectionConstants.DB_BATCH_SIZE == 0) {
-                    session.flushStatements();
-                }
-            }
-            session.flushStatements();
+        List<MarginMacro> existing = mapper.selectList(
+                new LambdaQueryWrapper<MarginMacro>().eq(MarginMacro::getExchange, exchange));
+        java.util.Map<LocalDate, MarginMacro> existingMap = new java.util.HashMap<>();
+        for (MarginMacro e : existing) {
+            existingMap.put(e.getTradeDate(), e);
         }
+
+        List<MarginMacro> toInsert = new ArrayList<>();
+        List<MarginMacro> toUpdate = new ArrayList<>();
+        for (MarginMacro e : entities) {
+            MarginMacro exist = existingMap.get(e.getTradeDate());
+            if (exist != null) {
+                e.setId(exist.getId());
+                toUpdate.add(e);
+            } else {
+                toInsert.add(e);
+            }
+        }
+
+        int count = 0;
+        if (!toInsert.isEmpty()) count += batchSqlRunner.batchInsert(toInsert);
+        if (!toUpdate.isEmpty()) count += batchSqlRunner.batchUpdate(toUpdate);
 
         log.info("MarginMacro cleanse complete: {} records for {}", count, exchange);
         return count;

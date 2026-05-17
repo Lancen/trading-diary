@@ -26,6 +26,9 @@ dependencies {
     // MyBatis-Plus
     implementation 'com.baomidou:mybatis-plus-spring-boot3-starter:3.5.9'
 
+    // JDBC (JdbcTemplate — BatchSqlRunner 批量 SQL 拼接)
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+
     // SpringDoc (Swagger/OpenAPI)
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
 

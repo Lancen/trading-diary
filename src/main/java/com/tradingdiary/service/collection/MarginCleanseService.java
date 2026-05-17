@@ -3,14 +3,11 @@ package com.tradingdiary.service.collection;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tradingdiary.collection.CollectionConstants;
 import com.tradingdiary.entity.MarginDaily;
 import com.tradingdiary.entity.MarginStock;
 import com.tradingdiary.mapper.MarginDailyMapper;
 import com.tradingdiary.mapper.MarginStockMapper;
-import org.apache.ibatis.session.ExecutorType;
-import org.apache.ibatis.session.SqlSession;
-import org.apache.ibatis.session.SqlSessionFactory;
+import com.tradingdiary.util.BatchSqlRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -29,19 +26,18 @@ import java.util.stream.Collectors;
 public class MarginCleanseService {
 
     private static final Logger log = LoggerFactory.getLogger(MarginCleanseService.class);
-    private static final int BATCH_SIZE = CollectionConstants.DB_BATCH_SIZE;
 
     private final MarginDailyMapper marginDailyMapper;
     private final MarginStockMapper marginStockMapper;
+    private final BatchSqlRunner batchSqlRunner;
     private final ObjectMapper objectMapper;
-    private final SqlSessionFactory sqlSessionFactory;
 
     public MarginCleanseService(MarginDailyMapper marginDailyMapper, MarginStockMapper marginStockMapper,
-                                 ObjectMapper objectMapper, SqlSessionFactory sqlSessionFactory) {
+                                 BatchSqlRunner batchSqlRunner, ObjectMapper objectMapper) {
         this.marginDailyMapper = marginDailyMapper;
         this.marginStockMapper = marginStockMapper;
+        this.batchSqlRunner = batchSqlRunner;
         this.objectMapper = objectMapper;
-        this.sqlSessionFactory = sqlSessionFactory;
     }
 
     @Transactional
@@ -85,10 +81,10 @@ public class MarginCleanseService {
 
         int count = 0;
         if (!toInsert.isEmpty()) {
-            count += executeDailyBatch(toInsert, BATCH_SIZE, (mapper, e) -> mapper.insert(e));
+            count += batchSqlRunner.batchInsert(toInsert);
         }
         if (!toUpdate.isEmpty()) {
-            count += executeDailyBatch(toUpdate, BATCH_SIZE, (mapper, e) -> mapper.updateById(e));
+            count += batchSqlRunner.batchUpdate(toUpdate);
         }
         return count;
     }
@@ -121,38 +117,7 @@ public class MarginCleanseService {
         }
 
         if (!toInsert.isEmpty()) {
-            executeStockBatch(toInsert, BATCH_SIZE, (mapper, e) -> mapper.insert(e));
-        }
-    }
-
-    private int executeDailyBatch(List<MarginDaily> list, int batchSize,
-                                   java.util.function.BiConsumer<MarginDailyMapper, MarginDaily> op) {
-        try (SqlSession session = sqlSessionFactory.openSession(ExecutorType.BATCH)) {
-            MarginDailyMapper mapper = session.getMapper(MarginDailyMapper.class);
-            int count = 0;
-            for (int i = 0; i < list.size(); i++) {
-                op.accept(mapper, list.get(i));
-                count++;
-                if ((i + 1) % batchSize == 0) {
-                    session.flushStatements();
-                }
-            }
-            session.flushStatements();
-            return count;
-        }
-    }
-
-    private void executeStockBatch(List<MarginStock> list, int batchSize,
-                                    java.util.function.BiConsumer<MarginStockMapper, MarginStock> op) {
-        try (SqlSession session = sqlSessionFactory.openSession(ExecutorType.BATCH)) {
-            MarginStockMapper mapper = session.getMapper(MarginStockMapper.class);
-            for (int i = 0; i < list.size(); i++) {
-                op.accept(mapper, list.get(i));
-                if ((i + 1) % batchSize == 0) {
-                    session.flushStatements();
-                }
-            }
-            session.flushStatements();
+            batchSqlRunner.batchInsert(toInsert);
         }
     }
 
