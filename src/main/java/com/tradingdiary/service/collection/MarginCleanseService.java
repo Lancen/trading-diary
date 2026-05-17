@@ -3,6 +3,7 @@ package com.tradingdiary.service.collection;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tradingdiary.collection.CollectionConstants;
 import com.tradingdiary.entity.MarginDaily;
 import com.tradingdiary.entity.MarginStock;
 import com.tradingdiary.mapper.MarginDailyMapper;
@@ -28,7 +29,7 @@ import java.util.stream.Collectors;
 public class MarginCleanseService {
 
     private static final Logger log = LoggerFactory.getLogger(MarginCleanseService.class);
-    private static final int BATCH_SIZE = 500;
+    private static final int BATCH_SIZE = CollectionConstants.DB_BATCH_SIZE;
 
     private final MarginDailyMapper marginDailyMapper;
     private final MarginStockMapper marginStockMapper;

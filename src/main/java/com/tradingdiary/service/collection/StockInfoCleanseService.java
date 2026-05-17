@@ -3,6 +3,7 @@ package com.tradingdiary.service.collection;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tradingdiary.collection.CollectionConstants;
 import com.tradingdiary.entity.StockInfo;
 import com.tradingdiary.mapper.StockInfoMapper;
 import org.apache.ibatis.session.ExecutorType;
@@ -24,8 +25,6 @@ import java.util.stream.Collectors;
 public class StockInfoCleanseService {
 
     private static final Logger log = LoggerFactory.getLogger(StockInfoCleanseService.class);
-    private static final int BATCH_SIZE = 500;
-
     private final StockInfoMapper stockInfoMapper;
     private final ObjectMapper objectMapper;
     private final SqlSessionFactory sqlSessionFactory;
@@ -68,10 +67,10 @@ public class StockInfoCleanseService {
 
         int count = 0;
         if (!toInsert.isEmpty()) {
-            count += executeBatch(toInsert, BATCH_SIZE, (mapper, e) -> mapper.insert(e));
+            count += executeBatch(toInsert, CollectionConstants.DB_BATCH_SIZE, (mapper, e) -> mapper.insert(e));
         }
         if (!toUpdate.isEmpty()) {
-            count += executeBatch(toUpdate, BATCH_SIZE, (mapper, e) -> mapper.updateById(e));
+            count += executeBatch(toUpdate, CollectionConstants.DB_BATCH_SIZE, (mapper, e) -> mapper.updateById(e));
         }
 
         log.info("StockInfo cleanse complete: {} records (insert={}, update={})",

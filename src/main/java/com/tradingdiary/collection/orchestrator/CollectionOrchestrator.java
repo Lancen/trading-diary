@@ -1,5 +1,6 @@
 package com.tradingdiary.collection.orchestrator;
 
+import com.tradingdiary.collection.CollectionConstants;
 import com.tradingdiary.collection.client.AKToolsClient;
 import com.tradingdiary.collection.model.BackfillRequest;
 import com.tradingdiary.entity.DataCollectionLog;
@@ -483,7 +484,7 @@ public class CollectionOrchestrator {
 
         int success = 0;
         int failed = 0;
-        // 每 50 只股票 API 调用后批量写一次 DB
+        // 每 N 只股票 API 调用后批量写一次 DB
         List<String> batchCodes = new ArrayList<>();
         List<String> batchJson = new ArrayList<>();
 
@@ -497,7 +498,7 @@ public class CollectionOrchestrator {
                 batchJson.add(rawJson);
                 success++;
 
-                if (batchCodes.size() >= 50) {
+                if (batchCodes.size() >= CollectionConstants.BACKFILL_ACCUMULATE_SIZE) {
                     stockDailyCleanseService.cleanseHistBatch(batchJson, batchCodes);
                     batchCodes.clear();
                     batchJson.clear();

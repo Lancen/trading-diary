@@ -3,6 +3,7 @@ package com.tradingdiary.service.collection;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tradingdiary.collection.CollectionConstants;
 import com.tradingdiary.collection.client.AKToolsClient;
 import com.tradingdiary.entity.TradeCalendar;
 import com.tradingdiary.mapper.TradeCalendarMapper;
@@ -68,7 +69,7 @@ public class TradeCalendarService {
                 TradeCalendarMapper mapper = session.getMapper(TradeCalendarMapper.class);
                 for (int i = 0; i < newEntries.size(); i++) {
                     mapper.insert(newEntries.get(i));
-                    if ((i + 1) % 500 == 0) {
+                    if ((i + 1) % CollectionConstants.DB_BATCH_SIZE == 0) {
                         session.flushStatements();
                     }
                 }

@@ -3,6 +3,7 @@ package com.tradingdiary.service.collection;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tradingdiary.collection.CollectionConstants;
 import com.tradingdiary.entity.StockDaily;
 import com.tradingdiary.mapper.StockDailyMapper;
 import org.apache.ibatis.session.ExecutorType;
@@ -24,8 +25,6 @@ import java.util.stream.Collectors;
 public class StockDailyCleanseService {
 
     private static final Logger log = LoggerFactory.getLogger(StockDailyCleanseService.class);
-    private static final int BATCH_SIZE = 500;
-
     private final StockDailyMapper stockDailyMapper;
     private final ObjectMapper objectMapper;
     private final SqlSessionFactory sqlSessionFactory;
@@ -103,7 +102,7 @@ public class StockDailyCleanseService {
                     }
                     total++;
                 }
-                if (total > 0 && total % 500 == 0) {
+                if (total > 0 && total % CollectionConstants.DB_BATCH_SIZE == 0) {
                     session.flushStatements();
                 }
             }
@@ -143,7 +142,7 @@ public class StockDailyCleanseService {
             for (int i = 0; i < list.size(); i++) {
                 operation.accept(mapper, list.get(i));
                 count++;
-                if ((i + 1) % BATCH_SIZE == 0) {
+                if ((i + 1) % CollectionConstants.DB_BATCH_SIZE == 0) {
                     session.flushStatements();
                 }
             }
