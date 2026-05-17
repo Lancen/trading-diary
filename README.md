@@ -121,17 +121,16 @@ curl -X POST http://localhost:8080/api/v1/admin/collection/trigger/MARGIN_DAILY_
 
 ### 日常增量采集
 
-后端启动后，以下定时任务自动运行（需 `spring.profiles.active=dev` 或 `prod`）：
+当前阶段全部使用手动触发。后端管理后台 (`/admin/collection`) 提供一键采集按钮。
 
-| 时间 | 任务 | 说明 |
-|------|------|------|
-| 交易日 16:00 | 股票行情快照 | `STOCK_INFO` + `STOCK_DAILY` |
-| 交易日 17:00 | 板块名称 | `INDUSTRY_NAME` + `CONCEPT_NAME` |
-| 交易日 18:00 | 两融明细 | `MARGIN_DAILY_SSE` + `MARGIN_DAILY_SZSE` |
-| 每月 1 号 | 成分股更新 | 手动执行 Playwright 脚本 |
-| 每月 1 号 | raw_data 归档 | 30 天前数据 GZIP 导出 + 物理删除 |
+| 频率 | 任务 | 手动触发命令 |
+|------|------|-------------|
+| 每日 | 股票行情快照 | `POST /api/v1/admin/collection/trigger/STOCK_INFO` |
+| 每日 | 板块名称 | `POST /api/v1/admin/collection/trigger/INDUSTRY_NAME` 等 |
+| 每日 | 两融明细 | `POST /api/v1/admin/collection/trigger/MARGIN_DAILY_SSE` 等 |
+| 每月 | 成分股更新 | `python3 scripts/scrape_ths_constituents.py -o data/constituents.json` |
 
-定时任务执行前自动检查交易日历，非交易日跳过。
+> 定时任务（`@Scheduled`）已在 `CollectionScheduler.java` 中注释暂停，后续需要自动运行时取消注释即可。
 
 ### 数据源对照
 

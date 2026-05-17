@@ -22,6 +22,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
+/**
+ * 定时采集调度器。
+ * 全部定时任务已暂停（@Scheduled 已注释），当前阶段使用手动触发。
+ * 需要恢复时，取消注释 @Scheduled 注解即可。
+ */
 @Component
 @Profile("!test")
 public class CollectionScheduler {
@@ -42,8 +47,9 @@ public class CollectionScheduler {
 
     /**
      * 16:00 on weekdays: Collect stock info and daily OHLCV data.
+     * 已暂停定时执行，改为手动触发。
      */
-    @Scheduled(cron = "0 0 16 * * MON-FRI")
+    // @Scheduled(cron = "0 0 16 * * MON-FRI")
     public void collectStockData() {
         LocalDate today = LocalDate.now();
         if (!isTradeDay(today)) {
@@ -61,8 +67,9 @@ public class CollectionScheduler {
 
     /**
      * 17:00 on weekdays: Collect industry and concept classifications.
+     * 已暂停定时执行，改为手动触发。
      */
-    @Scheduled(cron = "0 0 17 * * MON-FRI")
+    // @Scheduled(cron = "0 0 17 * * MON-FRI")
     public void collectClassificationData() {
         LocalDate today = LocalDate.now();
         if (!isTradeDay(today)) {
@@ -86,8 +93,9 @@ public class CollectionScheduler {
 
     /**
      * 18:00 on weekdays: Collect margin trading details from SSE and SZSE.
+     * 已暂停定时执行，改为手动触发。
      */
-    @Scheduled(cron = "0 0 18 * * MON-FRI")
+    // @Scheduled(cron = "0 0 18 * * MON-FRI")
     public void collectMarginData() {
         LocalDate today = LocalDate.now();
         if (!isTradeDay(today)) {
@@ -107,8 +115,9 @@ public class CollectionScheduler {
      * Monthly archive job: runs at 03:00 on the 1st of each month.
      * Archives raw_data records older than 30 days to a GZIP JSON Lines file,
      * then deletes those archived records.
+     * 已暂停定时执行，改为手动触发。
      */
-    @Scheduled(cron = "0 0 3 1 * *")
+    // @Scheduled(cron = "0 0 3 1 * *")
     public void archiveOldRawData() {
         log.info("Starting monthly raw data archive job");
         LocalDate cutoffDate = LocalDate.now().minusDays(30);
