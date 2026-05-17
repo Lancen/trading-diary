@@ -76,6 +76,7 @@ curl -X POST http://localhost:8080/api/v1/admin/collection/trigger/TRADE_CALENDA
 
 ```bash
 # 全 A 股实时行情快照（代码、名称、最新价、涨跌幅、OHLCV 等），数据源：新浪
+# STOCK_DAILY 复用同一份数据，无需单独采集
 curl -X POST http://localhost:8080/api/v1/admin/collection/trigger/STOCK_INFO
 
 # 历史日线回填（全量 5000+ 只，耗时约 30 分钟），数据源：腾讯
@@ -131,7 +132,7 @@ curl -X POST http://localhost:8080/api/v1/admin/collection/trigger/MARGIN_DAILY_
 | 频率 | 任务 | 手动触发命令 |
 |------|------|-------------|
 | 每日 | 股票行情快照 | `POST /api/v1/admin/collection/trigger/STOCK_INFO` |
-| 每日 | 板块名称 | `POST /api/v1/admin/collection/trigger/INDUSTRY_NAME` 等 |
+| 每日 | 行业/概念名称 | `POST .../trigger/INDUSTRY_NAME` + `CONCEPT_NAME` |
 | 每日 | 两融明细 | `POST /api/v1/admin/collection/trigger/MARGIN_DAILY_SSE` 等 |
 | 每月 | 成分股更新 | `python3 scripts/scrape_ths_constituents.py -o data/constituents.json` |
 
@@ -145,7 +146,7 @@ curl -X POST http://localhost:8080/api/v1/admin/collection/trigger/MARGIN_DAILY_
 | 股票行情 | 新浪 (`stock_zh_a_spot`) | AKTools HTTP |
 | 股票日线 | 腾讯 (`stock_zh_a_hist_tx`) | AKTools HTTP |
 | 行业/概念名称 | 同花顺 (`stock_board_*_name_ths`) | AKTools HTTP |
-| 行业/概念成分股 | 同花顺 (`q.10jqka.com.cn`) | Playwright 月级抓取 |
+| 行业/概念成分股 | 同花顺 (`q.10jqka.com.cn`) | Playwright 月级 → 后台导入 |
 | 两融明细 | 上交所/深交所 (`stock_margin_detail_sse/szse`) | AKTools HTTP |
 
 ### 验证
