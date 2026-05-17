@@ -106,6 +106,17 @@ public class CollectionOrchestrator {
         try {
             log.info("Starting orchestration: dataType={}, tradeDate={}", dataType, tradeDate);
 
+            // 检查是否已有成功的 FETCH，有则复用 raw_data 跳过重复采集
+            Long reuseLogId = findExistingFetchLog(dataType, tradeDate);
+            if (reuseLogId != null) {
+                log.info("复用已有 FETCH 数据: dataType={}, tradeDate={}, logId={}",
+                        dataType, tradeDate, reuseLogId);
+                executeCleanse(dataType, tradeDate, reuseLogId);
+                log.info("Orchestration complete (reused fetch): dataType={}, tradeDate={}",
+                        dataType, tradeDate);
+                return "执行成功（复用已有采集数据）";
+            }
+
             // Step 1: FETCH
             Result fetchResult = executeFetch(dataType, tradeDate);
             if (!fetchResult.success) {
@@ -472,6 +483,19 @@ public class CollectionOrchestrator {
                 success, failed, stocks.size());
         log.info(result);
         return result;
+    }
+
+    /**
+     * 查找当天已有的成功 FETCH 日志，返回 raw_data 的 collection_log_id。
+     * 若不存在则返回 null，需执行完整 FETCH。
+     */
+    private Long findExistingFetchLog(String dataType, LocalDate tradeDate) {
+        DataCollectionLog fetchLog = logMapper.selectLatestByDataTypeAndJobTypeAndTradeDate(
+                dataType, "FETCH", tradeDate);
+        if (fetchLog != null && "SUCCESS".equals(fetchLog.getStatus())) {
+            return fetchLog.getId();
+        }
+        return null;
     }
 
     /**
