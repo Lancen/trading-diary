@@ -10,6 +10,7 @@ import com.tradingdiary.mapper.MarginStockMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -44,6 +45,7 @@ public class MarginCleanseService {
      * @param tradeDate the trade date
      * @return number of margin_daily records saved
      */
+    @Transactional
     public int cleanse(String rawJson, String exchange, LocalDate tradeDate) {
         List<MarginDaily> dailyList = parseMarginDailyList(rawJson, exchange, tradeDate);
         if (dailyList.isEmpty()) {

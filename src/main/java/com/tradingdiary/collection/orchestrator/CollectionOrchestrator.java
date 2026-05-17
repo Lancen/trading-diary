@@ -106,21 +106,29 @@ public class CollectionOrchestrator {
         try {
             log.info("Starting orchestration: dataType={}, tradeDate={}", dataType, tradeDate);
 
+            // STOCK_DAILY 复用 STOCK_INFO 的 FETCH 数据（同一 API，同一份 JSON）
+            if ("STOCK_DAILY".equals(dataType)) {
+                Long stockInfoLogId = findExistingFetchLog("STOCK_INFO", tradeDate);
+                if (stockInfoLogId == null) {
+                    return "请先采集股票基础信息（STOCK_INFO），日线行情复用同一份数据";
+                }
+                log.info("STOCK_DAILY 复用 STOCK_INFO FETCH 数据: tradeDate={}, logId={}", tradeDate, stockInfoLogId);
+                executeCleanse(dataType, tradeDate, stockInfoLogId);
+                return "执行成功（复用股票基础信息采集数据）";
+            }
+
             // 检查是否已有成功的 FETCH，有则复用 raw_data 跳过重复采集
             Long reuseLogId = findExistingFetchLog(dataType, tradeDate);
             if (reuseLogId != null) {
                 log.info("复用已有 FETCH 数据: dataType={}, tradeDate={}, logId={}",
                         dataType, tradeDate, reuseLogId);
                 executeCleanse(dataType, tradeDate, reuseLogId);
-                log.info("Orchestration complete (reused fetch): dataType={}, tradeDate={}",
-                        dataType, tradeDate);
                 return "执行成功（复用已有采集数据）";
             }
 
             // Step 1: FETCH
             Result fetchResult = executeFetch(dataType, tradeDate);
             if (!fetchResult.success) {
-                log.error("Fetch failed for {} on {}, orchestration stopped", dataType, tradeDate);
                 return "采集失败: " + fetchResult.errorMsg;
             }
 
@@ -217,9 +225,10 @@ public class CollectionOrchestrator {
         String dateStr = tradeDate != null ? tradeDate.toString() : "";
         switch (dataType) {
             case "STOCK_INFO":
-            case "STOCK_DAILY":
-                // Both use stock_zh_a_spot_em — same JSON, different cleanse extraction
                 return aktoolsClient.fetchStockSpot();
+            case "STOCK_DAILY":
+                // STOCK_DAILY 复用 STOCK_INFO 的 FETCH 数据，不应走到这里
+                throw new IllegalStateException("STOCK_DAILY 应复用 STOCK_INFO FETCH，不应直接调用");
             case "INDUSTRY_NAME":
                 return aktoolsClient.fetchIndustryNames();
             case "INDUSTRY_CONS":

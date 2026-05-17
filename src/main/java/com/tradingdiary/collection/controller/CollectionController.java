@@ -36,9 +36,7 @@ public class CollectionController {
         DATA_TYPE_LABELS.put("STOCK_DAILY", "股票日线行情");
         DATA_TYPE_LABELS.put("TRADE_CALENDAR", "交易日历");
         DATA_TYPE_LABELS.put("INDUSTRY_NAME", "行业板块分类");
-        DATA_TYPE_LABELS.put("INDUSTRY_CONS", "行业成分股");
         DATA_TYPE_LABELS.put("CONCEPT_NAME", "概念板块分类");
-        DATA_TYPE_LABELS.put("CONCEPT_CONS", "概念成分股");
         DATA_TYPE_LABELS.put("MARGIN_DAILY_SSE", "两融明细(沪市)");
         DATA_TYPE_LABELS.put("MARGIN_DAILY_SZSE", "两融明细(深市)");
     }
