@@ -164,21 +164,22 @@ public class MarginCleanseService {
                 return result;
             }
 
+            boolean isSZSE = "SZSE".equals(exchange);
             for (JsonNode node : root) {
                 MarginDaily daily = new MarginDaily();
-                // SSE 用 "标的证券代码"，SZSE 用 "证券代码"
-                String code = safeText(node, "标的证券代码");
-                if (code == null) code = safeText(node, "证券代码");
+                // SSE: 标的证券代码/简称, SZSE: 证券代码/简称
+                String code = isSZSE ? safeText(node, "证券代码") : safeText(node, "标的证券代码");
                 daily.setStockCode(code);
                 daily.setTradeDate(tradeDate);
                 daily.setExchange(exchange);
                 daily.setMarginBalance(safeDecimal(node, "融资余额"));
                 daily.setMarginBuy(safeDecimal(node, "融资买入额"));
-                daily.setMarginRepay(safeDecimal(node, "融资偿还额"));
+                daily.setMarginRepay(safeDecimal(node, "融资偿还额")); // SZSE 无此字段
                 daily.setShortBalance(safeDecimal(node, "融券余额"));
                 daily.setShortSellVol(safeLong(node, "融券卖出量"));
-                daily.setShortRepayVol(safeLong(node, "融券偿还量"));
+                daily.setShortRepayVol(safeLong(node, "融券偿还量")); // SZSE 无此字段
                 daily.setShortRemainVol(safeLong(node, "融券余量"));
+                // SZSE: 融资融券余额(汇总), SSE: 无此字段(需计算)
                 daily.setTotalBalance(safeDecimal(node, "融资融券余额"));
 
                 if (daily.getStockCode() != null && !daily.getStockCode().isEmpty()) {
