@@ -32,8 +32,7 @@ public class CollectionController {
     private static final Map<String, String> DATA_TYPE_LABELS = new LinkedHashMap<>();
 
     static {
-        DATA_TYPE_LABELS.put("STOCK_INFO", "股票基础信息");
-        DATA_TYPE_LABELS.put("STOCK_DAILY", "股票日线行情");
+        DATA_TYPE_LABELS.put("STOCK_INFO", "股票行情（含日线）");
         DATA_TYPE_LABELS.put("TRADE_CALENDAR", "交易日历");
         DATA_TYPE_LABELS.put("INDUSTRY_NAME", "行业板块分类");
         DATA_TYPE_LABELS.put("CONCEPT_NAME", "概念板块分类");

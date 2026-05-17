@@ -123,6 +123,9 @@ public class CollectionOrchestrator {
                 log.info("复用已有 FETCH 数据: dataType={}, tradeDate={}, logId={}",
                         dataType, tradeDate, reuseLogId);
                 executeCleanse(dataType, tradeDate, reuseLogId);
+                if ("STOCK_INFO".equals(dataType)) {
+                    executeCleanse("STOCK_DAILY", tradeDate, reuseLogId);
+                }
                 return "执行成功（复用已有采集数据）";
             }
 
@@ -134,6 +137,12 @@ public class CollectionOrchestrator {
 
             // Step 2: CLEANSE
             executeCleanse(dataType, tradeDate, fetchResult.collectionLogId);
+
+            // STOCK_INFO 完成后联动执行 STOCK_DAILY CLEANSE（复用同一份 FETCH 数据）
+            if ("STOCK_INFO".equals(dataType)) {
+                log.info("STOCK_INFO done, 联动执行 STOCK_DAILY CLEANSE: tradeDate={}", tradeDate);
+                executeCleanse("STOCK_DAILY", tradeDate, fetchResult.collectionLogId);
+            }
 
             log.info("Orchestration complete: dataType={}, tradeDate={}", dataType, tradeDate);
             return "执行成功";
