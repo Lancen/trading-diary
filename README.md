@@ -97,14 +97,19 @@ curl -X POST http://localhost:8080/api/v1/admin/collection/trigger/CONCEPT_NAME
 **数据源为同花顺页面，需通过 Playwright 抓取（非实时 API）。**
 
 ```bash
-# 抓取全部行业+概念成分股，输出 JSON，耗时约 20 分钟
-python3 scripts/scrape_ths_constituents.py -o data/constituents.json
+# 抓取全部行业+概念成分股，自动保存到 data/constituents/constituents-YYYY-MM-DD.json
+# 耗时约 20 分钟
+python3 scripts/scrape_ths_constituents.py
 
 # 仅抓取概念（调试/快速验证）
-python3 scripts/scrape_ths_constituents.py --concept --limit 5 -o data/constituents_test.json
+python3 scripts/scrape_ths_constituents.py --concept --limit 5
 ```
 
-输出 JSON 中的 `stocks` 列表按板块逐个写入 `stock_industry` / `stock_concept` 表（code=板块代码, stock_code=成分股代码）。每月执行一次即可。
+抓取完成后，在管理后台 "采集状态" 页面（`/admin/collection`）底部的 "成分股数据" 区域：
+- 可以看到已抓取的文件列表（采集日期、板块数、关系总数）
+- 点击 **导入** 按钮将数据写入 `stock_industry` / `stock_concept` 表
+
+每月执行一次抓取 + 导入即可。
 
 #### 5. 两融交易明细
 
