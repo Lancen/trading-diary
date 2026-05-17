@@ -6,6 +6,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tradingdiary.collection.client.AKToolsClient;
 import com.tradingdiary.entity.TradeCalendar;
 import com.tradingdiary.mapper.TradeCalendarMapper;
+import org.apache.ibatis.session.ExecutorType;
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -24,13 +27,16 @@ public class TradeCalendarService {
     private final AKToolsClient aktoolsClient;
     private final TradeCalendarMapper tradeCalendarMapper;
     private final ObjectMapper objectMapper;
+    private final SqlSessionFactory sqlSessionFactory;
 
     public TradeCalendarService(AKToolsClient aktoolsClient,
                                 TradeCalendarMapper tradeCalendarMapper,
-                                ObjectMapper objectMapper) {
+                                ObjectMapper objectMapper,
+                                SqlSessionFactory sqlSessionFactory) {
         this.aktoolsClient = aktoolsClient;
         this.tradeCalendarMapper = tradeCalendarMapper;
         this.objectMapper = objectMapper;
+        this.sqlSessionFactory = sqlSessionFactory;
     }
 
     public int syncTradeCalendar() {
@@ -58,8 +64,15 @@ public class TradeCalendarService {
         }
 
         if (!newEntries.isEmpty()) {
-            for (TradeCalendar entry : newEntries) {
-                tradeCalendarMapper.insert(entry);
+            try (SqlSession session = sqlSessionFactory.openSession(ExecutorType.BATCH)) {
+                TradeCalendarMapper mapper = session.getMapper(TradeCalendarMapper.class);
+                for (int i = 0; i < newEntries.size(); i++) {
+                    mapper.insert(newEntries.get(i));
+                    if ((i + 1) % 500 == 0) {
+                        session.flushStatements();
+                    }
+                }
+                session.flushStatements();
             }
         }
 

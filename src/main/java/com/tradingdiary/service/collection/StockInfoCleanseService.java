@@ -5,9 +5,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tradingdiary.entity.StockInfo;
 import com.tradingdiary.mapper.StockInfoMapper;
+import org.apache.ibatis.session.ExecutorType;
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -20,24 +24,20 @@ import java.util.stream.Collectors;
 public class StockInfoCleanseService {
 
     private static final Logger log = LoggerFactory.getLogger(StockInfoCleanseService.class);
+    private static final int BATCH_SIZE = 500;
 
     private final StockInfoMapper stockInfoMapper;
     private final ObjectMapper objectMapper;
+    private final SqlSessionFactory sqlSessionFactory;
 
-    public StockInfoCleanseService(StockInfoMapper stockInfoMapper, ObjectMapper objectMapper) {
+    public StockInfoCleanseService(StockInfoMapper stockInfoMapper, ObjectMapper objectMapper,
+                                    SqlSessionFactory sqlSessionFactory) {
         this.stockInfoMapper = stockInfoMapper;
         this.objectMapper = objectMapper;
+        this.sqlSessionFactory = sqlSessionFactory;
     }
 
-    /**
-     * Cleanse stock_zh_a_spot_em JSON into StockInfo entities.
-     * Uses INSERT ON DUPLICATE KEY UPDATE pattern: query existing by unique key,
-     * set ID on matched entities, then saveOrUpdate.
-     *
-     * @param rawJson      raw JSON from stock_zh_a_spot_em API
-     * @param snapshotDate the snapshot date
-     * @return number of records inserted/updated
-     */
+    @Transactional
     public int cleanse(String rawJson, LocalDate snapshotDate) {
         List<StockInfo> entities = parseStockInfoList(rawJson, snapshotDate);
         if (entities.isEmpty()) {
@@ -45,7 +45,6 @@ public class StockInfoCleanseService {
             return 0;
         }
 
-        // Query existing records for this snapshot date
         List<StockInfo> existing = stockInfoMapper.selectList(
                 new LambdaQueryWrapper<StockInfo>()
                         .eq(StockInfo::getSnapshotDate, snapshotDate)
@@ -67,14 +66,37 @@ public class StockInfoCleanseService {
             }
         }
 
-        // 分批写入，每 500 条提交一次
         int count = 0;
-        count += batchInsert(toInsert, 500);
-        count += batchUpdate(toUpdate, 500);
+        if (!toInsert.isEmpty()) {
+            count += executeBatch(toInsert, BATCH_SIZE, (mapper, e) -> mapper.insert(e));
+        }
+        if (!toUpdate.isEmpty()) {
+            count += executeBatch(toUpdate, BATCH_SIZE, (mapper, e) -> mapper.updateById(e));
+        }
 
-        log.info("StockInfo cleanse complete: {} records for {} (insert={}, update={})",
-                count, snapshotDate, toInsert.size(), toUpdate.size());
+        log.info("StockInfo cleanse complete: {} records (insert={}, update={})",
+                count, toInsert.size(), toUpdate.size());
         return count;
+    }
+
+    /**
+     * 使用 MyBatis BATCH 模式执行批处理，配合 rewriteBatchedStatements=true 实现真正的 JDBC 批量写入。
+     */
+    private int executeBatch(List<StockInfo> list, int batchSize,
+                              java.util.function.BiConsumer<StockInfoMapper, StockInfo> operation) {
+        try (SqlSession session = sqlSessionFactory.openSession(ExecutorType.BATCH)) {
+            StockInfoMapper mapper = session.getMapper(StockInfoMapper.class);
+            int count = 0;
+            for (int i = 0; i < list.size(); i++) {
+                operation.accept(mapper, list.get(i));
+                count++;
+                if ((i + 1) % batchSize == 0) {
+                    session.flushStatements();
+                }
+            }
+            session.flushStatements();
+            return count;
+        }
     }
 
     private List<StockInfo> parseStockInfoList(String rawJson, LocalDate snapshotDate) {
@@ -94,7 +116,7 @@ public class StockInfoCleanseService {
             }
         } catch (Exception e) {
             log.error("Failed to parse stock info JSON", e);
-            throw new RuntimeException("Failed to parse stock info data: " + e.getMessage(), e);
+            throw new RuntimeException("解析股票基础信息数据失败: " + e.getMessage(), e);
         }
         return result;
     }
@@ -146,29 +168,5 @@ public class StockInfoCleanseService {
         } catch (Exception e) {
             return null;
         }
-    }
-
-    private int batchInsert(List<StockInfo> list, int batchSize) {
-        int count = 0;
-        for (int i = 0; i < list.size(); i += batchSize) {
-            int end = Math.min(i + batchSize, list.size());
-            for (int j = i; j < end; j++) {
-                stockInfoMapper.insert(list.get(j));
-                count++;
-            }
-        }
-        return count;
-    }
-
-    private int batchUpdate(List<StockInfo> list, int batchSize) {
-        int count = 0;
-        for (int i = 0; i < list.size(); i += batchSize) {
-            int end = Math.min(i + batchSize, list.size());
-            for (int j = i; j < end; j++) {
-                stockInfoMapper.updateById(list.get(j));
-                count++;
-            }
-        }
-        return count;
     }
 }

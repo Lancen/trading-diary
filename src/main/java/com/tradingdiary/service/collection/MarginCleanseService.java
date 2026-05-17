@@ -7,6 +7,9 @@ import com.tradingdiary.entity.MarginDaily;
 import com.tradingdiary.entity.MarginStock;
 import com.tradingdiary.mapper.MarginDailyMapper;
 import com.tradingdiary.mapper.MarginStockMapper;
+import org.apache.ibatis.session.ExecutorType;
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -15,36 +18,31 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
 public class MarginCleanseService {
 
     private static final Logger log = LoggerFactory.getLogger(MarginCleanseService.class);
+    private static final int BATCH_SIZE = 500;
 
     private final MarginDailyMapper marginDailyMapper;
     private final MarginStockMapper marginStockMapper;
     private final ObjectMapper objectMapper;
+    private final SqlSessionFactory sqlSessionFactory;
 
-    public MarginCleanseService(MarginDailyMapper marginDailyMapper,
-                                MarginStockMapper marginStockMapper,
-                                ObjectMapper objectMapper) {
+    public MarginCleanseService(MarginDailyMapper marginDailyMapper, MarginStockMapper marginStockMapper,
+                                 ObjectMapper objectMapper, SqlSessionFactory sqlSessionFactory) {
         this.marginDailyMapper = marginDailyMapper;
         this.marginStockMapper = marginStockMapper;
         this.objectMapper = objectMapper;
+        this.sqlSessionFactory = sqlSessionFactory;
     }
 
-    /**
-     * Cleanse margin detail JSON (from stock_margin_detail_sse or stock_margin_detail_szse)
-     * and save to margin_daily + margin_stock tables.
-     *
-     * @param rawJson   raw JSON from margin detail API
-     * @param exchange  "SSE" or "SZSE"
-     * @param tradeDate the trade date
-     * @return number of margin_daily records saved
-     */
     @Transactional
     public int cleanse(String rawJson, String exchange, LocalDate tradeDate) {
         List<MarginDaily> dailyList = parseMarginDailyList(rawJson, exchange, tradeDate);
@@ -53,19 +51,15 @@ public class MarginCleanseService {
             return 0;
         }
 
-        // Save margin_daily records
-        int dailyCount = saveMarginDailyList(dailyList, exchange, tradeDate);
-
-        // Extract unique stock codes and save to margin_stock
-        saveMarginStocks(dailyList, exchange, tradeDate);
+        int dailyCount = saveMarginDailyBatch(dailyList, exchange, tradeDate);
+        saveMarginStocksBatch(dailyList, exchange, tradeDate);
 
         log.info("Margin cleanse complete: {} margin_daily records for {} on {}",
                 dailyCount, exchange, tradeDate);
         return dailyCount;
     }
 
-    private int saveMarginDailyList(List<MarginDaily> dailyList, String exchange, LocalDate tradeDate) {
-        // Query existing for this exchange + trade date combo
+    private int saveMarginDailyBatch(List<MarginDaily> dailyList, String exchange, LocalDate tradeDate) {
         List<MarginDaily> existing = marginDailyMapper.selectList(
                 new LambdaQueryWrapper<MarginDaily>()
                         .eq(MarginDaily::getExchange, exchange)
@@ -75,22 +69,35 @@ public class MarginCleanseService {
         Map<String, MarginDaily> existingByCode = existing.stream()
                 .collect(Collectors.toMap(MarginDaily::getStockCode, e -> e, (a, b) -> a));
 
-        int count = 0;
+        List<MarginDaily> toInsert = new ArrayList<>();
+        List<MarginDaily> toUpdate = new ArrayList<>();
+
         for (MarginDaily entity : dailyList) {
             MarginDaily existingEntity = existingByCode.get(entity.getStockCode());
             if (existingEntity != null) {
                 entity.setId(existingEntity.getId());
-                marginDailyMapper.updateById(entity);
+                toUpdate.add(entity);
             } else {
-                marginDailyMapper.insert(entity);
+                toInsert.add(entity);
             }
-            count++;
+        }
+
+        int count = 0;
+        if (!toInsert.isEmpty()) {
+            count += executeDailyBatch(toInsert, BATCH_SIZE, (mapper, e) -> mapper.insert(e));
+        }
+        if (!toUpdate.isEmpty()) {
+            count += executeDailyBatch(toUpdate, BATCH_SIZE, (mapper, e) -> mapper.updateById(e));
         }
         return count;
     }
 
-    private void saveMarginStocks(List<MarginDaily> dailyList, String exchange, LocalDate tradeDate) {
-        // Query existing margin stocks for this exchange
+    private void saveMarginStocksBatch(List<MarginDaily> dailyList, String exchange, LocalDate tradeDate) {
+        Set<String> stockCodes = new HashSet<>();
+        for (MarginDaily d : dailyList) {
+            if (d.getStockCode() != null) stockCodes.add(d.getStockCode());
+        }
+
         List<MarginStock> existing = marginStockMapper.selectList(
                 new LambdaQueryWrapper<MarginStock>()
                         .eq(MarginStock::getExchange, exchange)
@@ -100,37 +107,51 @@ public class MarginCleanseService {
         Map<String, MarginStock> existingByCode = existing.stream()
                 .collect(Collectors.toMap(MarginStock::getStockCode, e -> e, (a, b) -> a));
 
-        // Deduplicate by stock code (name from the first occurrence)
-        Map<String, String> stockNameMap = dailyList.stream()
-                .filter(d -> d.getStockCode() != null)
-                .collect(Collectors.toMap(
-                        MarginDaily::getStockCode,
-                        d -> d.getStockCode(), // use code as name fallback
-                        (a, b) -> a
-                ));
-
-        int saved = 0;
-        for (Map.Entry<String, String> entry : stockNameMap.entrySet()) {
-            String stockCode = entry.getKey();
-            MarginStock existingStock = existingByCode.get(stockCode);
-            if (existingStock != null) {
-                existingStock.setIsMargin(1);
-                existingStock.setIsShort(1);
-                existingStock.setSnapDate(tradeDate);
-                marginStockMapper.updateById(existingStock);
-            } else {
-                MarginStock marginStock = new MarginStock();
-                marginStock.setStockCode(stockCode);
-                marginStock.setStockName(stockCode); // stock name not available in margin detail API, use code
-                marginStock.setExchange(exchange);
-                marginStock.setIsMargin(1);
-                marginStock.setIsShort(1);
-                marginStock.setSnapDate(tradeDate);
-                marginStockMapper.insert(marginStock);
+        List<MarginStock> toInsert = new ArrayList<>();
+        for (String code : stockCodes) {
+            if (!existingByCode.containsKey(code)) {
+                MarginStock ms = new MarginStock();
+                ms.setStockCode(code);
+                ms.setExchange(exchange);
+                ms.setSnapDate(tradeDate);
+                toInsert.add(ms);
             }
-            saved++;
         }
-        log.info("Saved {} margin_stock records for {} on {}", saved, exchange, tradeDate);
+
+        if (!toInsert.isEmpty()) {
+            executeStockBatch(toInsert, BATCH_SIZE, (mapper, e) -> mapper.insert(e));
+        }
+    }
+
+    private int executeDailyBatch(List<MarginDaily> list, int batchSize,
+                                   java.util.function.BiConsumer<MarginDailyMapper, MarginDaily> op) {
+        try (SqlSession session = sqlSessionFactory.openSession(ExecutorType.BATCH)) {
+            MarginDailyMapper mapper = session.getMapper(MarginDailyMapper.class);
+            int count = 0;
+            for (int i = 0; i < list.size(); i++) {
+                op.accept(mapper, list.get(i));
+                count++;
+                if ((i + 1) % batchSize == 0) {
+                    session.flushStatements();
+                }
+            }
+            session.flushStatements();
+            return count;
+        }
+    }
+
+    private void executeStockBatch(List<MarginStock> list, int batchSize,
+                                    java.util.function.BiConsumer<MarginStockMapper, MarginStock> op) {
+        try (SqlSession session = sqlSessionFactory.openSession(ExecutorType.BATCH)) {
+            MarginStockMapper mapper = session.getMapper(MarginStockMapper.class);
+            for (int i = 0; i < list.size(); i++) {
+                op.accept(mapper, list.get(i));
+                if ((i + 1) % batchSize == 0) {
+                    session.flushStatements();
+                }
+            }
+            session.flushStatements();
+        }
     }
 
     private List<MarginDaily> parseMarginDailyList(String rawJson, String exchange, LocalDate tradeDate) {
@@ -143,32 +164,28 @@ public class MarginCleanseService {
             }
 
             for (JsonNode node : root) {
-                MarginDaily daily = parseMarginDaily(node, exchange, tradeDate);
-                if (daily != null && daily.getStockCode() != null && !daily.getStockCode().isEmpty()) {
+                MarginDaily daily = new MarginDaily();
+                daily.setStockCode(safeText(node, "标的证券代码"));
+                daily.setTradeDate(tradeDate);
+                daily.setExchange(exchange);
+                daily.setMarginBalance(safeDecimal(node, "融资余额"));
+                daily.setMarginBuy(safeDecimal(node, "融资买入额"));
+                daily.setMarginRepay(safeDecimal(node, "融资偿还额"));
+                daily.setShortBalance(safeDecimal(node, "融券余额"));
+                daily.setShortSellVol(safeLong(node, "融券卖出量"));
+                daily.setShortRepayVol(safeLong(node, "融券偿还量"));
+                daily.setShortRemainVol(safeLong(node, "融券余量"));
+                daily.setTotalBalance(safeDecimal(node, "融资融券余额"));
+
+                if (daily.getStockCode() != null && !daily.getStockCode().isEmpty()) {
                     result.add(daily);
                 }
             }
         } catch (Exception e) {
             log.error("Failed to parse margin detail JSON for {} on {}", exchange, tradeDate, e);
-            throw new RuntimeException("Failed to parse margin detail data: " + e.getMessage(), e);
+            throw new RuntimeException("解析两融明细数据失败: " + e.getMessage(), e);
         }
         return result;
-    }
-
-    private MarginDaily parseMarginDaily(JsonNode node, String exchange, LocalDate tradeDate) {
-        MarginDaily daily = new MarginDaily();
-        daily.setStockCode(safeText(node, "股票代码"));
-        daily.setTradeDate(tradeDate);
-        daily.setExchange(exchange);
-        daily.setMarginBalance(safeDecimal(node, "融资余额"));
-        daily.setMarginBuy(safeDecimal(node, "融资买入额"));
-        daily.setMarginRepay(safeDecimal(node, "融资偿还额"));
-        daily.setShortBalance(safeDecimal(node, "融券余额"));
-        daily.setShortSellVol(safeLong(node, "融券卖出量"));
-        daily.setShortRepayVol(safeLong(node, "融券偿还量"));
-        daily.setShortRemainVol(safeLong(node, "融券余量"));
-        daily.setTotalBalance(safeDecimal(node, "总余额"));
-        return daily;
     }
 
     private String safeText(JsonNode node, String field) {
