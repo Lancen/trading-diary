@@ -57,6 +57,12 @@ export default function CollectionPage() {
   const [constituentFiles, setConstituentFiles] = useState<any[]>([]);
   const [filesLoading, setFilesLoading] = useState(false);
   const [importingFile, setImportingFile] = useState<string | null>(null);
+  const [backfillOpen, setBackfillOpen] = useState(false);
+  const [bfDataType, setBfDataType] = useState("STOCK_DAILY");
+  const [bfStart, setBfStart] = useState(new Date().toISOString().slice(0, 10));
+  const [bfEnd, setBfEnd] = useState(new Date().toISOString().slice(0, 10));
+  const [bfExchange, setBfExchange] = useState("SSE");
+  const [bfSubmitting, setBfSubmitting] = useState(false);
   const toast = useToast((s) => s.toast);
 
   useEffect(() => { fetchStatus(); fetchConstituentFiles(); }, []);
@@ -134,6 +140,26 @@ export default function CollectionPage() {
     }
   }
 
+  async function handleBackfillSubmit() {
+    setBfSubmitting(true);
+    try {
+      const res = await api.post("api/v1/admin/collection/backfill", {
+        json: { dataType: bfDataType, exchange: bfExchange, startDate: bfStart, endDate: bfEnd },
+      }).json<{ code: number; msg?: string }>();
+      if (res.code === 200) {
+        toast(`补采任务已提交: ${bfDataType} ${bfStart}~${bfEnd}`, "success");
+        setBackfillOpen(false);
+        setTimeout(() => fetchStatus(), 5000);
+      } else {
+        toast(`补采失败: ${res.msg || "未知错误"}`, "error");
+      }
+    } catch (e) {
+      toast("补采请求失败", "error");
+    } finally {
+      setBfSubmitting(false);
+    }
+  }
+
   const runningCount = statusList.filter(s => s.lastFetch?.status === "RUNNING" || s.lastCleanse?.status === "RUNNING").length;
   const successCount = statusList.filter(s => s.lastFetch?.status === "SUCCESS" && (!s.lastCleanse || s.lastCleanse.status === "SUCCESS")).length;
   const failedCount = statusList.filter(s => s.lastFetch?.status === "FAILED" || s.lastCleanse?.status === "FAILED").length;
@@ -142,7 +168,10 @@ export default function CollectionPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">采集状态</h1>
-        <button onClick={fetchStatus} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">刷新</button>
+        <div className="flex gap-2">
+          <button onClick={() => setBackfillOpen(true)} className="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-gray-50">历史补采</button>
+          <button onClick={fetchStatus} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">刷新</button>
+        </div>
       </div>
       <div className="flex gap-4">
         <div className="rounded-lg border bg-green-50 px-4 py-3"><div className="text-sm text-gray-600">成功</div><div className="text-2xl font-bold text-green-700">{successCount}</div></div>
@@ -249,6 +278,51 @@ export default function CollectionPage() {
           </div>
         )}
       </div>
+
+      {/* 历史补采弹窗 */}
+      {backfillOpen && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setBackfillOpen(false)} />
+          <div className="relative z-50 w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
+            <h2 className="mb-4 text-lg font-bold">历史数据补采</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">数据类型</label>
+                <select value={bfDataType} onChange={(e) => setBfDataType(e.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2 text-sm">
+                  <option value="STOCK_DAILY">股票日线（腾讯 hist_tx）</option>
+                  <option value="MARGIN_DAILY_SSE">两融明细(沪市)</option>
+                  <option value="MARGIN_DAILY_SZSE">两融明细(深市)</option>
+                </select>
+              </div>
+              {bfDataType !== "STOCK_DAILY" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">交易所</label>
+                  <select value={bfExchange} onChange={(e) => setBfExchange(e.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2 text-sm">
+                    <option value="SSE">上交所</option>
+                    <option value="SZSE">深交所</option>
+                  </select>
+                </div>
+              )}
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-700">开始日期</label>
+                  <input type="date" value={bfStart} onChange={(e) => setBfStart(e.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2 text-sm" />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-700">结束日期</label>
+                  <input type="date" value={bfEnd} onChange={(e) => setBfEnd(e.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2 text-sm" />
+                </div>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button onClick={() => setBackfillOpen(false)} disabled={bfSubmitting} className="rounded-lg border px-4 py-2 text-sm hover:bg-gray-50">取消</button>
+              <button onClick={handleBackfillSubmit} disabled={bfSubmitting} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
+                {bfSubmitting ? "提交中..." : "开始补采"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
