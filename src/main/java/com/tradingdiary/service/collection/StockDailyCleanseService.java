@@ -35,6 +35,14 @@ public class StockDailyCleanseService {
 
     /**
      * 清洗股票日线数据
+     * <p>
+     * 从原始JSON数据中解析股票日线信息，并与数据库中已有数据进行对比。
+     * 新数据执行插入操作，已存在数据执行更新操作。
+     * </p>
+     *
+     * @param rawJson 原始JSON数据字符串
+     * @param tradeDate 交易日期
+     * @return 处理的记录总数（插入+更新）
      */
     @Transactional
     public int cleanse(String rawJson, LocalDate tradeDate) {
@@ -80,6 +88,14 @@ public class StockDailyCleanseService {
 
     /**
      * 批量清洗历史股票日线数据
+     * <p>
+     * 处理多只股票的历史日线数据，支持批量导入场景。
+     * 自动识别新增和更新记录，执行相应的数据库操作。
+     * </p>
+     *
+     * @param rawJsonList 原始JSON数据列表，每个元素对应一只股票的数据
+     * @param stockCodes 股票代码列表，与rawJsonList一一对应
+     * @return 处理的记录总数（插入+更新）
      */
     @Transactional
     public int cleanseHistBatch(List<String> rawJsonList, List<String> stockCodes) {
@@ -116,6 +132,14 @@ public class StockDailyCleanseService {
 
     /**
      * 清洗单只股票的历史日线数据
+     * <p>
+     * 处理单只股票的历史日线数据，自动识别新增和更新记录。
+     * 适用于单只股票的数据补采场景。
+     * </p>
+     *
+     * @param rawJson 原始JSON数据字符串
+     * @param stockCode 股票代码
+     * @return 处理的记录总数（插入+更新）
      */
     @Transactional
     public int cleanseHistJson(String rawJson, String stockCode) {

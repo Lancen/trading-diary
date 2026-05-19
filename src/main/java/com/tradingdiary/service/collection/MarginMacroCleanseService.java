@@ -34,6 +34,14 @@ public class MarginMacroCleanseService {
 
     /**
      * 清洗两融总量数据
+     * <p>
+     * 从原始JSON数据中解析两融总量信息，包括融资买入额、融资余额、融券卖出量等。
+     * 按交易日维护总量数据，支持历史数据补全。
+     * </p>
+     *
+     * @param rawJson 原始JSON数据字符串
+     * @param exchange 交易所代码，"SSE"表示沪市，"SZSE"表示深市
+     * @return 处理的记录总数（插入+更新）
      */
     @Transactional
     public int cleanse(String rawJson, String exchange) {

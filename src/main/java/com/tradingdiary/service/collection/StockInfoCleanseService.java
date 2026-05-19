@@ -35,6 +35,14 @@ public class StockInfoCleanseService {
 
     /**
      * 清洗股票基础信息数据
+     * <p>
+     * 从原始JSON数据中解析股票基础信息，包括代码、名称、最新价、涨跌幅等。
+     * 按快照日期维护数据，同一股票在同一天的数据会执行更新操作。
+     * </p>
+     *
+     * @param rawJson 原始JSON数据字符串
+     * @param snapshotDate 快照日期
+     * @return 处理的记录总数（插入+更新）
      */
     @Transactional
     public int cleanse(String rawJson, LocalDate snapshotDate) {

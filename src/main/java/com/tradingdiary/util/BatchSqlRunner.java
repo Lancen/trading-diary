@@ -3,6 +3,7 @@ package com.tradingdiary.util;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.tradingdiary.collection.CollectionConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -25,7 +26,6 @@ import java.util.concurrent.ConcurrentMap;
 public class BatchSqlRunner {
 
     private static final Logger log = LoggerFactory.getLogger(BatchSqlRunner.class);
-    private static final int DEFAULT_BATCH_SIZE = 500;
 
     private final JdbcTemplate jdbcTemplate;
     private final ConcurrentMap<Class<?>, EntityMeta> metaCache = new ConcurrentHashMap<>();
@@ -35,7 +35,7 @@ public class BatchSqlRunner {
     }
 
     public <T> int batchInsert(List<T> entities) {
-        return batchInsert(entities, DEFAULT_BATCH_SIZE);
+        return batchInsert(entities, CollectionConstants.DB_BATCH_SIZE);
     }
 
     public <T> int batchInsert(List<T> entities, int batchSize) {
@@ -51,7 +51,7 @@ public class BatchSqlRunner {
     }
 
     public <T> int batchUpdate(List<T> entities) {
-        return batchUpdate(entities, DEFAULT_BATCH_SIZE);
+        return batchUpdate(entities, CollectionConstants.DB_BATCH_SIZE);
     }
 
     public <T> int batchUpdate(List<T> entities, int batchSize) {

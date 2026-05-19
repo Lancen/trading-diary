@@ -39,6 +39,12 @@ public class TradeCalendarService {
 
     /**
      * 同步交易日历数据
+     * <p>
+     * 从数据源获取最新的交易日历信息，并将新增的交易日保存到数据库。
+     * 已存在的交易日会被跳过，避免重复插入。
+     * </p>
+     *
+     * @return 新增的交易日数量
      */
     public int syncTradeCalendar() {
         log.info("Starting trade calendar sync");
@@ -93,7 +99,7 @@ public class TradeCalendarService {
             }
         } catch (Exception e) {
             log.error("Failed to parse trade calendar response", e);
-            throw new RuntimeException("Failed to parse trade calendar data: " + e.getMessage(), e);
+            throw new RuntimeException("解析交易日历数据失败: " + e.getMessage(), e);
         }
 
         log.info("Parsed {} trade dates from response", dates.size());

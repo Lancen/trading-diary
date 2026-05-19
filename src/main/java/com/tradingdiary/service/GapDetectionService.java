@@ -34,6 +34,15 @@ public class GapDetectionService {
 
     /**
      * 检测指定日期范围内的数据缺口
+     * <p>
+     * 对比交易日历和实际采集的两融数据，返回缺失的交易日数据。
+     * 结果按周分组，便于查看每周的数据完整性。
+     * </p>
+     *
+     * @param start 开始日期
+     * @param end 结束日期
+     * @param exchange 交易所代码，"SSE"表示沪市，"SZSE"表示深市
+     * @return 数据缺口报告，包含每周的完整度统计和缺失日期列表
      */
     public GapReportVO getGaps(LocalDate start, LocalDate end, String exchange) {
         List<TradeCalendar> tradingDays = tradeCalendarMapper.selectTradingDays(start, end);
@@ -96,6 +105,15 @@ public class GapDetectionService {
         return report;
     }
 
+    /**
+     * 按ISO周标准对日期进行分组
+     * <p>
+     * 将日期集合按"年份-W周数"的格式分组，便于按周统计。
+     * </p>
+     *
+     * @param expectedDates 需要分组的日期集合
+     * @return 按周分组的日期映射，key格式为"YYYY-Www"
+     */
     private Map<String, List<LocalDate>> groupByIsoWeek(Set<LocalDate> expectedDates) {
         WeekFields weekFields = WeekFields.ISO;
 

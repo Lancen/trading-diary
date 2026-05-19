@@ -25,7 +25,7 @@ public class ApiResponse<T> {
     }
 
     public static <T> ApiResponse<T> ok(T data) {
-        return new ApiResponse<>(200, "success", data);
+        return new ApiResponse<>(200, "操作成功", data);
     }
 
     public static <T> ApiResponse<T> ok(T data, String message) {

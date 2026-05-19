@@ -44,11 +44,14 @@ public class ConceptCleanseService {
     }
 
     /**
-     * Cleanse concept name list from stock_board_concept_name_em response.
-     * Saves new concept names to the concept table (simple INSERT — change detection in Phase 6).
+     * 清洗概念名称数据
+     * <p>
+     * 从原始JSON数据中解析概念名称信息，并将新增的概念保存到数据库。
+     * 已存在的概念会被跳过，避免重复插入。
+     * </p>
      *
-     * @param rawJson raw JSON from stock_board_concept_name_em API
-     * @return number of new concepts inserted
+     * @param rawJson 原始JSON数据字符串
+     * @return 新插入的概念数量
      */
     public int cleanseNames(String rawJson) {
         List<Concept> concepts = parseConceptNames(rawJson);
@@ -72,14 +75,17 @@ public class ConceptCleanseService {
     }
 
     /**
-     * Cleanse constituent list for ONE concept from stock_board_concept_cons_em response.
-     * Compares today's data with DB records to detect ADD and REMOVE changes,
-     * logging each change to classification_change_log.
+     * 清洗概念成分股数据
+     * <p>
+     * 对比当日数据和数据库记录，检测成分股的增减变化。
+     * 新增的成分股执行插入操作，移除的成分股执行逻辑删除操作。
+     * 所有变化都会记录到分类变更日志中。
+     * </p>
      *
-     * @param rawJson     raw JSON from stock_board_concept_cons_em API
-     * @param conceptCode the concept board code
-     * @param snapDate    the snapshot date
-     * @return number of changes (adds + removals)
+     * @param rawJson 原始JSON数据字符串
+     * @param conceptCode 概念代码
+     * @param snapDate 快照日期
+     * @return 变更数量（新增+移除）
      */
     public int cleanseCons(String rawJson, String conceptCode, LocalDate snapDate) {
         List<StockConcept> todayRelations = parseStockConceptList(rawJson, conceptCode, snapDate);
@@ -160,7 +166,7 @@ public class ConceptCleanseService {
             }
         } catch (Exception e) {
             log.error("Failed to parse concept names JSON", e);
-            throw new RuntimeException("Failed to parse concept names: " + e.getMessage(), e);
+            throw new RuntimeException("解析概念名称失败: " + e.getMessage(), e);
         }
         return result;
     }
@@ -185,7 +191,7 @@ public class ConceptCleanseService {
             }
         } catch (Exception e) {
             log.error("Failed to parse concept constituents JSON for {}", conceptCode, e);
-            throw new RuntimeException("Failed to parse concept constituents: " + e.getMessage(), e);
+            throw new RuntimeException("解析概念成分股失败: " + e.getMessage(), e);
         }
         return result;
     }

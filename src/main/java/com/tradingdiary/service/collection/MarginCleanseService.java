@@ -42,6 +42,15 @@ public class MarginCleanseService {
 
     /**
      * 清洗两融明细数据
+     * <p>
+     * 从原始JSON数据中解析两融明细信息，包括融资余额、融券余量等。
+     * 同时维护两融标的股票列表，确保新标的股票被记录。
+     * </p>
+     *
+     * @param rawJson 原始JSON数据字符串
+     * @param exchange 交易所代码，"SSE"表示沪市，"SZSE"表示深市
+     * @param tradeDate 交易日期
+     * @return 处理的两融明细记录数量
      */
     @Transactional
     public int cleanse(String rawJson, String exchange, LocalDate tradeDate) {

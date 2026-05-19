@@ -44,11 +44,14 @@ public class IndustryCleanseService {
     }
 
     /**
-     * Cleanse industry name list from stock_board_industry_name_em response.
-     * Saves new industry names to the industry table (simple INSERT — change detection in Phase 6).
+     * 清洗行业名称数据
+     * <p>
+     * 从原始JSON数据中解析行业名称信息，并将新增的行业保存到数据库。
+     * 已存在的行业会被跳过，避免重复插入。
+     * </p>
      *
-     * @param rawJson raw JSON from stock_board_industry_name_em API
-     * @return number of new industries inserted
+     * @param rawJson 原始JSON数据字符串
+     * @return 新插入的行业数量
      */
     public int cleanseNames(String rawJson) {
         List<Industry> industries = parseIndustryNames(rawJson);
@@ -72,14 +75,17 @@ public class IndustryCleanseService {
     }
 
     /**
-     * Cleanse constituent list for ONE industry from stock_board_industry_cons_em response.
-     * Compares today's data with DB records to detect ADD and REMOVE changes,
-     * logging each change to classification_change_log.
+     * 清洗行业成分股数据
+     * <p>
+     * 对比当日数据和数据库记录，检测成分股的增减变化。
+     * 新增的成分股执行插入操作，移除的成分股执行逻辑删除操作。
+     * 所有变化都会记录到分类变更日志中。
+     * </p>
      *
-     * @param rawJson      raw JSON from stock_board_industry_cons_em API
-     * @param industryCode the industry board code
-     * @param snapDate     the snapshot date
-     * @return number of changes (adds + removals)
+     * @param rawJson 原始JSON数据字符串
+     * @param industryCode 行业代码
+     * @param snapDate 快照日期
+     * @return 变更数量（新增+移除）
      */
     public int cleanseCons(String rawJson, String industryCode, LocalDate snapDate) {
         List<StockIndustry> todayRelations = parseStockIndustryList(rawJson, industryCode, snapDate);
@@ -160,7 +166,7 @@ public class IndustryCleanseService {
             }
         } catch (Exception e) {
             log.error("Failed to parse industry names JSON", e);
-            throw new RuntimeException("Failed to parse industry names: " + e.getMessage(), e);
+            throw new RuntimeException("解析行业名称失败: " + e.getMessage(), e);
         }
         return result;
     }
@@ -185,7 +191,7 @@ public class IndustryCleanseService {
             }
         } catch (Exception e) {
             log.error("Failed to parse industry constituents JSON for {}", industryCode, e);
-            throw new RuntimeException("Failed to parse industry constituents: " + e.getMessage(), e);
+            throw new RuntimeException("解析行业成分股失败: " + e.getMessage(), e);
         }
         return result;
     }

@@ -94,6 +94,14 @@ public class CollectionOrchestrator {
 
     /**
      * 编排执行数据采集和清洗流程
+     * <p>
+     * 根据数据类型和交易日，执行完整的数据采集（FETCH）和清洗（CLEANSE）流程。
+     * 支持数据复用机制，避免重复采集。使用分布式锁确保同一数据类型的采集任务不会并发执行。
+     * </p>
+     *
+     * @param dataType 数据类型，如"STOCK_INFO"、"STOCK_DAILY"、"MARGIN_DAILY_SSE"等
+     * @param tradeDate 交易日期
+     * @return 执行结果描述，包含成功或失败信息
      */
     public String orchestrate(String dataType, LocalDate tradeDate) {
         String lockKey = dataType + "_" + tradeDate;
