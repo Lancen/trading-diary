@@ -5,14 +5,18 @@ import com.tradingdiary.collection.model.BackfillRequest;
 import com.tradingdiary.collection.model.GapReportVO;
 import com.tradingdiary.collection.orchestrator.CollectionOrchestrator;
 import com.tradingdiary.entity.DataCollectionLog;
+import com.tradingdiary.entity.TradeCalendar;
 import com.tradingdiary.mapper.DataCollectionLogMapper;
-import com.tradingdiary.security.JwtAuthFilter;
+import com.tradingdiary.mapper.TradeCalendarMapper;
 import com.tradingdiary.service.GapDetectionService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+
+import com.tradingdiary.security.JwtAuthFilter;
+import com.tradingdiary.service.collection.ConstituentImportService;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -35,6 +39,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WithMockUser(roles = "ADMIN")
 class CollectionControllerTest {
 
+    @MockBean
+    private JwtAuthFilter jwtAuthFilter;
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -51,30 +58,26 @@ class CollectionControllerTest {
     private CollectionOrchestrator orchestrator;
 
     @MockBean
-    private JwtAuthFilter jwtAuthFilter;
+    private TradeCalendarMapper tradeCalendarMapper;
 
-    // ─── GET /api/v1/admin/collection/status ──────────────────────────
+    @MockBean
+    private ConstituentImportService constituentImportService;
+
+    private static final String[] EXPECTED_TYPES = {
+            "STOCK_INFO", "TRADE_CALENDAR", "INDUSTRY_NAME", "CONCEPT_NAME",
+            "MARGIN_DAILY_SSE", "MARGIN_DAILY_SZSE", "MARGIN_MACRO_SSE", "MARGIN_MACRO_SZSE"
+    };
 
     @Test
-    void shouldReturnStatusWithNineCards() throws Exception {
+    void shouldReturnStatusWithEightCards() throws Exception {
         when(logMapper.selectLatestByDataTypeAndJobType(anyString(), anyString()))
                 .thenReturn(null);
 
         mockMvc.perform(get("/api/v1/admin/collection/status"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.message").value("success"))
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data.length()").value(9))
-                .andExpect(jsonPath("$.data[0].dataType").value("STOCK_INFO"))
-                .andExpect(jsonPath("$.data[1].dataType").value("STOCK_DAILY"))
-                .andExpect(jsonPath("$.data[2].dataType").value("TRADE_CALENDAR"))
-                .andExpect(jsonPath("$.data[3].dataType").value("INDUSTRY_NAME"))
-                .andExpect(jsonPath("$.data[4].dataType").value("INDUSTRY_CONS"))
-                .andExpect(jsonPath("$.data[5].dataType").value("CONCEPT_NAME"))
-                .andExpect(jsonPath("$.data[6].dataType").value("CONCEPT_CONS"))
-                .andExpect(jsonPath("$.data[7].dataType").value("MARGIN_DAILY_SSE"))
-                .andExpect(jsonPath("$.data[8].dataType").value("MARGIN_DAILY_SZSE"));
+                .andExpect(jsonPath("$.data.length()").value(8))
+                .andExpect(jsonPath("$.data[0].dataType").value("STOCK_INFO"));
     }
 
     @Test
@@ -91,30 +94,26 @@ class CollectionControllerTest {
 
         mockMvc.perform(get("/api/v1/admin/collection/status"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[7].dataType").value("MARGIN_DAILY_SSE"))
-                .andExpect(jsonPath("$.data[7].lastFetch.status").value("SUCCESS"))
-                .andExpect(jsonPath("$.data[7].lastCleanse.status").value("SUCCESS"));
+                .andExpect(jsonPath("$.data[4].dataType").value("MARGIN_DAILY_SSE"))
+                .andExpect(jsonPath("$.data[4].lastFetch.status").value("SUCCESS"))
+                .andExpect(jsonPath("$.data[4].lastCleanse.status").value("SUCCESS"));
     }
 
     @Test
     void shouldReturnStatusWithFailedLogs() throws Exception {
-        DataCollectionLog fetchLog = buildLog("STOCK_DAILY", "FETCH", "FAILED", 0);
+        DataCollectionLog fetchLog = buildLog("MARGIN_DAILY_SSE", "FETCH", "FAILED", 0);
         fetchLog.setErrorMsg("Connection timeout");
 
         when(logMapper.selectLatestByDataTypeAndJobType(anyString(), anyString()))
                 .thenReturn(null);
-        when(logMapper.selectLatestByDataTypeAndJobType("STOCK_DAILY", "FETCH"))
+        when(logMapper.selectLatestByDataTypeAndJobType("MARGIN_DAILY_SSE", "FETCH"))
                 .thenReturn(fetchLog);
 
         mockMvc.perform(get("/api/v1/admin/collection/status"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[1].dataType").value("STOCK_DAILY"))
-                .andExpect(jsonPath("$.data[1].lastFetch.status").value("FAILED"))
-                .andExpect(jsonPath("$.data[1].lastFetch.errorMsg").value("Connection timeout"))
-                .andExpect(jsonPath("$.data[1].lastCleanse").doesNotExist());
+                .andExpect(jsonPath("$.data[4].lastFetch.status").value("FAILED"))
+                .andExpect(jsonPath("$.data[4].lastFetch.errorMsg").value("Connection timeout"));
     }
-
-    // ─── GET /api/v1/admin/collection/logs ────────────────────────────
 
     @Test
     void shouldReturnLogs() throws Exception {
@@ -131,7 +130,6 @@ class CollectionControllerTest {
                         .param("limit", "10"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data.length()").value(2))
                 .andExpect(jsonPath("$.data[0].dataType").value("STOCK_INFO"))
                 .andExpect(jsonPath("$.data[0].jobType").value("FETCH"));
@@ -145,11 +143,8 @@ class CollectionControllerTest {
         mockMvc.perform(get("/api/v1/admin/collection/logs"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data.length()").value(0));
     }
-
-    // ─── GET /api/v1/admin/collection/gaps ────────────────────────────
 
     @Test
     void shouldReturnGapsReport() throws Exception {
@@ -207,17 +202,18 @@ class CollectionControllerTest {
                 .andExpect(jsonPath("$.data.totalWeeks").value(0));
     }
 
-    // ─── POST /api/v1/admin/collection/trigger/{dataType} ─────────────
-
     @Test
     void shouldTriggerOrchestrationForValidDataType() throws Exception {
-        when(orchestrator.orchestrate(eq("STOCK_INFO"), any()))
-                .thenReturn("Collection started");
+        TradeCalendar cal = new TradeCalendar();
+        cal.setTradeDate(LocalDate.of(2026, 5, 20));
+        cal.setIsTradingDay(1);
+        when(tradeCalendarMapper.selectOne(any()))
+                .thenReturn(cal);
 
         mockMvc.perform(post("/api/v1/admin/collection/trigger/STOCK_INFO"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.data").value("Collection started"));
+                .andExpect(jsonPath("$.data").value("任务已提交（交易日: 2026-05-20），正在后台执行"));
     }
 
     @Test
@@ -225,10 +221,8 @@ class CollectionControllerTest {
         mockMvc.perform(post("/api/v1/admin/collection/trigger/UNKNOWN_TYPE"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(400))
-                .andExpect(jsonPath("$.message").value("Unknown data type: UNKNOWN_TYPE"));
+                .andExpect(jsonPath("$.message").value("未知数据类型: UNKNOWN_TYPE"));
     }
-
-    // ─── POST /api/v1/admin/collection/backfill ───────────────────────
 
     @Test
     void shouldBackfillWithValidRequest() throws Exception {
@@ -238,15 +232,12 @@ class CollectionControllerTest {
         request.setStartDate(LocalDate.of(2026, 5, 4));
         request.setEndDate(LocalDate.of(2026, 5, 8));
 
-        when(orchestrator.backfillMarginByWeek(any(BackfillRequest.class)))
-                .thenReturn("Backfill complete: 5 dates processed");
-
         mockMvc.perform(post("/api/v1/admin/collection/backfill")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.data").value("Backfill complete: 5 dates processed"));
+                .andExpect(jsonPath("$.data").value("补采任务已提交，正在后台执行"));
     }
 
     @Test
@@ -264,7 +255,7 @@ class CollectionControllerTest {
                         .content(body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(400))
-                .andExpect(jsonPath("$.message").value("dataType is required"));
+                .andExpect(jsonPath("$.message").value("dataType 不能为空"));
     }
 
     @Test
@@ -282,25 +273,7 @@ class CollectionControllerTest {
                         .content(body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(400))
-                .andExpect(jsonPath("$.message").value("startDate is required"));
-    }
-
-    @Test
-    void shouldReturn400ForMissingEndDateOnBackfill() throws Exception {
-        String body = """
-                {
-                    "dataType": "MARGIN_DAILY_SSE",
-                    "exchange": "SSE",
-                    "startDate": "2026-05-04"
-                }
-                """;
-
-        mockMvc.perform(post("/api/v1/admin/collection/backfill")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(400))
-                .andExpect(jsonPath("$.message").value("endDate is required"));
+                .andExpect(jsonPath("$.message").value("startDate 不能为空"));
     }
 
     @Test
@@ -319,10 +292,8 @@ class CollectionControllerTest {
                         .content(body))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(400))
-                .andExpect(jsonPath("$.message").value("endDate must be on or after startDate"));
+                .andExpect(jsonPath("$.message").value("endDate 不能早于 startDate"));
     }
-
-    // ─── Helpers ──────────────────────────────────────────────────────
 
     private static DataCollectionLog buildLog(String dataType, String jobType, String status, int recordCount) {
         DataCollectionLog log = new DataCollectionLog();

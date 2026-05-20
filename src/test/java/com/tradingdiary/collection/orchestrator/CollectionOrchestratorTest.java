@@ -108,7 +108,7 @@ class CollectionOrchestratorTest {
         String result = orchestrator.backfillMarginByWeek(request);
 
         // Then
-        assertThat(result).contains("skipped");
+        assertThat(result).contains("已跳过");
         verify(orchestrator, never()).orchestrate(any(), any());
     }
 
@@ -144,7 +144,7 @@ class CollectionOrchestratorTest {
         String result = orchestrator.backfillMarginByWeek(request);
 
         // Then
-        assertThat(result).contains("Backfill complete");
+        assertThat(result).contains("补采完成");
         verify(orchestrator, times(3)).orchestrate(eq("MARGIN_DAILY_SSE"), any());
     }
 
@@ -163,7 +163,7 @@ class CollectionOrchestratorTest {
         String result = orchestrator.backfillMarginByWeek(request);
 
         // Then
-        assertThat(result).contains("No trading days");
+        assertThat(result).contains("此范围无交易日");
         verify(orchestrator, never()).orchestrate(any(), any());
     }
 
@@ -212,7 +212,7 @@ class CollectionOrchestratorTest {
         String result = orchestrator.backfillMarginByWeek(request);
 
         // Then
-        assertThat(result).contains("Backfill complete");
+        assertThat(result).contains("补采完成");
         // Only 2 dates need orchestration (day 1 was already complete)
         verify(orchestrator, times(2)).orchestrate(eq("MARGIN_DAILY_SSE"), any());
     }
@@ -269,8 +269,8 @@ class CollectionOrchestratorTest {
         String result = orchestrator.backfillMarginByWeek(request);
 
         // Then
-        assertThat(result).contains("Backfill complete");
-        assertThat(result).contains("skipped");
+        assertThat(result).contains("补采完成");
+        assertThat(result).contains("已跳过");
         // Only week 2 dates (3 dates) need orchestration
         verify(orchestrator, times(3)).orchestrate(eq("MARGIN_DAILY_SSE"), any());
     }
@@ -285,13 +285,13 @@ class CollectionOrchestratorTest {
         when(stockInfoMapper.selectList(null)).thenReturn(java.util.Arrays.asList(stock1, stock2));
         when(aktoolsClient.fetchStockDaily(eq("000001"), any(), any())).thenReturn("[{\"日期\":\"2026-05-15\",\"开盘\":10.0,\"收盘\":10.5,\"最高\":11.0,\"最低\":9.8,\"成交量\":1000000,\"成交额\":10500000}]");
         when(aktoolsClient.fetchStockDaily(eq("000002"), any(), any())).thenReturn("[{\"日期\":\"2026-05-15\",\"开盘\":20.0,\"收盘\":20.5,\"最高\":21.0,\"最低\":19.8,\"成交量\":2000000,\"成交额\":41000000}]");
-        when(stockDailyCleanseService.cleanseHistJson(any(), any())).thenReturn(1);
+        when(stockDailyCleanseService.cleanseHistBatch(any(), any())).thenReturn(1);
 
         String result = orchestrator.backfillStockDaily(
                 LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 15));
 
-        assertThat(result).contains("2 stocks succeeded", "0 failed");
-        verify(stockDailyCleanseService, times(2)).cleanseHistJson(any(), any());
+        assertThat(result).contains("成功 2 只", "失败 0 只");
+        verify(stockDailyCleanseService, times(1)).cleanseHistBatch(any(), any());
     }
 
     @Test
@@ -301,7 +301,7 @@ class CollectionOrchestratorTest {
         String result = orchestrator.backfillStockDaily(
                 LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 15));
 
-        assertThat(result).contains("No stocks in stock_info table");
+        assertThat(result).contains("stock_info 表无数据");
         verify(aktoolsClient, never()).fetchStockDaily(any(), any(), any());
     }
 
@@ -317,13 +317,13 @@ class CollectionOrchestratorTest {
                 .thenThrow(new RuntimeException("API error"));
         when(aktoolsClient.fetchStockDaily(eq("000002"), any(), any()))
                 .thenReturn("[{\"日期\":\"2026-05-15\",\"开盘\":20.0,\"收盘\":20.5,\"最高\":21.0,\"最低\":19.8,\"成交量\":2000000,\"成交额\":41000000}]");
-        when(stockDailyCleanseService.cleanseHistJson(any(), any())).thenReturn(1);
+        when(stockDailyCleanseService.cleanseHistBatch(any(), any())).thenReturn(1);
 
         String result = orchestrator.backfillStockDaily(
                 LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 15));
 
-        assertThat(result).contains("1 stocks succeeded", "1 failed");
-        verify(stockDailyCleanseService, times(1)).cleanseHistJson(any(), any());
+        assertThat(result).contains("成功 1 只", "失败 1 只");
+        verify(stockDailyCleanseService, times(1)).cleanseHistBatch(any(), any());
     }
 
     private TradeCalendar buildTradingDay(LocalDate date) {

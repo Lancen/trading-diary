@@ -7,6 +7,7 @@ import com.tradingdiary.collection.model.GapReportVO;
 import com.tradingdiary.collection.orchestrator.CollectionOrchestrator;
 import com.tradingdiary.entity.DataCollectionLog;
 import com.tradingdiary.mapper.DataCollectionLogMapper;
+import com.tradingdiary.mapper.TradeCalendarMapper;
 import com.tradingdiary.model.ApiResponse;
 import com.tradingdiary.service.GapDetectionService;
 import org.junit.jupiter.api.Test;
@@ -40,6 +41,9 @@ class CollectionControllerTest {
     @Mock
     private CollectionOrchestrator collectionOrchestrator;
 
+    @Mock
+    private TradeCalendarMapper tradeCalendarMapper;
+
     @InjectMocks
     private CollectionController collectionController;
 
@@ -53,7 +57,7 @@ class CollectionControllerTest {
         ApiResponse<List<CollectionStatusVO>> response = collectionController.status();
 
         assertThat(response.getCode()).isEqualTo(200);
-        assertThat(response.getData()).hasSize(9);
+        assertThat(response.getData()).hasSize(8);
 
         CollectionStatusVO first = response.getData().get(0);
         assertThat(first.getDataType()).isEqualTo("STOCK_INFO");
@@ -83,22 +87,22 @@ class CollectionControllerTest {
 
     @Test
     void shouldReturnStatusWithFailedLogs() {
-        DataCollectionLog fetchLog = buildLog("STOCK_DAILY", "FETCH", "FAILED", 0);
+        DataCollectionLog fetchLog = buildLog("MARGIN_DAILY_SSE", "FETCH", "FAILED", 0);
         fetchLog.setErrorMsg("Connection timeout");
 
         when(dataCollectionLogMapper.selectLatestByDataTypeAndJobType(anyString(), anyString()))
                 .thenReturn(null);
-        when(dataCollectionLogMapper.selectLatestByDataTypeAndJobType("STOCK_DAILY", "FETCH"))
+        when(dataCollectionLogMapper.selectLatestByDataTypeAndJobType("MARGIN_DAILY_SSE", "FETCH"))
                 .thenReturn(fetchLog);
 
         ApiResponse<List<CollectionStatusVO>> response = collectionController.status();
 
-        CollectionStatusVO stockDaily = response.getData().stream()
-                .filter(v -> "STOCK_DAILY".equals(v.getDataType()))
+        CollectionStatusVO item = response.getData().stream()
+                .filter(v -> "MARGIN_DAILY_SSE".equals(v.getDataType()))
                 .findFirst().orElseThrow();
-        assertThat(stockDaily.getLastFetch().getStatus()).isEqualTo("FAILED");
-        assertThat(stockDaily.getLastFetch().getErrorMsg()).isEqualTo("Connection timeout");
-        assertThat(stockDaily.getLastCleanse()).isNull();
+        assertThat(item.getLastFetch().getStatus()).isEqualTo("FAILED");
+        assertThat(item.getLastFetch().getErrorMsg()).isEqualTo("Connection timeout");
+        assertThat(item.getLastCleanse()).isNull();
     }
 
     @Test
@@ -164,14 +168,16 @@ class CollectionControllerTest {
 
     @Test
     void shouldTriggerOrchestrationForValidDataType() {
-        when(collectionOrchestrator.orchestrate(eq("STOCK_INFO"), any()))
-                .thenReturn("success");
+        com.tradingdiary.entity.TradeCalendar cal = new com.tradingdiary.entity.TradeCalendar();
+        cal.setTradeDate(LocalDate.of(2026, 5, 20));
+        cal.setIsTradingDay(1);
+        when(tradeCalendarMapper.selectOne(any(com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper.class)))
+                .thenReturn(cal);
 
         ApiResponse<String> response = collectionController.trigger("STOCK_INFO");
 
         assertThat(response.getCode()).isEqualTo(200);
-        assertThat(response.getData()).isEqualTo("success");
-        verify(collectionOrchestrator).orchestrate(eq("STOCK_INFO"), any());
+        assertThat(response.getData()).contains("任务已提交");
     }
 
     @Test
@@ -179,7 +185,7 @@ class CollectionControllerTest {
         ApiResponse<String> response = collectionController.trigger("UNKNOWN_TYPE");
 
         assertThat(response.getCode()).isEqualTo(400);
-        assertThat(response.getMessage()).contains("Unknown data type");
+        assertThat(response.getMessage()).contains("未知数据类型");
     }
 
     @Test
@@ -190,14 +196,10 @@ class CollectionControllerTest {
         request.setStartDate(LocalDate.of(2026, 5, 4));
         request.setEndDate(LocalDate.of(2026, 5, 8));
 
-        when(collectionOrchestrator.backfillMarginByWeek(any(BackfillRequest.class)))
-                .thenReturn("Backfill complete: 5 dates processed");
-
         ApiResponse<String> response = collectionController.backfill(request);
 
         assertThat(response.getCode()).isEqualTo(200);
-        assertThat(response.getData()).contains("Backfill complete");
-        verify(collectionOrchestrator).backfillMarginByWeek(any(BackfillRequest.class));
+        assertThat(response.getData()).contains("补采");
     }
 
     @Test
