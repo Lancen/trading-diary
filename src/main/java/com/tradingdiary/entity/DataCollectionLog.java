@@ -36,7 +36,13 @@ public class DataCollectionLog implements Serializable {
 
     private Integer recordCount;
 
+    private String requestUrl;
+
+    private String requestParams;
+
     private String errorMsg;
+
+    private String remark;
 
     private LocalDateTime startedAt;
 

@@ -45,6 +45,10 @@ public class MarginDaily implements Serializable {
 
     private BigDecimal totalBalance;
 
+    private BigDecimal marginChange;
+
+    private BigDecimal shortChange;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 

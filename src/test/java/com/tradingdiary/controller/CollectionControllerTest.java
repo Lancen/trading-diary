@@ -247,8 +247,30 @@ class CollectionControllerTest {
         log.setJobType(jobType);
         log.setStatus(status);
         log.setRecordCount(recordCount);
+        log.setRequestUrl("http://aktools:8080/api/public/stock_zh_a_hist_tx");
+        log.setRequestParams("symbol=000001&start_date=2026-05-20&end_date=2026-05-20");
+        log.setRemark("全量A股行情快照");
         log.setStartedAt(LocalDateTime.now().minusMinutes(5));
         log.setCompletedAt(LocalDateTime.now());
         return log;
+    }
+
+    @Test
+    void shouldReturnLogsWithNewFields() {
+        List<DataCollectionLog> logs = new ArrayList<>();
+        DataCollectionLog log = buildLog("STOCK_INFO", "FETCH", "SUCCESS", 5000);
+        log.setRemark("腾讯行情API采集");
+        logs.add(log);
+
+        when(dataCollectionLogMapper.selectRecentByDataType("STOCK_INFO", 10))
+                .thenReturn(logs);
+
+        ApiResponse<List<DataCollectionLog>> response = collectionController.logs("STOCK_INFO", 10);
+
+        assertThat(response.getCode()).isEqualTo(200);
+        DataCollectionLog result = response.getData().get(0);
+        assertThat(result.getRequestUrl()).isEqualTo("http://aktools:8080/api/public/stock_zh_a_hist_tx");
+        assertThat(result.getRequestParams()).isEqualTo("symbol=000001&start_date=2026-05-20&end_date=2026-05-20");
+        assertThat(result.getRemark()).isEqualTo("腾讯行情API采集");
     }
 }
