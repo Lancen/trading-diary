@@ -15,6 +15,35 @@ interface DetailData {
   dailyMargins: Margin[];
 }
 
+function getWeekKey(d: string): string {
+  const date = new Date(d);
+  const day = date.getDay();
+  const monday = new Date(date);
+  monday.setDate(date.getDate() - (day === 0 ? 6 : day - 1));
+  return monday.toISOString().slice(0, 10);
+}
+
+function getMonthKey(d: string): string { return d.slice(0, 7); }
+
+function aggregateKlines(klines: Kline[], period: "daily" | "weekly" | "monthly"): Kline[] {
+  if (period === "daily") return klines;
+  const getKey = period === "weekly" ? getWeekKey : getMonthKey;
+  const groups = new Map<string, Kline[]>();
+  for (const k of klines) {
+    const key = getKey(k.tradeDate);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(k);
+  }
+  return Array.from(groups.entries()).map(([key, bars]) => ({
+    tradeDate: bars[bars.length - 1].tradeDate,
+    open: bars[0].open,
+    high: Math.max(...bars.map(b => b.high)),
+    low: Math.min(...bars.map(b => b.low)),
+    close: bars[bars.length - 1].close,
+    volume: bars.reduce((s, b) => s + b.volume, 0),
+  }));
+}
+
 export default function StockDetailPage() {
   const { code } = useParams<{ code: string }>();
   const router = useRouter();
@@ -66,8 +95,10 @@ export default function StockDetailPage() {
       timeScale: { borderColor: "#e5e7eb" },
     });
 
-    const candleData = detail.dailyKlines.map((k) => ({ time: k.tradeDate, open: k.open, high: k.high, low: k.low, close: k.close }));
-    const volumeData = detail.dailyKlines.map((k) => ({ time: k.tradeDate, value: k.volume, color: k.close >= k.open ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)" }));
+    const klines = aggregateKlines(detail.dailyKlines, period);
+
+    const candleData = klines.map((k) => ({ time: k.tradeDate, open: k.open, high: k.high, low: k.low, close: k.close }));
+    const volumeData = klines.map((k) => ({ time: k.tradeDate, value: k.volume, color: k.close >= k.open ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)" }));
 
     const candleSeries = chart.addSeries(CandlestickSeries, { upColor: "#dc2626", downColor: "#16a34a", borderUpColor: "#dc2626", borderDownColor: "#16a34a", wickUpColor: "#dc2626", wickDownColor: "#16a34a" });
     candleSeries.setData(candleData as any);
@@ -78,8 +109,8 @@ export default function StockDetailPage() {
 
     if (detail.dailyMargins?.length) {
       const marginMap = new Map(detail.dailyMargins.map((m) => [m.tradeDate, m]));
-      const marginBalanceData = detail.dailyKlines.map((k) => ({ time: k.tradeDate, value: marginMap.get(k.tradeDate)?.marginBalance ?? undefined }));
-      const shortBalanceData = detail.dailyKlines.map((k) => ({ time: k.tradeDate, value: marginMap.get(k.tradeDate)?.shortBalance ?? undefined }));
+      const marginBalanceData = klines.map((k) => ({ time: k.tradeDate, value: marginMap.get(k.tradeDate)?.marginBalance ?? undefined }));
+      const shortBalanceData = klines.map((k) => ({ time: k.tradeDate, value: marginMap.get(k.tradeDate)?.shortBalance ?? undefined }));
 
       const marginSeries = chart.addSeries(LineSeries, { priceScaleId: "margin", color: "#2563eb", lineWidth: 1 });
       marginSeries.setData(marginBalanceData.filter((d) => d.value != null) as any);
@@ -90,7 +121,7 @@ export default function StockDetailPage() {
 
     chart.timeScale().fitContent();
     return () => chart.remove();
-  }, [detail]);
+  }, [detail, period]);
 
   if (loading) return <div className="py-8 text-center text-gray-500">加载中...</div>;
   if (!detail) return <div className="py-8 text-center text-gray-500">未找到该股票</div>;

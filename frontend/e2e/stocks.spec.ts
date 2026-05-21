@@ -79,7 +79,7 @@ test.describe("股票列表页", () => {
     await page.getByPlaceholder("输入搜索").fill("平安");
     await page.click("text=查询");
 
-    expect(capturedParams?.get("keyword")).toBe("平安");
+    expect((capturedParams as unknown as URLSearchParams).get("keyword")).toBe("平安");
   });
 });
 
