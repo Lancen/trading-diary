@@ -58,8 +58,8 @@
 
 - [x] T020 [US1] 重构侧边栏 `frontend/src/app/(dashboard)/layout.tsx`：分组名"采集状态"→"基础数据管理"，条目名"采集状态"→"数据采集"；新增"数据浏览"分组含 4 个条目（股票数据/概念列表/行业列表/融资统计）；高亮逻辑用 startsWith 排除 `/admin/collection/margin`
 - [x] T021 [US1] 改造 Hub 页 `frontend/src/app/(dashboard)/admin/collection/page.tsx`：9 张卡片 3 列网格统一布局（8 采集类型 + 成分股），每卡片显示名称+状态标签+最新时间；移除全部操作按钮和日志展开，仅保留"刷新"；点击"股票行情"卡片 → `/admin/collection/stocks`；点击"成分股数据"卡片 → `/admin/collection/constituents`
-- [ ] T022 [US1] E2E：Playwright 验证 Hub 页卡片渲染、点击跳转 `e2e/collection-hub.spec.ts`
-- [ ] T023 [US1] 提交: `git add` layout.tsx + page.tsx + e2e，commit
+- [x] T022 [US1] E2E：Playwright 验证 Hub 页卡片渲染、点击跳转 `e2e/collection-hub.spec.ts`
+- [x] T023 [US1] 提交: `git add` layout.tsx + page.tsx + e2e，commit
 
 **检查点**: Hub 页纯展示，侧边栏新分组可见，卡片跳转正常
 
@@ -99,7 +99,7 @@
 
 - [x] T028 [US4] 新建股票列表页 `frontend/src/app/(dashboard)/admin/stocks/page.tsx`：筛选栏（代码/名称输入+行业下拉+概念下拉+日期）、表头可排序（涨跌幅/成交量/融资余额/融资变化/融券余额/融券变化）、列（代码/名称/行业/概念/收盘/涨跌幅/成交量/融资余额/融资变化/融券余额/融券变化/日期）、点击代码/名称跳转详情
 - [x] T029 [US4] 新建股票详情页 `frontend/src/app/(dashboard)/admin/stocks/[code]/page.tsx`：面包屑返回、行业+概念标签、行情摘要卡片、K线图（lightweight-charts 单图叠加：CandlestickSeries + HistogramSeries 成交量半透明 + 2 LineSeries 融资/融券线，双 PriceScale，日K/周K/月K 切换，快捷区间 1月/3月/6月/1年+自定义日期，默认最近3个月日K，无两融数据断开）、日线明细表默认收起可展开
-- [ ] T030 [US4] E2E：Playwright 验证股票列表筛选/排序、详情页 K线渲染 `e2e/stocks.spec.ts`
+- [x] T030 [US4] E2E：Playwright 验证股票列表筛选/排序、详情页 K线渲染 `e2e/stocks.spec.ts`
 - [x] T031 [US4] 提交: `git add` 两个 page.tsx + e2e，commit
 
 **检查点**: 股票列表筛选排序正常，详情页 K线+两融叠加渲染正确
@@ -125,7 +125,7 @@
 **目的**: 验证、文档更新
 
 - [x] T035 运行完整后端测试: `./gradlew test`，验证全部通过
-- [ ] T036 运行前端 E2E: `cd frontend && pnpm exec playwright test`，验证全部通过
+- [x] T036 运行前端 E2E: `cd frontend && pnpm exec playwright test`，验证全部通过（10/10）
 - [ ] T037 运行 quickstart.md 验证流程（迁移+API+前端页面）
 
 ---
