@@ -126,7 +126,7 @@
 
 - [x] T035 运行完整后端测试: `./gradlew test`，验证全部通过
 - [x] T036 运行前端 E2E: `cd frontend && pnpm exec playwright test`，验证全部通过（10/10）
-- [ ] T037 运行 quickstart.md 验证流程（迁移+API+前端页面）
+- [x] T037 运行 quickstart.md 验证流程（迁移+API+前端页面）全部 API 200 OK
 
 ---
 
