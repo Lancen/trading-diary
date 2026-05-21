@@ -62,7 +62,6 @@ public class ConstituentImportService {
                         try {
                             info.put("size", Files.size(p));
                             info.put("lastModified", Files.getLastModifiedTime(p).toInstant().toString());
-                            // 读取 JSON 元数据
                             JsonNode root = objectMapper.readTree(p.toFile());
                             info.put("fetchedDate", root.has("fetched_date") ? root.get("fetched_date").asText() : null);
                             info.put("industryCount", root.has("industries") ? root.get("industries").size() : 0);
@@ -79,6 +78,23 @@ public class ConstituentImportService {
                                 }
                             }
                             info.put("totalRelations", totalStocks);
+
+                            // 判断是否已导入：查 stock_industry 表 snap_date 匹配 fetchedDate
+                            boolean imported = false;
+                            if (info.get("fetchedDate") != null) {
+                                try {
+                                    LocalDate snapDate = LocalDate.parse((String) info.get("fetchedDate"));
+                                    imported = stockIndustryMapper.selectCount(
+                                            new LambdaQueryWrapper<StockIndustry>()
+                                                    .eq(StockIndustry::getSnapDate, snapDate)
+                                                    .eq(StockIndustry::getIsDeleted, false)
+                                                    .last("LIMIT 1")
+                                    ) > 0;
+                                } catch (Exception e) {
+                                    log.debug("Failed to check import status for {}: {}", p.getFileName(), e.getMessage());
+                                }
+                            }
+                            info.put("imported", imported);
                         } catch (Exception e) {
                             info.put("error", e.getMessage());
                         }
@@ -93,144 +109,101 @@ public class ConstituentImportService {
     /**
      * 从指定文件导入行业和概念成分股数据。
      */
+    @Transactional
     public Map<String, Object> importFromFile(String filename) {
         Path file = dataDir.resolve(filename).normalize();
         if (!file.startsWith(dataDir)) {
             throw new IllegalArgumentException("非法文件路径: " + filename);
         }
-
-        Map<String, Object> result = new LinkedHashMap<>();
-        result.put("filename", filename);
+        if (!Files.exists(file)) {
+            return Map.of("status", "failed", "error", "文件不存在: " + filename);
+        }
 
         try {
             JsonNode root = objectMapper.readTree(file.toFile());
-            LocalDate snapDate = root.has("fetched_date")
-                    ? LocalDate.parse(root.get("fetched_date").asText())
-                    : LocalDate.now();
+            int industryCount = 0;
+            int conceptCount = 0;
 
-            int industryRelCount = importIndustries(root, snapDate);
-            int conceptRelCount = importConcepts(root, snapDate);
+            String fetchedDate = root.has("fetched_date") ? root.get("fetched_date").asText() : null;
+            LocalDate snapDate = fetchedDate != null ? LocalDate.parse(fetchedDate) : LocalDate.now();
 
-            result.put("snapDate", snapDate.toString());
-            result.put("industryRelations", industryRelCount);
-            result.put("conceptRelations", conceptRelCount);
+            if (root.has("industries")) {
+                for (JsonNode ind : root.get("industries")) {
+                    String industryCode = ind.get("code").asText();
+                    if (ind.has("stocks")) {
+                        for (JsonNode stock : ind.get("stocks")) {
+                            String stockCode = stock.asText();
+                            if (stockCode == null || stockCode.isEmpty()) continue;
+                            industryCount += upsertStockIndustry(stockCode, industryCode, snapDate);
+                        }
+                    }
+                }
+            }
+
+            if (root.has("concepts")) {
+                for (JsonNode con : root.get("concepts")) {
+                    String conceptCode = con.get("code").asText();
+                    if (con.has("stocks")) {
+                        for (JsonNode stock : con.get("stocks")) {
+                            String stockCode = stock.asText();
+                            if (stockCode == null || stockCode.isEmpty()) continue;
+                            conceptCount += upsertStockConcept(stockCode, conceptCode, snapDate);
+                        }
+                    }
+                }
+            }
+
+            log.info("Constituent import complete: {} industries, {} concepts from {}", industryCount, conceptCount, filename);
+            Map<String, Object> result = new LinkedHashMap<>();
             result.put("status", "success");
-
-            log.info("Constituent import complete: {} industry + {} concept relations from {}",
-                    industryRelCount, conceptRelCount, filename);
+            result.put("industryRelations", industryCount);
+            result.put("conceptRelations", conceptCount);
+            return result;
         } catch (Exception e) {
-            log.error("Failed to import constituents from {}", filename, e);
-            result.put("status", "failed");
-            result.put("error", e.getMessage());
+            log.error("Failed to import constituent file: {}", filename, e);
+            return Map.of("status", "failed", "error", e.getMessage());
         }
-        return result;
     }
 
-    @Transactional
-    private int importIndustries(JsonNode root, LocalDate snapDate) {
-        JsonNode industries = root.get("industries");
-        if (industries == null || !industries.isArray()) return 0;
-
-        List<StockIndustry> allRelations = new ArrayList<>();
-        for (JsonNode ind : industries) {
-            String industryCode = ind.get("code").asText();
-            JsonNode stocks = ind.get("stocks");
-            if (stocks == null || !stocks.isArray()) continue;
-
-            for (JsonNode stock : stocks) {
-                StockIndustry si = new StockIndustry();
-                si.setStockCode(stock.asText());
-                si.setIndustryCode(industryCode);
-                si.setSnapDate(snapDate);
-                allRelations.add(si);
-            }
-        }
-
-        return batchUpsertStockIndustry(allRelations, snapDate);
-    }
-
-    @Transactional
-    private int importConcepts(JsonNode root, LocalDate snapDate) {
-        JsonNode concepts = root.get("concepts");
-        if (concepts == null || !concepts.isArray()) return 0;
-
-        List<StockConcept> allRelations = new ArrayList<>();
-        for (JsonNode con : concepts) {
-            String conceptCode = con.get("code").asText();
-            JsonNode stocks = con.get("stocks");
-            if (stocks == null || !stocks.isArray()) continue;
-
-            for (JsonNode stock : stocks) {
-                StockConcept sc = new StockConcept();
-                sc.setStockCode(stock.asText());
-                sc.setConceptCode(conceptCode);
-                sc.setSnapDate(snapDate);
-                allRelations.add(sc);
-            }
-        }
-
-        return batchUpsertStockConcept(allRelations, snapDate);
-    }
-
-    private int batchUpsertStockIndustry(List<StockIndustry> relations, LocalDate snapDate) {
-        if (relations.isEmpty()) return 0;
-
-        Set<String> stockCodes = relations.stream().map(StockIndustry::getStockCode).collect(Collectors.toSet());
-        Map<String, StockIndustry> existingMap = stockIndustryMapper.selectList(
+    private int upsertStockIndustry(String stockCode, String industryCode, LocalDate snapDate) {
+        StockIndustry existing = stockIndustryMapper.selectOne(
                 new LambdaQueryWrapper<StockIndustry>()
-                        .in(StockIndustry::getStockCode, stockCodes)
+                        .eq(StockIndustry::getStockCode, stockCode)
+                        .eq(StockIndustry::getIndustryCode, industryCode)
                         .eq(StockIndustry::getIsDeleted, false)
-        ).stream().collect(Collectors.toMap(
-                e -> e.getStockCode() + "|" + e.getIndustryCode(), e -> e, (a, b) -> a));
+        );
 
-        List<StockIndustry> toInsert = new ArrayList<>();
-        List<StockIndustry> toUpdate = new ArrayList<>();
-
-        for (StockIndustry si : relations) {
-            String key = si.getStockCode() + "|" + si.getIndustryCode();
-            StockIndustry existing = existingMap.get(key);
-            if (existing != null) {
-                existing.setSnapDate(snapDate);
-                toUpdate.add(existing);
-            } else {
-                toInsert.add(si);
-            }
+        if (existing != null) {
+            existing.setSnapDate(snapDate);
+            return stockIndustryMapper.updateById(existing);
+        } else {
+            StockIndustry si = new StockIndustry();
+            si.setStockCode(stockCode);
+            si.setIndustryCode(industryCode);
+            si.setSnapDate(snapDate);
+            stockIndustryMapper.insert(si);
+            return 1;
         }
-
-        int count = 0;
-        if (!toInsert.isEmpty()) count += batchSqlRunner.batchInsert(toInsert);
-        if (!toUpdate.isEmpty()) count += batchSqlRunner.batchUpdate(toUpdate);
-        return count;
     }
 
-    private int batchUpsertStockConcept(List<StockConcept> relations, LocalDate snapDate) {
-        if (relations.isEmpty()) return 0;
-
-        Set<String> stockCodes = relations.stream().map(StockConcept::getStockCode).collect(Collectors.toSet());
-        Map<String, StockConcept> existingMap = stockConceptMapper.selectList(
+    private int upsertStockConcept(String stockCode, String conceptCode, LocalDate snapDate) {
+        StockConcept existing = stockConceptMapper.selectOne(
                 new LambdaQueryWrapper<StockConcept>()
-                        .in(StockConcept::getStockCode, stockCodes)
+                        .eq(StockConcept::getStockCode, stockCode)
+                        .eq(StockConcept::getConceptCode, conceptCode)
                         .eq(StockConcept::getIsDeleted, false)
-        ).stream().collect(Collectors.toMap(
-                e -> e.getStockCode() + "|" + e.getConceptCode(), e -> e, (a, b) -> a));
+        );
 
-        List<StockConcept> toInsert = new ArrayList<>();
-        List<StockConcept> toUpdate = new ArrayList<>();
-
-        for (StockConcept sc : relations) {
-            String key = sc.getStockCode() + "|" + sc.getConceptCode();
-            StockConcept existing = existingMap.get(key);
-            if (existing != null) {
-                existing.setSnapDate(snapDate);
-                toUpdate.add(existing);
-            } else {
-                toInsert.add(sc);
-            }
+        if (existing != null) {
+            existing.setSnapDate(snapDate);
+            return stockConceptMapper.updateById(existing);
+        } else {
+            StockConcept sc = new StockConcept();
+            sc.setStockCode(stockCode);
+            sc.setConceptCode(conceptCode);
+            sc.setSnapDate(snapDate);
+            stockConceptMapper.insert(sc);
+            return 1;
         }
-
-        int count = 0;
-        if (!toInsert.isEmpty()) count += batchSqlRunner.batchInsert(toInsert);
-        if (!toUpdate.isEmpty()) count += batchSqlRunner.batchUpdate(toUpdate);
-        return count;
     }
 }

@@ -19,8 +19,8 @@
 - [ ] T002 运行 Flyway 迁移验证: `./gradlew flywayMigrate`，预期成功
 - [x] T003 [P] 更新 `DataCollectionLog` 实体 `src/main/java/com/tradingdiary/entity/DataCollectionLog.java` 加 `requestUrl`、`requestParams`、`remark` 字段
 - [x] T004 [P] 更新 `MarginDaily` 实体 `src/main/java/com/tradingdiary/entity/MarginDaily.java` 加 `marginChange`、`shortChange` 字段
-- [ ] T005 [P] 新建 `IndexDaily` 实体 `src/main/java/com/tradingdiary/entity/IndexDaily.java`，MyBatis-Plus 注解，字段对应 V5 建表
-- [ ] T006 [P] 新建 `IndexDailyMapper` `src/main/java/com/tradingdiary/mapper/IndexDailyMapper.java` 继承 `BaseMapper<IndexDaily>`
+- [x] T005 [P] 新建 `IndexDaily` 实体 `src/main/java/com/tradingdiary/entity/IndexDaily.java`，MyBatis-Plus 注解，字段对应 V5 建表
+- [x] T006 [P] 新建 `IndexDailyMapper` `src/main/java/com/tradingdiary/mapper/IndexDailyMapper.java` 继承 `BaseMapper<IndexDaily>`
 - [x] T007 [P] 新建 Collection 相关 VO/DTO：`src/main/java/com/tradingdiary/collection/model/StockListVO.java`、`src/main/java/com/tradingdiary/collection/model/StockDetailVO.java`、`src/main/java/com/tradingdiary/collection/model/ConceptIndustryVO.java`、`src/main/java/com/tradingdiary/collection/model/MarginSummaryVO.java`、`src/main/java/com/tradingdiary/collection/model/CalendarDayVO.java`
 - [x] T008 提交: `git add` V5 迁移 + 3 实体 + 1 Mapper + 5 VO，commit
 
@@ -42,8 +42,8 @@
 - [x] T014 新建 `MarketDataController` `src/main/java/com/tradingdiary/collection/controller/MarketDataController.java`：`GET /api/v1/admin/market/concepts`、`GET /api/v1/admin/market/industries`
 - [x] T015 新建 `StockDataController` `src/main/java/com/tradingdiary/collection/controller/StockDataController.java`：`GET /api/v1/admin/stocks/list`、`GET /api/v1/admin/stocks/{code}`、`GET /api/v1/admin/stocks/{code}/calendar`
 - [ ] T016 新建 `MarginStatsController` `src/main/java/com/tradingdiary/collection/controller/MarginStatsController.java`：`GET /api/v1/admin/margin-stats/summary`
-- [x] T017 写 Controller 集成测试 `src/test/java/com/tradingdiary/controller/StockDataControllerTest.java`、`MarketDataControllerTest.java`、`MarginStatsControllerTest.java`：MockMvc 验证 API 响应格式和分页。RED→GREEN
-- [ ] T018 更新 `ConstituentImportService.listFiles()` `src/main/java/com/tradingdiary/service/collection/ConstituentImportService.java`：查询 stock_industry 表 snap_date=file.fetchedDate 有无记录，返回字段加 `imported: boolean`
+- [ ] T017 写 Controller 集成测试 `src/test/java/com/tradingdiary/controller/StockDataControllerTest.java`、`MarketDataControllerTest.java`、`MarginStatsControllerTest.java`：MockMvc 验证 API 响应格式和分页。RED→GREEN
+- [x] T018 更新 `ConstituentImportService.listFiles()` `src/main/java/com/tradingdiary/service/collection/ConstituentImportService.java`：查询 stock_industry 表 snap_date=file.fetchedDate 有无记录，返回字段加 `imported: boolean`
 - [x] T019 提交: `git add` 所有 Service + Controller + 测试，commit
 
 **检查点**: 后端 API 全部就位，可用 curl 测试
