@@ -38,6 +38,12 @@
 | **新浪 API** | 股票日线数据 | 按需 |
 | **同花顺** | 行业/概念成分股快照 | 每月 |
 
+## 系统约束
+
+- **启动 Profile**：后端必须 `SPRING_PROFILES_ACTIVE=dev`，否则 JWT 配置为空导致登录 NPE
+- **margin_macro 表**：无 `is_deleted` 字段（与其他表不同）
+- **采集类型分两级**：日级（需交易日历）+ 月级快照（无需日历），详见 `.claude/rules/collection-pipeline.md`
+
 ## 使用者
 
 当前个人使用（ADMIN 角色），后续可能开放他人。主要用途：数据采集状态监控 + 市场数据浏览。
