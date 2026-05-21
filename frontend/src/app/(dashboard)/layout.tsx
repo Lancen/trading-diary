@@ -14,6 +14,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Toaster } from "@/components/ui/toast";
 
+function isActive(pathname: string, href: string, exact: boolean = false) {
+  if (exact) return pathname === href;
+  return pathname === href || pathname.startsWith(href + "/");
+}
+
 export default function DashboardLayout({
   children,
 }: {
@@ -62,27 +67,74 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 
           <div className="pt-4">
             <div className="mb-1 px-3 text-xs font-semibold uppercase text-gray-400">
-              数据采集
+              基础数据管理
             </div>
             <Link
               href="/admin/collection"
               className={`block rounded-lg px-6 py-2 text-sm font-medium transition-colors ${
-                pathname === "/admin/collection"
+                isActive(pathname, "/admin/collection") &&
+                !pathname.startsWith("/admin/collection/margin")
                   ? "bg-primary text-primary-foreground"
                   : "text-gray-700 hover:bg-gray-200"
               }`}
             >
-              采集状态
+              数据采集
             </Link>
             <Link
               href="/admin/collection/margin"
               className={`block rounded-lg px-6 py-2 text-sm font-medium transition-colors ${
-                pathname === "/admin/collection/margin"
+                isActive(pathname, "/admin/collection/margin", true)
                   ? "bg-primary text-primary-foreground"
                   : "text-gray-700 hover:bg-gray-200"
               }`}
             >
               两融完整性
+            </Link>
+          </div>
+
+          <div className="pt-4">
+            <div className="mb-1 px-3 text-xs font-semibold uppercase text-gray-400">
+              数据浏览
+            </div>
+            <Link
+              href="/admin/stocks"
+              className={`block rounded-lg px-6 py-2 text-sm font-medium transition-colors ${
+                isActive(pathname, "/admin/stocks")
+                  ? "bg-primary text-primary-foreground"
+                  : "text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              股票数据
+            </Link>
+            <Link
+              href="/admin/concepts"
+              className={`block rounded-lg px-6 py-2 text-sm font-medium transition-colors ${
+                isActive(pathname, "/admin/concepts", true)
+                  ? "bg-primary text-primary-foreground"
+                  : "text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              概念列表
+            </Link>
+            <Link
+              href="/admin/industries"
+              className={`block rounded-lg px-6 py-2 text-sm font-medium transition-colors ${
+                isActive(pathname, "/admin/industries", true)
+                  ? "bg-primary text-primary-foreground"
+                  : "text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              行业列表
+            </Link>
+            <Link
+              href="/admin/margin-stats"
+              className={`block rounded-lg px-6 py-2 text-sm font-medium transition-colors ${
+                isActive(pathname, "/admin/margin-stats")
+                  ? "bg-primary text-primary-foreground"
+                  : "text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              融资统计
             </Link>
           </div>
         </nav>
