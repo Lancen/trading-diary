@@ -42,11 +42,10 @@ public class CalendarService {
                 .map(TradeCalendar::getTradeDate)
                 .collect(Collectors.toSet());
 
-        Set<LocalDate> infoDates = new HashSet<>(stockInfoMapper.selectDistinctSnapshotDates(firstDay, lastDay));
-        Set<LocalDate> dailyDates = new HashSet<>(stockDailyMapper.selectDistinctTradeDates(firstDay, lastDay));
-        // 必须两张表同时存在数据才算完整
-        infoDates.retainAll(dailyDates);
-        Set<LocalDate> collectedSet = infoDates;
+        Set<LocalDate> collectedSet = new HashSet<>();
+        collectedSet.addAll(stockInfoMapper.selectDistinctSnapshotDates(firstDay, lastDay));
+        collectedSet.addAll(stockDailyMapper.selectDistinctTradeDates(firstDay, lastDay));
+        // stock_info 和 stock_daily 复用同一份 spot API 数据，并集即可
 
         List<CalendarDayVO> days = new ArrayList<>();
         for (LocalDate d = firstDay; !d.isAfter(lastDay); d = d.plusDays(1)) {
