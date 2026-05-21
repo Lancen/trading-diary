@@ -8,13 +8,18 @@
       "mcp__playwright__browser_snapshot",
       "mcp__playwright__browser_wait_for",
       "pnpm exec tsc --noEmit",
+      "pnpm exec playwright *",
+      "pnpm dev",
+      "Bash(cd:*)",
       "sed -i",
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git -C /Users/lance/code/trading-diary add:*)",
       "Bash(git -C /Users/lance/code/trading-diary commit:*)",
       "Bash(mkdir:*)",
-      "Bash(cp:*)"
+      "Bash(cp:*)",
+      "Bash(rtk:*)",
+      "mcp__plugin_claude-mem_mcp-search__*"
     ]
   }
 }
