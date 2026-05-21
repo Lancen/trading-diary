@@ -124,7 +124,7 @@
 
 **目的**: 验证、文档更新
 
-- [ ] T035 运行完整后端测试: `./gradlew test`，验证全部通过
+- [x] T035 运行完整后端测试: `./gradlew test`，验证全部通过
 - [ ] T036 运行前端 E2E: `cd frontend && pnpm exec playwright test`，验证全部通过
 - [ ] T037 运行 quickstart.md 验证流程（迁移+API+前端页面）
 
