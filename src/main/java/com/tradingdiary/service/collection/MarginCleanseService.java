@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -58,6 +59,27 @@ public class MarginCleanseService {
         if (dailyList.isEmpty()) {
             log.warn("No margin daily records parsed for {} on {}", exchange, tradeDate);
             return 0;
+        }
+
+        // 计算环比变化：查询上一交易日数据，差额写入 marginChange/shortChange
+        LocalDate prevTradeDate = findPreviousTradeDate(tradeDate, exchange);
+        Map<String, MarginDaily> prevByCode = Collections.emptyMap();
+        if (prevTradeDate != null) {
+            prevByCode = marginDailyMapper.selectList(
+                    new LambdaQueryWrapper<MarginDaily>()
+                            .eq(MarginDaily::getExchange, exchange)
+                            .eq(MarginDaily::getTradeDate, prevTradeDate)
+            ).stream().collect(Collectors.toMap(MarginDaily::getStockCode, e -> e, (a, b) -> a));
+        }
+        final Map<String, MarginDaily> prevMap = prevByCode;
+        for (MarginDaily entity : dailyList) {
+            MarginDaily prev = prevMap.get(entity.getStockCode());
+            if (prev != null && entity.getMarginBalance() != null && prev.getMarginBalance() != null) {
+                entity.setMarginChange(entity.getMarginBalance().subtract(prev.getMarginBalance()));
+            }
+            if (prev != null && entity.getShortBalance() != null && prev.getShortBalance() != null) {
+                entity.setShortChange(entity.getShortBalance().subtract(prev.getShortBalance()));
+            }
         }
 
         int dailyCount = saveMarginDailyBatch(dailyList, exchange, tradeDate);
@@ -187,6 +209,17 @@ public class MarginCleanseService {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private LocalDate findPreviousTradeDate(LocalDate tradeDate, String exchange) {
+        return marginDailyMapper.selectList(
+                new LambdaQueryWrapper<MarginDaily>()
+                        .select(MarginDaily::getTradeDate)
+                        .eq(MarginDaily::getExchange, exchange)
+                        .lt(MarginDaily::getTradeDate, tradeDate)
+                        .orderByDesc(MarginDaily::getTradeDate)
+                        .last("LIMIT 1")
+        ).stream().findFirst().map(MarginDaily::getTradeDate).orElse(null);
     }
 
     private Long safeLong(JsonNode node, String field) {
