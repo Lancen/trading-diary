@@ -33,6 +33,8 @@ const LABEL_MAP: Record<string, string> = {
   MARGIN_MACRO_SSE: "两融总量(沪市)", MARGIN_MACRO_SZSE: "两融总量(深市)",
 };
 
+const CALENDAR_TYPES = new Set(["STOCK_INFO", "MARGIN_DAILY_SSE", "MARGIN_DAILY_SZSE", "MARGIN_MACRO_SSE", "MARGIN_MACRO_SZSE"]);
+
 function PipelineStep({ label, time, count, done, failed }: {
   label: string; time: string | null; count: string; done: boolean; failed?: boolean;
 }) {
@@ -135,7 +137,7 @@ export default function CollectionDetailPage() {
   }, [calYear, calMonth]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
-  useEffect(() => { fetchCalendar(); }, [fetchCalendar]);
+  useEffect(() => { if (CALENDAR_TYPES.has(dataType)) fetchCalendar(); }, [fetchCalendar]);
 
   async function handleTrigger() {
     setTriggering(true);
@@ -209,8 +211,9 @@ export default function CollectionDetailPage() {
         {dataType === "STOCK_INFO" && <BackfillButton onDone={fetchData} />}
       </div>
 
-      {/* 交易日历 */}
-      <div className="rounded-lg border p-4">
+      {/* 交易日历 — 仅日级数据采集类型 */}
+      {CALENDAR_TYPES.has(dataType) && (
+        <div className="rounded-lg border p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-semibold text-sm">交易日历</h3>
             <div className="flex items-center gap-2">
@@ -239,6 +242,7 @@ export default function CollectionDetailPage() {
             <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded bg-gray-100" /> 非交易日</span>
           </div>
         </div>
+      )}
 
       {/* 采集日志 */}
       <div className="rounded-lg border">
