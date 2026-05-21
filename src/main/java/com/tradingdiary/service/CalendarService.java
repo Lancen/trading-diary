@@ -2,6 +2,8 @@ package com.tradingdiary.service;
 
 import com.tradingdiary.collection.model.CalendarDayVO;
 import com.tradingdiary.entity.TradeCalendar;
+import com.tradingdiary.mapper.MarginDailyMapper;
+import com.tradingdiary.mapper.MarginMacroMapper;
 import com.tradingdiary.mapper.StockDailyMapper;
 import com.tradingdiary.mapper.StockInfoMapper;
 import com.tradingdiary.mapper.TradeCalendarMapper;
@@ -23,16 +25,22 @@ public class CalendarService {
     private final TradeCalendarMapper tradeCalendarMapper;
     private final StockInfoMapper stockInfoMapper;
     private final StockDailyMapper stockDailyMapper;
+    private final MarginDailyMapper marginDailyMapper;
+    private final MarginMacroMapper marginMacroMapper;
 
     public CalendarService(TradeCalendarMapper tradeCalendarMapper,
                            StockInfoMapper stockInfoMapper,
-                           StockDailyMapper stockDailyMapper) {
+                           StockDailyMapper stockDailyMapper,
+                           MarginDailyMapper marginDailyMapper,
+                           MarginMacroMapper marginMacroMapper) {
         this.tradeCalendarMapper = tradeCalendarMapper;
         this.stockInfoMapper = stockInfoMapper;
         this.stockDailyMapper = stockDailyMapper;
+        this.marginDailyMapper = marginDailyMapper;
+        this.marginMacroMapper = marginMacroMapper;
     }
 
-    public Map<String, Object> getMonthCalendar(int year, int month) {
+    public Map<String, Object> getMonthCalendar(int year, int month, String dataType) {
         YearMonth ym = YearMonth.of(year, month);
         LocalDate firstDay = ym.atDay(1);
         LocalDate lastDay = ym.atEndOfMonth();
@@ -42,10 +50,7 @@ public class CalendarService {
                 .map(TradeCalendar::getTradeDate)
                 .collect(Collectors.toSet());
 
-        Set<LocalDate> collectedSet = new HashSet<>();
-        collectedSet.addAll(stockInfoMapper.selectDistinctSnapshotDates(firstDay, lastDay));
-        collectedSet.addAll(stockDailyMapper.selectDistinctTradeDates(firstDay, lastDay));
-        // stock_info 和 stock_daily 复用同一份 spot API 数据，并集即可
+        Set<LocalDate> collectedSet = resolveDataSource(dataType, firstDay, lastDay);
 
         List<CalendarDayVO> days = new ArrayList<>();
         for (LocalDate d = firstDay; !d.isAfter(lastDay); d = d.plusDays(1)) {
@@ -67,5 +72,31 @@ public class CalendarService {
         result.put("yearMonth", ym.toString());
         result.put("days", days);
         return result;
+    }
+
+    private Set<LocalDate> resolveDataSource(String dataType, LocalDate firstDay, LocalDate lastDay) {
+        Set<LocalDate> dates = new HashSet<>();
+        if (dataType == null) dataType = "";
+
+        switch (dataType) {
+            case "MARGIN_DAILY_SSE":
+                dates.addAll(marginDailyMapper.selectDistinctTradeDates(firstDay, lastDay, "SSE"));
+                break;
+            case "MARGIN_DAILY_SZSE":
+                dates.addAll(marginDailyMapper.selectDistinctTradeDates(firstDay, lastDay, "SZSE"));
+                break;
+            case "MARGIN_MACRO_SSE":
+                dates.addAll(marginMacroMapper.selectDistinctTradeDates(firstDay, lastDay, "SSE"));
+                break;
+            case "MARGIN_MACRO_SZSE":
+                dates.addAll(marginMacroMapper.selectDistinctTradeDates(firstDay, lastDay, "SZSE"));
+                break;
+            default:
+                // STOCK_INFO 及默认：stock_info + stock_daily 并集（同一份 spot API 数据）
+                dates.addAll(stockInfoMapper.selectDistinctSnapshotDates(firstDay, lastDay));
+                dates.addAll(stockDailyMapper.selectDistinctTradeDates(firstDay, lastDay));
+                break;
+        }
+        return dates;
     }
 }

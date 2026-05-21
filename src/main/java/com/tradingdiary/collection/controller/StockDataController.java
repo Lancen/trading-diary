@@ -54,11 +54,12 @@ public class StockDataController {
         return ApiResponse.ok(detail);
     }
 
-    @Operation(summary = "获取交易日历（日线数据覆盖度）")
+    @Operation(summary = "获取交易日历（按采集类型查询数据覆盖度）")
     @GetMapping("/calendar")
     public ApiResponse<Map<String, Object>> calendar(
             @RequestParam(defaultValue = "2026") int year,
-            @RequestParam(defaultValue = "5") int month) {
-        return ApiResponse.ok(calendarService.getMonthCalendar(year, month));
+            @RequestParam(defaultValue = "5") int month,
+            @RequestParam(required = false) String dataType) {
+        return ApiResponse.ok(calendarService.getMonthCalendar(year, month, dataType));
     }
 }

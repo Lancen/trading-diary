@@ -131,10 +131,10 @@ export default function CollectionDetailPage() {
 
   const fetchCalendar = useCallback(async () => {
     try {
-      const res = await api.get("api/v1/admin/stocks/calendar", { searchParams: { year: calYear, month: calMonth } }).json<{ code: number; data: { days: CalendarDay[] } }>();
+      const res = await api.get("api/v1/admin/stocks/calendar", { searchParams: { year: calYear, month: calMonth, dataType } }).json<{ code: number; data: { days: CalendarDay[] } }>();
       setCalDays(res.data?.days || []);
     } catch (e) { console.error(e); }
-  }, [calYear, calMonth]);
+  }, [calYear, calMonth, dataType]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
   useEffect(() => { if (CALENDAR_TYPES.has(dataType)) fetchCalendar(); }, [fetchCalendar]);
