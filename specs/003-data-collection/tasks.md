@@ -41,8 +41,8 @@
 - [x] T013 新建 `CalendarService` `src/main/java/com/tradingdiary/service/CalendarService.java`：提供交易日历查询（trade_calendar 当月交易日 vs stock_daily DISTINCT trade_date 比对，返回 3 态）
 - [x] T014 新建 `MarketDataController` `src/main/java/com/tradingdiary/collection/controller/MarketDataController.java`：`GET /api/v1/admin/market/concepts`、`GET /api/v1/admin/market/industries`
 - [x] T015 新建 `StockDataController` `src/main/java/com/tradingdiary/collection/controller/StockDataController.java`：`GET /api/v1/admin/stocks/list`、`GET /api/v1/admin/stocks/{code}`、`GET /api/v1/admin/stocks/{code}/calendar`
-- [ ] T016 新建 `MarginStatsController` `src/main/java/com/tradingdiary/collection/controller/MarginStatsController.java`：`GET /api/v1/admin/margin-stats/summary`
-- [ ] T017 写 Controller 集成测试 `src/test/java/com/tradingdiary/controller/StockDataControllerTest.java`、`MarketDataControllerTest.java`、`MarginStatsControllerTest.java`：MockMvc 验证 API 响应格式和分页。RED→GREEN
+- [x] T016 新建 `MarginStatsController` `src/main/java/com/tradingdiary/collection/controller/MarginStatsController.java`：`GET /api/v1/admin/margin-stats/summary`
+- [x] T017 写 Controller 集成测试 `src/test/java/com/tradingdiary/controller/StockDataControllerTest.java`、`MarketDataControllerTest.java`、`MarginStatsControllerTest.java`：MockMvc 验证 API 响应格式和分页。RED→GREEN
 - [x] T018 更新 `ConstituentImportService.listFiles()` `src/main/java/com/tradingdiary/service/collection/ConstituentImportService.java`：查询 stock_industry 表 snap_date=file.fetchedDate 有无记录，返回字段加 `imported: boolean`
 - [x] T019 提交: `git add` 所有 Service + Controller + 测试，commit
 
