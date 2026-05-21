@@ -2,6 +2,7 @@ package com.tradingdiary.collection.controller;
 
 import com.tradingdiary.collection.model.StockDetailVO;
 import com.tradingdiary.model.ApiResponse;
+import com.tradingdiary.service.CalendarService;
 import com.tradingdiary.service.StockDataService;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,9 +21,11 @@ import java.util.Map;
 public class StockDataController {
 
     private final StockDataService stockDataService;
+    private final CalendarService calendarService;
 
-    public StockDataController(StockDataService stockDataService) {
+    public StockDataController(StockDataService stockDataService, CalendarService calendarService) {
         this.stockDataService = stockDataService;
+        this.calendarService = calendarService;
     }
 
     @Operation(summary = "获取股票列表（含行情和两融数据）")
@@ -49,5 +52,13 @@ public class StockDataController {
             @RequestParam(required = false) LocalDate endDate) {
         StockDetailVO detail = stockDataService.getStockDetail(code, startDate, endDate);
         return ApiResponse.ok(detail);
+    }
+
+    @Operation(summary = "获取交易日历（日线数据覆盖度）")
+    @GetMapping("/calendar")
+    public ApiResponse<Map<String, Object>> calendar(
+            @RequestParam(defaultValue = "2026") int year,
+            @RequestParam(defaultValue = "5") int month) {
+        return ApiResponse.ok(calendarService.getMonthCalendar(year, month));
     }
 }
