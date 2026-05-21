@@ -3,12 +3,14 @@ package com.tradingdiary.service;
 import com.tradingdiary.collection.model.CalendarDayVO;
 import com.tradingdiary.entity.TradeCalendar;
 import com.tradingdiary.mapper.StockDailyMapper;
+import com.tradingdiary.mapper.StockInfoMapper;
 import com.tradingdiary.mapper.TradeCalendarMapper;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,10 +21,14 @@ import java.util.stream.Collectors;
 public class CalendarService {
 
     private final TradeCalendarMapper tradeCalendarMapper;
+    private final StockInfoMapper stockInfoMapper;
     private final StockDailyMapper stockDailyMapper;
 
-    public CalendarService(TradeCalendarMapper tradeCalendarMapper, StockDailyMapper stockDailyMapper) {
+    public CalendarService(TradeCalendarMapper tradeCalendarMapper,
+                           StockInfoMapper stockInfoMapper,
+                           StockDailyMapper stockDailyMapper) {
         this.tradeCalendarMapper = tradeCalendarMapper;
+        this.stockInfoMapper = stockInfoMapper;
         this.stockDailyMapper = stockDailyMapper;
     }
 
@@ -31,15 +37,16 @@ public class CalendarService {
         LocalDate firstDay = ym.atDay(1);
         LocalDate lastDay = ym.atEndOfMonth();
 
-        // 获取当月所有交易日
         List<TradeCalendar> tradingDays = tradeCalendarMapper.selectTradingDays(firstDay, lastDay);
         Set<LocalDate> tradeDateSet = tradingDays.stream()
                 .map(TradeCalendar::getTradeDate)
                 .collect(Collectors.toSet());
 
-        // 获取当月有采集数据的日期（从 stock_daily 表）
-        List<LocalDate> collectedDates = stockDailyMapper.selectDistinctTradeDates(firstDay, lastDay);
-        Set<LocalDate> collectedSet = Set.copyOf(collectedDates);
+        Set<LocalDate> infoDates = new HashSet<>(stockInfoMapper.selectDistinctSnapshotDates(firstDay, lastDay));
+        Set<LocalDate> dailyDates = new HashSet<>(stockDailyMapper.selectDistinctTradeDates(firstDay, lastDay));
+        // 必须两张表同时存在数据才算完整
+        infoDates.retainAll(dailyDates);
+        Set<LocalDate> collectedSet = infoDates;
 
         List<CalendarDayVO> days = new ArrayList<>();
         for (LocalDate d = firstDay; !d.isAfter(lastDay); d = d.plusDays(1)) {

@@ -43,4 +43,10 @@
         <if test='concept != null and concept != ""'>AND c.name = #{concept}</if>
     </select>
 
+    <select id="selectDistinctSnapshotDates" resultType="java.time.LocalDate">
+        SELECT DISTINCT snapshot_date FROM stock_info
+        WHERE snapshot_date BETWEEN #{start} AND #{end} AND is_deleted = 0
+        ORDER BY snapshot_date
+    </select>
+
 </mapper>

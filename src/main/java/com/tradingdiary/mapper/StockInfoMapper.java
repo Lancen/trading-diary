@@ -6,6 +6,7 @@ import com.tradingdiary.entity.StockInfo;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Mapper
@@ -24,4 +25,6 @@ public interface StockInfoMapper extends BaseMapper<StockInfo> {
                         @Param("industry") String industry,
                         @Param("concept") String concept,
                         @Param("tradeDate") String tradeDate);
+
+    List<LocalDate> selectDistinctSnapshotDates(@Param("start") LocalDate start, @Param("end") LocalDate end);
 }
