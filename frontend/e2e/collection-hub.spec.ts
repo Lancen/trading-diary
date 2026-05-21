@@ -90,9 +90,9 @@ test.describe("数据采集 Hub 页", () => {
     await page.waitForLoadState("networkidle");
 
     await page.click("text=股票行情");
-    await page.waitForURL("**/admin/collection/stocks");
+    await page.waitForURL("**/admin/collection/STOCK_INFO");
 
-    await expect(page).toHaveURL(/\/admin\/collection\/stocks/);
+    await expect(page).toHaveURL(/\/admin\/collection\/STOCK_INFO/);
   });
 
   test("点击成分股卡片跳转到管理页", async ({ page }) => {

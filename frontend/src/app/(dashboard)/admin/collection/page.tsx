@@ -65,10 +65,20 @@ export default function CollectionHubPage() {
     s.lastFetch?.status === "FAILED" || s.lastCleanse?.status === "FAILED"
   ).length;
 
+  const routeMap: Record<string, string> = {
+    STOCK_INFO: "/admin/collection/STOCK_INFO",
+    TRADE_CALENDAR: "/admin/collection/TRADE_CALENDAR",
+    INDUSTRY_NAME: "/admin/collection/INDUSTRY_NAME",
+    CONCEPT_NAME: "/admin/collection/CONCEPT_NAME",
+    MARGIN_DAILY_SSE: "/admin/collection/MARGIN_DAILY_SSE",
+    MARGIN_DAILY_SZSE: "/admin/collection/MARGIN_DAILY_SZSE",
+    MARGIN_MACRO_SSE: "/admin/collection/MARGIN_MACRO_SSE",
+    MARGIN_MACRO_SZSE: "/admin/collection/MARGIN_MACRO_SZSE",
+  };
+
   const handleCardClick = (dataType: string) => {
-    if (dataType === "STOCK_INFO") {
-      router.push("/admin/collection/stocks");
-    }
+    const target = routeMap[dataType];
+    if (target) router.push(target);
   };
 
   const constituentCount = constituentFiles.length;
@@ -92,14 +102,14 @@ export default function CollectionHubPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {statusList.map((item) => {
             const hasError = item.lastFetch?.errorMsg || item.lastCleanse?.errorMsg;
-            const isClickable = item.dataType === "STOCK_INFO";
+            const target = routeMap[item.dataType];
             return (
               <div
                 key={item.dataType}
                 onClick={() => handleCardClick(item.dataType)}
                 className={"rounded-lg border p-4 transition-shadow hover:shadow-md " +
                   (hasError ? "border-red-300 bg-red-50" : "bg-white") +
-                  (isClickable ? " cursor-pointer border-blue-300" : "")
+                  (target ? " cursor-pointer border-blue-300" : "")
                 }
               >
                 <div className="flex items-center justify-between">
@@ -124,7 +134,7 @@ export default function CollectionHubPage() {
                     </div>
                   )}
                 </div>
-                {isClickable && (
+                {target && (
                   <p className="mt-2 text-xs text-blue-600">→ 查看详情</p>
                 )}
               </div>
