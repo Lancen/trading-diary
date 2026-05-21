@@ -12,6 +12,6 @@ import java.util.List;
 @Mapper
 public interface MarginMacroMapper extends BaseMapper<MarginMacro> {
 
-    @Select("SELECT DISTINCT trade_date FROM margin_macro WHERE trade_date BETWEEN #{start} AND #{end} AND exchange = #{exchange} AND is_deleted = 0 ORDER BY trade_date")
+    @Select("SELECT DISTINCT trade_date FROM margin_macro WHERE trade_date BETWEEN #{start} AND #{end} AND exchange = #{exchange} ORDER BY trade_date")
     List<LocalDate> selectDistinctTradeDates(@Param("start") LocalDate start, @Param("end") LocalDate end, @Param("exchange") String exchange);
 }
