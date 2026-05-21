@@ -35,7 +35,7 @@
 **⚠️ 关键**: 后续所有前端任务依赖此阶段 Controller API 就位
 
 - [x] T009 改造 `MarginCleanseService.cleanse()` `src/main/java/com/tradingdiary/service/collection/MarginCleanseService.java`：清洗时查询上一交易日 margin_daily，计算 `marginChange = 当日.balance - 上日.balance`、`shortChange = 当日.shortBalance - 上日.shortBalance`，写入实体。无上日数据时设为 null
-- [ ] T010 写 `MarginCleanseService` 测试 `src/test/java/com/tradingdiary/collection/MarginCleanseServiceTest.java`：验证 change 计算正确、无上日数据时 change=null。RED→GREEN
+- [x] T010 写 `MarginCleanseService` 测试 `src/test/java/com/tradingdiary/collection/MarginCleanseServiceTest.java`：验证 change 计算正确、无上日数据时 change=null。RED→GREEN
 - [x] T011 新建 `MarketDataService` `src/main/java/com/tradingdiary/service/MarketDataService.java`：提供概念列表聚合查询（concept JOIN stock_concept JOIN margin_daily GROUP BY + SUM）和行业列表聚合查询（同上用 stock_industry）
 - [x] T012 新建 `StockDataService` `src/main/java/com/tradingdiary/service/StockDataService.java`：提供股票列表查询（stock_info JOIN stock_industry/stock_concept LEFT JOIN margin_daily，支持 keyword/日期/行业/概念筛选，sortBy/sortDir 排序，分页）和股票详情查询（stock_info + stock_daily 日线 + margin_daily 两融 + industry/concept 标签）
 - [ ] T013 新建 `CalendarService` `src/main/java/com/tradingdiary/service/CalendarService.java`：提供交易日历查询（trade_calendar 当月交易日 vs stock_daily DISTINCT trade_date 比对，返回 3 态）
