@@ -3,6 +3,7 @@ package com.tradingdiary.service;
 import com.tradingdiary.collection.model.GapReportVO;
 import com.tradingdiary.entity.TradeCalendar;
 import com.tradingdiary.mapper.MarginDailyMapper;
+import com.tradingdiary.mapper.MarginMacroMapper;
 import com.tradingdiary.mapper.TradeCalendarMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,11 +26,14 @@ public class GapDetectionService {
 
     private final TradeCalendarMapper tradeCalendarMapper;
     private final MarginDailyMapper marginDailyMapper;
+    private final MarginMacroMapper marginMacroMapper;
 
     public GapDetectionService(TradeCalendarMapper tradeCalendarMapper,
-                                MarginDailyMapper marginDailyMapper) {
+                                MarginDailyMapper marginDailyMapper,
+                                MarginMacroMapper marginMacroMapper) {
         this.tradeCalendarMapper = tradeCalendarMapper;
         this.marginDailyMapper = marginDailyMapper;
+        this.marginMacroMapper = marginMacroMapper;
     }
 
     /**
@@ -41,16 +45,19 @@ public class GapDetectionService {
      *
      * @param start 开始日期
      * @param end 结束日期
-     * @param exchange 交易所代码，"SSE"表示沪市，"SZSE"表示深市
+     * @param dataType 数据类型（MARGIN_DAILY_SSE/SZSE 或 MARGIN_MACRO_SSE/SZSE）
      * @return 数据缺口报告，包含每周的完整度统计和缺失日期列表
      */
-    public GapReportVO getGaps(LocalDate start, LocalDate end, String exchange) {
+    public GapReportVO getGaps(LocalDate start, LocalDate end, String dataType) {
         List<TradeCalendar> tradingDays = tradeCalendarMapper.selectTradingDays(start, end);
         Set<LocalDate> expectedDates = tradingDays.stream()
                 .map(TradeCalendar::getTradeDate)
                 .collect(Collectors.toCollection(TreeSet::new));
 
-        List<LocalDate> collectedDates = marginDailyMapper.selectDistinctTradeDates(start, end, exchange);
+        String exchange = extractExchange(dataType);
+        List<LocalDate> collectedDates = isMacro(dataType)
+                ? marginMacroMapper.selectDistinctTradeDates(start, end, exchange)
+                : marginDailyMapper.selectDistinctTradeDates(start, end, exchange);
         Set<LocalDate> collectedSet = new TreeSet<>(collectedDates);
 
         Set<LocalDate> missingDates = new TreeSet<>(expectedDates);
@@ -114,6 +121,15 @@ public class GapDetectionService {
      * @param expectedDates 需要分组的日期集合
      * @return 按周分组的日期映射，key格式为"YYYY-Www"
      */
+    private static String extractExchange(String dataType) {
+        if (dataType == null) return "SSE";
+        return dataType.endsWith("SZSE") ? "SZSE" : "SSE";
+    }
+
+    private static boolean isMacro(String dataType) {
+        return dataType != null && dataType.startsWith("MARGIN_MACRO");
+    }
+
     private Map<String, List<LocalDate>> groupByIsoWeek(Set<LocalDate> expectedDates) {
         WeekFields weekFields = WeekFields.ISO;
 

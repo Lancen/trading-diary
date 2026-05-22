@@ -16,6 +16,7 @@ interface CollectionStatus {
   dataTypeLabel: string;
   lastFetch: JobStatus | null;
   lastCleanse: JobStatus | null;
+  lastDataDate: string | null;
 }
 
 function StatusBadge({ status }: { status: string | null }) {
@@ -101,38 +102,28 @@ export default function CollectionHubPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {statusList.map((item) => {
-            const hasError = item.lastFetch?.errorMsg || item.lastCleanse?.errorMsg;
+            const isFailed = item.lastFetch?.status === "FAILED";
             const target = routeMap[item.dataType];
             return (
               <div
                 key={item.dataType}
                 onClick={() => handleCardClick(item.dataType)}
                 className={"rounded-lg border p-4 transition-shadow hover:shadow-md " +
-                  (hasError ? "border-red-300 bg-red-50" : "bg-white") +
+                  (isFailed ? "border-red-300 bg-red-50" : "bg-white") +
                   (target ? " cursor-pointer border-blue-300" : "")
                 }
               >
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold">{item.dataTypeLabel}</h3>
-                  {hasError ? (
-                    <StatusBadge status="FAILED" />
-                  ) : (
-                    <StatusBadge status="SUCCESS" />
-                  )}
+                  <StatusBadge status={item.lastFetch?.status ?? null} />
                 </div>
                 <div className="mt-2 space-y-1 text-sm">
-                  {item.lastFetch && (
-                    <div className="flex justify-between text-xs text-gray-500">
-                      <span>采集: {formatTime(item.lastFetch.completedAt)}</span>
-                      <span>{item.lastFetch.recordCount ?? 0} 条</span>
-                    </div>
-                  )}
-                  {item.lastCleanse && item.lastCleanse.status === "SUCCESS" && (
-                    <div className="flex justify-between text-xs text-gray-500">
-                      <span>清洗: {formatTime(item.lastCleanse.completedAt)}</span>
-                      <span>{item.lastCleanse.recordCount ?? 0} 条</span>
-                    </div>
-                  )}
+                  <div className="text-xs text-gray-500">
+                    最新采集: {formatTime(item.lastFetch?.completedAt ?? null)}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    数据时间: {formatTime(item.lastDataDate)}
+                  </div>
                 </div>
                 {target && (
                   <p className="mt-2 text-xs text-blue-600">→ 查看详情</p>

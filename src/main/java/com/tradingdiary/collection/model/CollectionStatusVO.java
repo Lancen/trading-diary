@@ -21,6 +21,10 @@ public class CollectionStatusVO {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private JobStatus lastCleanse;
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", timezone = "UTC")
+    private java.time.LocalDateTime lastDataDate;
+
     @Getter
     @Setter
     public static class JobStatus {

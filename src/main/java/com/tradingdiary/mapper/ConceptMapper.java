@@ -5,7 +5,9 @@ import com.tradingdiary.collection.model.ConceptIndustryVO;
 import com.tradingdiary.entity.Concept;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Mapper
@@ -19,4 +21,7 @@ public interface ConceptMapper extends BaseMapper<Concept> {
                                               @Param("size") int size);
 
     long countConceptList(@Param("keyword") String keyword, @Param("tradeDate") String tradeDate);
+
+    @Select("SELECT MAX(created_at) FROM concept WHERE is_deleted = 0")
+    LocalDateTime selectMaxCreatedAt();
 }

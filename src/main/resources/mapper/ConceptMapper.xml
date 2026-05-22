@@ -8,11 +8,11 @@
                SUM(md.short_balance) AS shortBalance, SUM(md.short_change) AS shortChange,
                MAX(sc.snap_date) AS snapDate
         FROM concept c
-        INNER JOIN stock_concept sc ON c.code = sc.concept_code AND sc.is_deleted = 0
-        INNER JOIN margin_daily md ON sc.stock_code = md.stock_code AND sc.snap_date = md.trade_date AND md.is_deleted = 0
+        LEFT JOIN stock_concept sc ON c.code = sc.concept_code AND sc.is_deleted = 0
+        LEFT JOIN margin_daily md ON sc.stock_code = md.stock_code AND sc.snap_date = md.trade_date AND md.is_deleted = 0
+            <if test="tradeDate != null">AND md.trade_date = #{tradeDate}</if>
+            <if test="tradeDate == null">AND md.trade_date = (SELECT MAX(trade_date) FROM margin_daily WHERE is_deleted = 0)</if>
         WHERE c.is_deleted = 0
-        <if test="tradeDate != null">AND md.trade_date = #{tradeDate}</if>
-        <if test="tradeDate == null">AND md.trade_date = (SELECT MAX(trade_date) FROM margin_daily WHERE is_deleted = 0)</if>
         <if test='keyword != null and keyword != ""'>AND c.name LIKE CONCAT('%', #{keyword}, '%')</if>
         GROUP BY c.code, c.name
         ORDER BY ${sortBy} ${sortDir}
@@ -21,11 +21,11 @@
 
     <select id="countConceptList" resultType="long">
         SELECT COUNT(DISTINCT c.id) FROM concept c
-        INNER JOIN stock_concept sc ON c.code = sc.concept_code AND sc.is_deleted = 0
-        INNER JOIN margin_daily md ON sc.stock_code = md.stock_code AND sc.snap_date = md.trade_date AND md.is_deleted = 0
+        LEFT JOIN stock_concept sc ON c.code = sc.concept_code AND sc.is_deleted = 0
+        LEFT JOIN margin_daily md ON sc.stock_code = md.stock_code AND sc.snap_date = md.trade_date AND md.is_deleted = 0
+            <if test="tradeDate != null">AND md.trade_date = #{tradeDate}</if>
+            <if test="tradeDate == null">AND md.trade_date = (SELECT MAX(trade_date) FROM margin_daily WHERE is_deleted = 0)</if>
         WHERE c.is_deleted = 0
-        <if test="tradeDate != null">AND md.trade_date = #{tradeDate}</if>
-        <if test="tradeDate == null">AND md.trade_date = (SELECT MAX(trade_date) FROM margin_daily WHERE is_deleted = 0)</if>
         <if test='keyword != null and keyword != ""'>AND c.name LIKE CONCAT('%', #{keyword}, '%')</if>
     </select>
 

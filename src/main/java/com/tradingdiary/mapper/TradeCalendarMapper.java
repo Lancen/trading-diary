@@ -14,4 +14,7 @@ public interface TradeCalendarMapper extends BaseMapper<TradeCalendar> {
 
     @Select("SELECT * FROM trade_calendar WHERE trade_date BETWEEN #{start} AND #{end} AND is_trading_day = 1 AND is_deleted = 0 ORDER BY trade_date")
     List<TradeCalendar> selectTradingDays(@Param("start") LocalDate start, @Param("end") LocalDate end);
+
+    @Select("SELECT MAX(trade_date) FROM trade_calendar WHERE is_deleted = 0")
+    LocalDate selectMaxCalDate();
 }

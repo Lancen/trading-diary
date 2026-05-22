@@ -5,6 +5,7 @@ import com.tradingdiary.collection.model.StockListVO;
 import com.tradingdiary.entity.StockInfo;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -27,4 +28,7 @@ public interface StockInfoMapper extends BaseMapper<StockInfo> {
                         @Param("tradeDate") String tradeDate);
 
     List<LocalDate> selectDistinctSnapshotDates(@Param("start") LocalDate start, @Param("end") LocalDate end);
+
+    @Select("SELECT MAX(snapshot_date) FROM stock_info WHERE is_deleted = 0")
+    LocalDate selectMaxTradeDate();
 }

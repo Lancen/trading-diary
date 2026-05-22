@@ -14,4 +14,7 @@ public interface MarginMacroMapper extends BaseMapper<MarginMacro> {
 
     @Select("SELECT DISTINCT trade_date FROM margin_macro WHERE trade_date BETWEEN #{start} AND #{end} AND exchange = #{exchange} ORDER BY trade_date")
     List<LocalDate> selectDistinctTradeDates(@Param("start") LocalDate start, @Param("end") LocalDate end, @Param("exchange") String exchange);
+
+    @Select("SELECT MAX(trade_date) FROM margin_macro WHERE exchange = #{exchange}")
+    LocalDate selectMaxTradeDate(@Param("exchange") String exchange);
 }

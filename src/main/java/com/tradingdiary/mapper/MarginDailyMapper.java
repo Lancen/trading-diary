@@ -26,4 +26,7 @@ public interface MarginDailyMapper extends BaseMapper<MarginDaily> {
 
     @Select("<script>SELECT COUNT(DISTINCT stock_code) FROM margin_daily WHERE is_deleted = 0<if test='tradeDate != null'> AND trade_date = #{tradeDate}</if></script>")
     Integer countDistinctStocks(@Param("tradeDate") String tradeDate);
+
+    @Select("SELECT MAX(trade_date) FROM margin_daily WHERE exchange = #{exchange} AND is_deleted = 0")
+    LocalDate selectMaxTradeDate(@Param("exchange") String exchange);
 }

@@ -1,6 +1,7 @@
 package com.tradingdiary.collection.orchestrator;
 
 import com.tradingdiary.collection.client.AKToolsClient;
+import com.tradingdiary.collection.client.TushareClient;
 import com.tradingdiary.collection.model.BackfillRequest;
 import com.tradingdiary.entity.DataCollectionLog;
 import com.tradingdiary.entity.TradeCalendar;
@@ -64,9 +65,10 @@ class CollectionOrchestratorTest {
         IndustryMapper industryMapper = mock(IndustryMapper.class);
         ConceptMapper conceptMapper = mock(ConceptMapper.class);
         stockInfoMapper = mock(StockInfoMapper.class);
+        TushareClient tushareClient = mock(TushareClient.class);
 
         CollectionOrchestrator real = new CollectionOrchestrator(
-                aktoolsClient, dataCollectionLogMapper, rawDataMapper,
+                aktoolsClient, tushareClient, dataCollectionLogMapper, rawDataMapper,
                 stockInfoCleanseService, stockDailyCleanseService,
                 industryCleanseService, conceptCleanseService,
                 marginCleanseService, marginMacroCleanseService, tradeCalendarService,
@@ -276,54 +278,39 @@ class CollectionOrchestratorTest {
     }
 
     @Test
-    void shouldBackfillStockDailyWithAllStocks() {
-        com.tradingdiary.entity.StockInfo stock1 = new com.tradingdiary.entity.StockInfo();
-        stock1.setCode("000001");
-        com.tradingdiary.entity.StockInfo stock2 = new com.tradingdiary.entity.StockInfo();
-        stock2.setCode("000002");
-
-        when(stockInfoMapper.selectList(null)).thenReturn(java.util.Arrays.asList(stock1, stock2));
-        when(aktoolsClient.fetchStockDaily(eq("000001"), any(), any())).thenReturn("[{\"日期\":\"2026-05-15\",\"开盘\":10.0,\"收盘\":10.5,\"最高\":11.0,\"最低\":9.8,\"成交量\":1000000,\"成交额\":10500000}]");
-        when(aktoolsClient.fetchStockDaily(eq("000002"), any(), any())).thenReturn("[{\"日期\":\"2026-05-15\",\"开盘\":20.0,\"收盘\":20.5,\"最高\":21.0,\"最低\":19.8,\"成交量\":2000000,\"成交额\":41000000}]");
-        when(stockDailyCleanseService.cleanseHistBatch(any(), any())).thenReturn(1);
+    void shouldBackfillStockDailyWithAllDates() {
+        String tushareResp = "{\"data\":{\"fields\":[\"ts_code\",\"trade_date\"],\"items\":[]}}";
+        when(stockDailyCleanseService.cleanseTushareDaily(any())).thenReturn(5000);
 
         String result = orchestrator.backfillStockDaily(
-                LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 15));
+                LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 5));
 
-        assertThat(result).contains("成功 2 只", "失败 0 只");
-        verify(stockDailyCleanseService, times(1)).cleanseHistBatch(any(), any());
+        assertThat(result).contains("25000 条记录", "0 天失败");
+        verify(stockDailyCleanseService, times(5)).cleanseTushareDaily(any());
     }
 
     @Test
-    void shouldBackfillStockDailyWithNoStocks() {
-        when(stockInfoMapper.selectList(null)).thenReturn(java.util.Collections.emptyList());
-
+    void shouldHandleEmptyDateRange() {
+        // endDate before startDate — while loop doesn't execute
         String result = orchestrator.backfillStockDaily(
-                LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 15));
+                LocalDate.of(2026, 5, 5), LocalDate.of(2026, 5, 1));
 
-        assertThat(result).contains("stock_info 表无数据");
-        verify(aktoolsClient, never()).fetchStockDaily(any(), any(), any());
+        assertThat(result).contains("0 条记录");
     }
 
     @Test
-    void shouldContinueBackfillAfterSingleStockFailure() {
-        com.tradingdiary.entity.StockInfo stock1 = new com.tradingdiary.entity.StockInfo();
-        stock1.setCode("000001");
-        com.tradingdiary.entity.StockInfo stock2 = new com.tradingdiary.entity.StockInfo();
-        stock2.setCode("000002");
-
-        when(stockInfoMapper.selectList(null)).thenReturn(java.util.Arrays.asList(stock1, stock2));
-        when(aktoolsClient.fetchStockDaily(eq("000001"), any(), any()))
-                .thenThrow(new RuntimeException("API error"));
-        when(aktoolsClient.fetchStockDaily(eq("000002"), any(), any()))
-                .thenReturn("[{\"日期\":\"2026-05-15\",\"开盘\":20.0,\"收盘\":20.5,\"最高\":21.0,\"最低\":19.8,\"成交量\":2000000,\"成交额\":41000000}]");
-        when(stockDailyCleanseService.cleanseHistBatch(any(), any())).thenReturn(1);
+    void shouldContinueBackfillAfterSingleDateFailure() {
+        String tushareResp = "{\"data\":{\"fields\":[\"ts_code\"],\"items\":[]}}";
+        when(stockDailyCleanseService.cleanseTushareDaily(any()))
+                .thenReturn(5000)
+                .thenThrow(new RuntimeException("Tushare error"))
+                .thenReturn(5000);
 
         String result = orchestrator.backfillStockDaily(
-                LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 15));
+                LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 3));
 
-        assertThat(result).contains("成功 1 只", "失败 1 只");
-        verify(stockDailyCleanseService, times(1)).cleanseHistBatch(any(), any());
+        assertThat(result).contains("10000 条记录", "1 天失败");
+        verify(stockDailyCleanseService, times(3)).cleanseTushareDaily(any());
     }
 
     private TradeCalendar buildTradingDay(LocalDate date) {

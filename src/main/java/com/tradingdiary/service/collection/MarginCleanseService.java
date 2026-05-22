@@ -4,9 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tradingdiary.entity.MarginDaily;
-import com.tradingdiary.entity.MarginStock;
 import com.tradingdiary.mapper.MarginDailyMapper;
-import com.tradingdiary.mapper.MarginStockMapper;
 import com.tradingdiary.util.BatchSqlRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,10 +15,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,14 +25,12 @@ public class MarginCleanseService {
     private static final Logger log = LoggerFactory.getLogger(MarginCleanseService.class);
 
     private final MarginDailyMapper marginDailyMapper;
-    private final MarginStockMapper marginStockMapper;
     private final BatchSqlRunner batchSqlRunner;
     private final ObjectMapper objectMapper;
 
-    public MarginCleanseService(MarginDailyMapper marginDailyMapper, MarginStockMapper marginStockMapper,
+    public MarginCleanseService(MarginDailyMapper marginDailyMapper,
                                  BatchSqlRunner batchSqlRunner, ObjectMapper objectMapper) {
         this.marginDailyMapper = marginDailyMapper;
-        this.marginStockMapper = marginStockMapper;
         this.batchSqlRunner = batchSqlRunner;
         this.objectMapper = objectMapper;
     }
@@ -45,7 +39,6 @@ public class MarginCleanseService {
      * 清洗两融明细数据
      * <p>
      * 从原始JSON数据中解析两融明细信息，包括融资余额、融券余量等。
-     * 同时维护两融标的股票列表，确保新标的股票被记录。
      * </p>
      *
      * @param rawJson 原始JSON数据字符串
@@ -83,7 +76,6 @@ public class MarginCleanseService {
         }
 
         int dailyCount = saveMarginDailyBatch(dailyList, exchange, tradeDate);
-        saveMarginStocksBatch(dailyList, exchange, tradeDate);
 
         log.info("Margin cleanse complete: {} margin_daily records for {} on {}",
                 dailyCount, exchange, tradeDate);
@@ -121,38 +113,6 @@ public class MarginCleanseService {
             count += batchSqlRunner.batchUpdate(toUpdate);
         }
         return count;
-    }
-
-    private void saveMarginStocksBatch(List<MarginDaily> dailyList, String exchange, LocalDate tradeDate) {
-        Set<String> stockCodes = new HashSet<>();
-        for (MarginDaily d : dailyList) {
-            if (d.getStockCode() != null) stockCodes.add(d.getStockCode());
-        }
-
-        List<MarginStock> existing = marginStockMapper.selectList(
-                new LambdaQueryWrapper<MarginStock>()
-                        .eq(MarginStock::getExchange, exchange)
-                        .eq(MarginStock::getSnapDate, tradeDate)
-        );
-
-        Map<String, MarginStock> existingByCode = existing.stream()
-                .collect(Collectors.toMap(MarginStock::getStockCode, e -> e, (a, b) -> a));
-
-        List<MarginStock> toInsert = new ArrayList<>();
-        for (String code : stockCodes) {
-            if (!existingByCode.containsKey(code)) {
-                MarginStock ms = new MarginStock();
-                ms.setStockCode(code);
-                ms.setStockName(code);
-                ms.setExchange(exchange);
-                ms.setSnapDate(tradeDate);
-                toInsert.add(ms);
-            }
-        }
-
-        if (!toInsert.isEmpty()) {
-            batchSqlRunner.batchInsert(toInsert);
-        }
     }
 
     private List<MarginDaily> parseMarginDailyList(String rawJson, String exchange, LocalDate tradeDate) {

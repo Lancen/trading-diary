@@ -6,9 +6,15 @@ import com.tradingdiary.collection.model.CollectionStatusVO;
 import com.tradingdiary.collection.model.GapReportVO;
 import com.tradingdiary.collection.orchestrator.CollectionOrchestrator;
 import com.tradingdiary.entity.DataCollectionLog;
+import com.tradingdiary.mapper.ConceptMapper;
 import com.tradingdiary.mapper.DataCollectionLogMapper;
+import com.tradingdiary.mapper.IndustryMapper;
+import com.tradingdiary.mapper.MarginDailyMapper;
+import com.tradingdiary.mapper.MarginMacroMapper;
+import com.tradingdiary.mapper.StockInfoMapper;
 import com.tradingdiary.mapper.TradeCalendarMapper;
 import com.tradingdiary.model.ApiResponse;
+import com.tradingdiary.service.collection.ConstituentImportService;
 import com.tradingdiary.service.GapDetectionService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,6 +49,24 @@ class CollectionControllerTest {
 
     @Mock
     private TradeCalendarMapper tradeCalendarMapper;
+
+    @Mock
+    private StockInfoMapper stockInfoMapper;
+
+    @Mock
+    private IndustryMapper industryMapper;
+
+    @Mock
+    private ConceptMapper conceptMapper;
+
+    @Mock
+    private MarginDailyMapper marginDailyMapper;
+
+    @Mock
+    private MarginMacroMapper marginMacroMapper;
+
+    @Mock
+    private ConstituentImportService constituentImportService;
 
     @InjectMocks
     private CollectionController collectionController;
@@ -139,9 +163,9 @@ class CollectionControllerTest {
         gapReport.setPartialWeeks(0);
         gapReport.setMissingWeeks(0);
 
-        when(gapDetectionService.getGaps(start, end, "SSE")).thenReturn(gapReport);
+        when(gapDetectionService.getGaps(start, end, "MARGIN_DAILY_SSE")).thenReturn(gapReport);
 
-        ApiResponse<GapReportVO> response = collectionController.gaps(start, end, "SSE");
+        ApiResponse<GapReportVO> response = collectionController.gaps(start, end, "MARGIN_DAILY_SSE");
 
         assertThat(response.getCode()).isEqualTo(200);
         assertThat(response.getData().getCompleteWeeks()).isEqualTo(1);
@@ -159,9 +183,9 @@ class CollectionControllerTest {
         gapReport.setPartialWeeks(0);
         gapReport.setMissingWeeks(0);
 
-        when(gapDetectionService.getGaps(start, end, "SSE")).thenReturn(gapReport);
+        when(gapDetectionService.getGaps(start, end, "MARGIN_DAILY_SSE")).thenReturn(gapReport);
 
-        ApiResponse<GapReportVO> response = collectionController.gaps(start, end, "SSE");
+        ApiResponse<GapReportVO> response = collectionController.gaps(start, end, "MARGIN_DAILY_SSE");
 
         assertThat(response.getCode()).isEqualTo(200);
     }

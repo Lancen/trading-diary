@@ -52,9 +52,17 @@ public class AKToolsClient {
     }
 
     public String fetchStockDaily(String symbol, String startDate, String endDate) {
-        log.info("Fetching stock daily data (腾讯): symbol={}, startDate={}, endDate={}", symbol, startDate, endDate);
+        String prefixed = toTxSymbol(symbol);
+        log.info("Fetching stock daily data (腾讯): symbol={}, startDate={}, endDate={}", prefixed, startDate, endDate);
         return get("/api/public/stock_zh_a_hist_tx?symbol={symbol}&start_date={startDate}&end_date={endDate}",
-                symbol, startDate, endDate);
+                prefixed, startDate, endDate);
+    }
+
+    private static String toTxSymbol(String symbol) {
+        char first = symbol.charAt(0);
+        if (first == '6') return "sh" + symbol;  // 上交所
+        if (first == '0' || first == '3') return "sz" + symbol;  // 深交所
+        return "nq" + symbol;  // 北交所/新三板 (4/8/9)
     }
 
     public String fetchIndustryNames() {

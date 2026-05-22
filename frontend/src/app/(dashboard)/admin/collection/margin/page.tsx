@@ -28,9 +28,22 @@ function statusEmoji(status: string): string {
   return status;
 }
 
+const DATA_TYPE_OPTIONS: Record<string, string> = {
+  MARGIN_DAILY_SSE: "两融明细(沪市)",
+  MARGIN_DAILY_SZSE: "两融明细(深市)",
+  MARGIN_MACRO_SSE: "两融总量(沪市)",
+  MARGIN_MACRO_SZSE: "两融总量(深市)",
+};
+
+const DATA_TYPE_TO_EXCHANGE: Record<string, string> = {
+  MARGIN_DAILY_SSE: "SSE",
+  MARGIN_DAILY_SZSE: "SZSE",
+  MARGIN_MACRO_SSE: "SSE",
+  MARGIN_MACRO_SZSE: "SZSE",
+};
+
 interface BackfillForm {
   dataType: string;
-  exchange: string;
   startDate: string;
   endDate: string;
 }
@@ -47,7 +60,6 @@ function BackfillDialog({
   const toast = useToast((s) => s.toast);
   const today = new Date().toISOString().slice(0, 10);
   const [dataType, setDataType] = useState(initialValues?.dataType || "MARGIN_DAILY_SSE");
-  const [exchange, setExchange] = useState(initialValues?.exchange || "SSE");
   const [startDate, setStartDate] = useState(initialValues?.startDate || today);
   const [endDate, setEndDate] = useState(initialValues?.endDate || today);
   const [submitting, setSubmitting] = useState(false);
@@ -58,7 +70,6 @@ function BackfillDialog({
   if (initKey !== lastInit) {
     setLastInit(initKey);
     setDataType(initialValues?.dataType || "MARGIN_DAILY_SSE");
-    setExchange(initialValues?.exchange || "SSE");
     setStartDate(initialValues?.startDate || today);
     setEndDate(initialValues?.endDate || today);
   }
@@ -67,12 +78,13 @@ function BackfillDialog({
 
   async function handleSubmit() {
     setSubmitting(true);
+    const exchange = DATA_TYPE_TO_EXCHANGE[dataType] || "SSE";
     try {
       const res = await api.post("api/v1/admin/collection/backfill", {
         json: { dataType, exchange, startDate, endDate },
       }).json<{ code: number; msg?: string }>();
       if (res.code === 200) {
-        toast(`补采已提交: ${dataType} ${exchange} ${startDate}~${endDate}`, "success");
+        toast(`补采已提交: ${DATA_TYPE_OPTIONS[dataType]} ${startDate}~${endDate}`, "success");
         onClose();
       } else {
         toast(`补采失败: ${res.msg || "未知错误"}`, "error");
@@ -98,20 +110,9 @@ function BackfillDialog({
               onChange={(e) => setDataType(e.target.value)}
               className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
             >
-              <option value="MARGIN_DAILY_SSE">上交所两融</option>
-              <option value="MARGIN_DAILY_SZSE">深交所两融</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">交易所</label>
-            <select
-              value={exchange}
-              onChange={(e) => setExchange(e.target.value)}
-              className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
-            >
-              <option value="SSE">上交所</option>
-              <option value="SZSE">深交所</option>
+              {Object.entries(DATA_TYPE_OPTIONS).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
             </select>
           </div>
 
@@ -162,7 +163,7 @@ export default function MarginPage() {
   const today = new Date().toISOString().slice(0, 10);
   const [start, setStart] = useState(today);
   const [end, setEnd] = useState(today);
-  const [exchange, setExchange] = useState("SSE");
+  const [dataType, setDataType] = useState("MARGIN_DAILY_SSE");
   const [report, setReport] = useState<GapReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -172,7 +173,7 @@ export default function MarginPage() {
     setLoading(true);
     try {
       const res = await api.get("api/v1/admin/collection/gaps", {
-        searchParams: { start, end, exchange },
+        searchParams: { start, end, dataType },
       }).json<{ code: number; data: GapReport }>();
       setReport(res.data || null);
     } catch (e) { console.error(e); }
@@ -180,10 +181,8 @@ export default function MarginPage() {
   }
 
   function openBackfillDialog(prefill?: Partial<BackfillForm>) {
-    const dataType = exchange === "SZSE" ? "MARGIN_DAILY_SZSE" : "MARGIN_DAILY_SSE";
     setDialogValues({
       dataType: prefill?.dataType || dataType,
-      exchange: prefill?.exchange || exchange,
       startDate: prefill?.startDate || start,
       endDate: prefill?.endDate || end,
     });
@@ -218,10 +217,11 @@ export default function MarginPage() {
           <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} className="mt-1 rounded-lg border px-3 py-2 text-sm" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">交易所</label>
-          <select value={exchange} onChange={(e) => setExchange(e.target.value)} className="mt-1 rounded-lg border px-3 py-2 text-sm">
-            <option value="SSE">上交所</option>
-            <option value="SZSE">深交所</option>
+          <label className="block text-sm font-medium text-gray-700">数据类型</label>
+          <select value={dataType} onChange={(e) => setDataType(e.target.value)} className="mt-1 rounded-lg border px-3 py-2 text-sm">
+            {Object.entries(DATA_TYPE_OPTIONS).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
           </select>
         </div>
         <button onClick={fetchGaps} disabled={loading} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
@@ -256,7 +256,7 @@ export default function MarginPage() {
                   return (
                     <tr key={i} className="hover:bg-gray-50">
                       <td className="border px-3 py-2">{week.weekStart} ~ {week.weekEnd}</td>
-                      <td className="border px-3 py-2">{exchange}</td>
+                      <td className="border px-3 py-2">{DATA_TYPE_OPTIONS[dataType]}</td>
                       <td className="border px-3 py-2 text-right">{week.expectedDays}</td>
                       <td className="border px-3 py-2 text-right">{week.collectedDays}</td>
                       <td className="border px-3 py-2 text-xs text-red-600">{week.missingDates.length > 0 ? week.missingDates.join(", ") : "-"}</td>

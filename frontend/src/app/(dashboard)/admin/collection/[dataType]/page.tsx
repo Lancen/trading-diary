@@ -35,22 +35,6 @@ const LABEL_MAP: Record<string, string> = {
 
 const CALENDAR_TYPES = new Set(["STOCK_INFO", "MARGIN_DAILY_SSE", "MARGIN_DAILY_SZSE", "MARGIN_MACRO_SSE", "MARGIN_MACRO_SZSE"]);
 
-function PipelineStep({ label, time, count, done, failed }: {
-  label: string; time: string | null; count: string; done: boolean; failed?: boolean;
-}) {
-  return (
-    <div className="text-center flex-1">
-      <div className={`mx-auto flex h-10 w-10 items-center justify-center rounded-full text-lg font-bold ${
-        failed ? "bg-red-500 text-white" : done ? "bg-green-500 text-white" : "bg-gray-200 text-gray-400"
-      }`}>
-        {failed ? "✗" : done ? "✓" : "-"}
-      </div>
-      <p className="mt-1 text-sm font-bold">{label}</p>
-      <p className="text-xs text-gray-500">{time}</p>
-      <p className="text-xs text-gray-400">{count}</p>
-    </div>
-  );
-}
 
 function BackfillButton({ onDone }: { onDone: () => void }) {
   const [open, setOpen] = useState(false);
@@ -105,7 +89,7 @@ export default function CollectionDetailPage() {
   const label = LABEL_MAP[dataType] || dataType;
 
   const [fetchStatus, setFetchStatus] = useState<JobStatus | null>(null);
-  const [cleanseStatus, setCleanseStatus] = useState<JobStatus | null>(null);
+  const [lastDataDate, setLastDataDate] = useState<string | null>(null);
   const [logs, setLogs] = useState<CollectionLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [triggering, setTriggering] = useState(false);
@@ -113,6 +97,8 @@ export default function CollectionDetailPage() {
   const [calMonth, setCalMonth] = useState(() => new Date().getMonth() + 1);
   const [calDays, setCalDays] = useState<CalendarDay[]>([]);
   const toast = useToast((s) => s.toast);
+
+  const isMonthly = dataType === "INDUSTRY_NAME" || dataType === "CONCEPT_NAME";
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -123,7 +109,7 @@ export default function CollectionDetailPage() {
       ]);
       const item = (statusRes.data || []).find((s: any) => s.dataType === dataType);
       setFetchStatus(item?.lastFetch || null);
-      setCleanseStatus(item?.lastCleanse || null);
+      setLastDataDate(item?.lastDataDate || null);
       setLogs(logsRes.data || []);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
@@ -176,30 +162,12 @@ export default function CollectionDetailPage() {
     return `${day} 非交易日`;
   }
 
-  const fetchDone = fetchStatus?.status === "SUCCESS";
-  const cleanseDone = cleanseStatus?.status === "SUCCESS";
-  const fetchFailed = fetchStatus?.status === "FAILED";
-  const cleanseFailed = cleanseStatus?.status === "FAILED";
-
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2 text-sm text-gray-500">
         <Link href="/admin/collection" className="hover:underline">← 返回数据采集</Link>
         <span className="text-gray-300">|</span>
         <h1 className="text-2xl font-bold text-gray-900">{label}</h1>
-      </div>
-
-      {/* 采集管线状态 */}
-      <div className={`rounded-lg border p-6 ${fetchFailed || cleanseFailed ? "border-red-300 bg-red-50" : "border-green-200 bg-green-50"}`}>
-        <p className="mb-4 text-sm text-gray-500">采集管线状态</p>
-        <div className="flex items-center">
-          <PipelineStep label="采集" time={formatTime(fetchStatus?.completedAt ?? null)} count={fetchStatus?.recordCount ? `${fetchStatus.recordCount}条` : "-"} done={fetchDone} failed={fetchFailed} />
-          <span className="px-4 text-gray-300 text-xl">→</span>
-          <PipelineStep label="清洗" time={formatTime(cleanseStatus?.completedAt ?? null)} count={cleanseStatus?.recordCount ? `${cleanseStatus.recordCount}条` : "-"} done={cleanseDone} failed={cleanseFailed} />
-        </div>
-        {(fetchFailed || cleanseFailed) && (
-          <p className="mt-3 text-sm text-red-600">{fetchStatus?.errorMsg || cleanseStatus?.errorMsg}</p>
-        )}
       </div>
 
       {/* 操作按钮 */}
@@ -210,6 +178,22 @@ export default function CollectionDetailPage() {
         </button>
         {dataType === "STOCK_INFO" && <BackfillButton onDone={fetchData} />}
       </div>
+
+      {/* 月级类型：最新采集时间 + 数据最新时间（替代交易日历的覆盖度信息） */}
+      {isMonthly && (
+        <div className="rounded-lg border p-4">
+          <div className="flex gap-8 text-sm">
+            <div>
+              <span className="text-gray-500">最新采集: </span>
+              <span className="font-medium">{formatTime(fetchStatus?.completedAt ?? null)}</span>
+            </div>
+            <div>
+              <span className="text-gray-500">数据时间: </span>
+              <span className="font-medium">{formatTime(lastDataDate)}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 交易日历 — 仅日级数据采集类型 */}
       {CALENDAR_TYPES.has(dataType) && (

@@ -3,6 +3,7 @@ package com.tradingdiary.service;
 import com.tradingdiary.collection.model.GapReportVO;
 import com.tradingdiary.entity.TradeCalendar;
 import com.tradingdiary.mapper.MarginDailyMapper;
+import com.tradingdiary.mapper.MarginMacroMapper;
 import com.tradingdiary.mapper.TradeCalendarMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,6 +28,9 @@ class GapDetectionServiceTest {
 
     @Mock
     private MarginDailyMapper marginDailyMapper;
+
+    @Mock
+    private MarginMacroMapper marginMacroMapper;
 
     @InjectMocks
     private GapDetectionService gapDetectionService;
@@ -53,7 +57,7 @@ class GapDetectionServiceTest {
         when(marginDailyMapper.selectDistinctTradeDates(start, end, "SSE"))
                 .thenReturn(collectedDates);
 
-        GapReportVO report = gapDetectionService.getGaps(start, end, "SSE");
+        GapReportVO report = gapDetectionService.getGaps(start, end, "MARGIN_DAILY_SSE");
 
         assertThat(report.getWeeks()).hasSize(1);
         assertThat(report.getTotalWeeks()).isEqualTo(1);
@@ -88,7 +92,7 @@ class GapDetectionServiceTest {
         when(marginDailyMapper.selectDistinctTradeDates(start, end, "SZSE"))
                 .thenReturn(collectedDates);
 
-        GapReportVO report = gapDetectionService.getGaps(start, end, "SZSE");
+        GapReportVO report = gapDetectionService.getGaps(start, end, "MARGIN_DAILY_SZSE");
 
         assertThat(report.getCompleteWeeks()).isEqualTo(1);
         assertThat(report.getPartialWeeks()).isEqualTo(0);
@@ -113,7 +117,7 @@ class GapDetectionServiceTest {
         when(marginDailyMapper.selectDistinctTradeDates(start, end, "SSE"))
                 .thenReturn(List.of());
 
-        GapReportVO report = gapDetectionService.getGaps(start, end, "SSE");
+        GapReportVO report = gapDetectionService.getGaps(start, end, "MARGIN_DAILY_SSE");
 
         assertThat(report.getMissingWeeks()).isEqualTo(1);
         assertThat(report.getCompleteWeeks()).isEqualTo(0);
@@ -132,7 +136,7 @@ class GapDetectionServiceTest {
 
         when(tradeCalendarMapper.selectTradingDays(eq(start), eq(end))).thenReturn(List.of());
 
-        GapReportVO report = gapDetectionService.getGaps(start, end, "SSE");
+        GapReportVO report = gapDetectionService.getGaps(start, end, "MARGIN_DAILY_SSE");
 
         assertThat(report.getWeeks()).isEmpty();
         assertThat(report.getTotalWeeks()).isEqualTo(0);
@@ -169,7 +173,7 @@ class GapDetectionServiceTest {
         when(marginDailyMapper.selectDistinctTradeDates(start, end, "SZSE"))
                 .thenReturn(collectedDates);
 
-        GapReportVO report = gapDetectionService.getGaps(start, end, "SZSE");
+        GapReportVO report = gapDetectionService.getGaps(start, end, "MARGIN_DAILY_SZSE");
 
         assertThat(report.getWeeks()).hasSize(2);
         assertThat(report.getTotalWeeks()).isEqualTo(2);

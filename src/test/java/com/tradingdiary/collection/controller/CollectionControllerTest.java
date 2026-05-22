@@ -6,7 +6,12 @@ import com.tradingdiary.collection.model.GapReportVO;
 import com.tradingdiary.collection.orchestrator.CollectionOrchestrator;
 import com.tradingdiary.entity.DataCollectionLog;
 import com.tradingdiary.entity.TradeCalendar;
+import com.tradingdiary.mapper.ConceptMapper;
 import com.tradingdiary.mapper.DataCollectionLogMapper;
+import com.tradingdiary.mapper.IndustryMapper;
+import com.tradingdiary.mapper.MarginDailyMapper;
+import com.tradingdiary.mapper.MarginMacroMapper;
+import com.tradingdiary.mapper.StockInfoMapper;
 import com.tradingdiary.mapper.TradeCalendarMapper;
 import com.tradingdiary.service.GapDetectionService;
 import org.junit.jupiter.api.Test;
@@ -62,6 +67,21 @@ class CollectionControllerTest {
 
     @MockBean
     private ConstituentImportService constituentImportService;
+
+    @MockBean
+    private StockInfoMapper stockInfoMapper;
+
+    @MockBean
+    private IndustryMapper industryMapper;
+
+    @MockBean
+    private ConceptMapper conceptMapper;
+
+    @MockBean
+    private MarginDailyMapper marginDailyMapper;
+
+    @MockBean
+    private MarginMacroMapper marginMacroMapper;
 
     private static final String[] EXPECTED_TYPES = {
             "STOCK_INFO", "TRADE_CALENDAR", "INDUSTRY_NAME", "CONCEPT_NAME",
@@ -165,13 +185,13 @@ class CollectionControllerTest {
         when(gapDetectionService.getGaps(
                 LocalDate.of(2026, 5, 4),
                 LocalDate.of(2026, 5, 15),
-                "SSE"))
+                "MARGIN_DAILY_SSE"))
                 .thenReturn(gapReport);
 
         mockMvc.perform(get("/api/v1/admin/collection/gaps")
                         .param("start", "2026-05-04")
                         .param("end", "2026-05-15")
-                        .param("exchange", "SSE"))
+                        .param("dataType", "MARGIN_DAILY_SSE"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data.totalWeeks").value(1))
@@ -191,7 +211,7 @@ class CollectionControllerTest {
         when(gapDetectionService.getGaps(
                 LocalDate.of(2026, 5, 4),
                 LocalDate.of(2026, 5, 15),
-                "SSE"))
+                "MARGIN_DAILY_SSE"))
                 .thenReturn(gapReport);
 
         mockMvc.perform(get("/api/v1/admin/collection/gaps")

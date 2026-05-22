@@ -258,6 +258,126 @@ public class StockDailyCleanseService {
         }
     }
 
+    /**
+     * 清洗 Tushare daily API 返回的全市场日线数据
+     * <p>
+     * Tushare 返回格式: {"fields": [...], "items": [[...], ...]}，items 是二维数组。
+     * </p>
+     *
+     * @param tushareResponse Tushare API 原始返回 JSON
+     * @return 处理的记录总数（插入+更新）
+     */
+    @Transactional
+    public int cleanseTushareDaily(String tushareResponse) {
+        List<StockDaily> entities = parseTushareDaily(tushareResponse);
+        if (entities.isEmpty()) {
+            log.warn("No records parsed from Tushare daily response");
+            return 0;
+        }
+
+        LocalDate tradeDate = entities.get(0).getTradeDate();
+        List<StockDaily> existing = stockDailyMapper.selectList(
+                new LambdaQueryWrapper<StockDaily>().eq(StockDaily::getTradeDate, tradeDate));
+
+        Map<String, StockDaily> existingByCode = existing.stream()
+                .collect(Collectors.toMap(StockDaily::getStockCode, e -> e, (a, b) -> a));
+
+        List<StockDaily> toInsert = new ArrayList<>();
+        List<StockDaily> toUpdate = new ArrayList<>();
+        for (StockDaily entity : entities) {
+            StockDaily exist = existingByCode.get(entity.getStockCode());
+            if (exist != null) {
+                entity.setId(exist.getId());
+                toUpdate.add(entity);
+            } else {
+                toInsert.add(entity);
+            }
+        }
+
+        int count = 0;
+        if (!toInsert.isEmpty()) count += batchSqlRunner.batchInsert(toInsert);
+        if (!toUpdate.isEmpty()) count += batchSqlRunner.batchUpdate(toUpdate);
+
+        log.info("Tushare daily cleanse: {} records (insert={}, update={}) for {}",
+                count, toInsert.size(), toUpdate.size(), tradeDate);
+        return count;
+    }
+
+    List<StockDaily> parseTushareDaily(String tushareResponse) {
+        List<StockDaily> result = new ArrayList<>();
+        try {
+            JsonNode root = objectMapper.readTree(tushareResponse);
+            JsonNode data = root.path("data");
+            JsonNode fields = data.path("fields");
+            JsonNode items = data.path("items");
+            if (!items.isArray()) return result;
+
+            // 找到各字段的索引位置
+            int idxCode = -1, idxDate = -1, idxOpen = -1, idxHigh = -1, idxLow = -1;
+            int idxClose = -1, idxVol = -1, idxAmount = -1;
+            for (int i = 0; i < fields.size(); i++) {
+                String f = fields.get(i).asText();
+                switch (f) {
+                    case "ts_code": idxCode = i; break;
+                    case "trade_date": idxDate = i; break;
+                    case "open": idxOpen = i; break;
+                    case "high": idxHigh = i; break;
+                    case "low": idxLow = i; break;
+                    case "close": idxClose = i; break;
+                    case "vol": idxVol = i; break;
+                    case "amount": idxAmount = i; break;
+                }
+            }
+
+            for (JsonNode item : items) {
+                StockDaily daily = new StockDaily();
+                // ts_code: "000001.SZ" → "000001"
+                String tsCode = item.get(idxCode).asText();
+                daily.setStockCode(tsCode.contains(".") ? tsCode.substring(0, tsCode.indexOf('.')) : tsCode);
+                // trade_date: "20260521" → LocalDate
+                daily.setTradeDate(LocalDate.parse(
+                        item.get(idxDate).asText().replaceAll("(\\d{4})(\\d{2})(\\d{2})", "$1-$2-$3")));
+                daily.setOpen(safeBigDecimal(item, idxOpen));
+                daily.setHigh(safeBigDecimal(item, idxHigh));
+                daily.setLow(safeBigDecimal(item, idxLow));
+                daily.setClose(safeBigDecimal(item, idxClose));
+                // vol: 手 → 股 (×100)
+                Long vol = safeLong(item, idxVol);
+                daily.setVolume(vol != null ? vol * 100 : null);
+                // amount: 千元 → 元 (×1000)
+                BigDecimal amt = safeBigDecimal(item, idxAmount);
+                daily.setAmount(amt != null ? amt.multiply(java.math.BigDecimal.valueOf(1000)) : null);
+                result.add(daily);
+            }
+        } catch (Exception e) {
+            log.error("Failed to parse Tushare daily response", e);
+            throw new RuntimeException("解析 Tushare 日线数据失败: " + e.getMessage(), e);
+        }
+        return result;
+    }
+
+    private BigDecimal safeBigDecimal(JsonNode node, int index) {
+        if (index < 0 || index >= node.size()) return null;
+        JsonNode val = node.get(index);
+        if (val == null || val.isNull()) return null;
+        try {
+            return new BigDecimal(val.asText());
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private Long safeLong(JsonNode node, int index) {
+        if (index < 0 || index >= node.size()) return null;
+        JsonNode val = node.get(index);
+        if (val == null || val.isNull()) return null;
+        try {
+            return Long.parseLong(val.asText());
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     private Long safeLong(JsonNode node, String field) {
         JsonNode fieldNode = node.get(field);
         if (fieldNode == null || fieldNode.isNull()) return null;

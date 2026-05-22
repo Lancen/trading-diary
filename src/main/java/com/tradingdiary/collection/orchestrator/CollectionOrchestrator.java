@@ -2,6 +2,7 @@ package com.tradingdiary.collection.orchestrator;
 
 import com.tradingdiary.collection.CollectionConstants;
 import com.tradingdiary.collection.client.AKToolsClient;
+import com.tradingdiary.collection.client.TushareClient;
 import com.tradingdiary.collection.model.BackfillRequest;
 import com.tradingdiary.entity.DataCollectionLog;
 import com.tradingdiary.entity.Industry;
@@ -48,6 +49,7 @@ public class CollectionOrchestrator {
     private final Map<String, ReentrantLock> lockMap = new ConcurrentHashMap<>();
 
     private final AKToolsClient aktoolsClient;
+    private final TushareClient tushareClient;
     private final DataCollectionLogMapper logMapper;
     private final RawDataMapper rawDataMapper;
     private final StockInfoCleanseService stockInfoCleanseService;
@@ -63,6 +65,7 @@ public class CollectionOrchestrator {
     private final StockInfoMapper stockInfoMapper;
 
     public CollectionOrchestrator(AKToolsClient aktoolsClient,
+                                  TushareClient tushareClient,
                                   DataCollectionLogMapper logMapper,
                                   RawDataMapper rawDataMapper,
                                   StockInfoCleanseService stockInfoCleanseService,
@@ -77,6 +80,7 @@ public class CollectionOrchestrator {
                                   ConceptMapper conceptMapper,
                                   StockInfoMapper stockInfoMapper) {
         this.aktoolsClient = aktoolsClient;
+        this.tushareClient = tushareClient;
         this.logMapper = logMapper;
         this.rawDataMapper = rawDataMapper;
         this.stockInfoCleanseService = stockInfoCleanseService;
@@ -479,53 +483,29 @@ public class CollectionOrchestrator {
     }
 
     /**
-     * 补采股票日线历史数据
+     * 补采股票日线历史数据（Tushare 全市场一次拉取）
      */
     public String backfillStockDaily(LocalDate startDate, LocalDate endDate) {
-        String start = startDate.toString();
-        String end = endDate.toString();
-        log.info("Starting stock daily backfill: {} to {}", start, end);
+        log.info("Starting stock daily backfill (Tushare): {} to {}", startDate, endDate);
 
-        List<StockInfo> stocks = stockInfoMapper.selectList(null);
-        if (stocks.isEmpty()) {
-            return "stock_info 表无数据 — 请先采集 STOCK_INFO";
-        }
-
-        int success = 0;
-        int failed = 0;
-        // 每 N 只股票 API 调用后批量写一次 DB
-        List<String> batchCodes = new ArrayList<>();
-        List<String> batchJson = new ArrayList<>();
-
-        for (StockInfo stock : stocks) {
-            String code = stock.getCode();
-            if (code == null || code.isBlank()) continue;
-
+        int totalRecords = 0;
+        int failedDays = 0;
+        LocalDate date = startDate;
+        while (!date.isAfter(endDate)) {
             try {
-                String rawJson = aktoolsClient.fetchStockDaily(code, start, end);
-                batchCodes.add(code);
-                batchJson.add(rawJson);
-                success++;
-
-                if (batchCodes.size() >= CollectionConstants.BACKFILL_ACCUMULATE_SIZE) {
-                    stockDailyCleanseService.cleanseHistBatch(batchJson, batchCodes);
-                    batchCodes.clear();
-                    batchJson.clear();
-                }
+                String resp = tushareClient.fetchDaily(date);
+                int count = stockDailyCleanseService.cleanseTushareDaily(resp);
+                totalRecords += count;
+                log.info("Tushare daily backfill: {} → {} records", date, count);
             } catch (Exception e) {
-                log.error("Failed to backfill stock {}", code, e);
-                failed++;
+                log.error("Tushare daily backfill failed for {}", date, e);
+                failedDays++;
             }
-            aktoolsClient.sleepBetweenCalls();
+            date = date.plusDays(1);
         }
 
-        // 处理剩余不足 50 只的
-        if (!batchCodes.isEmpty()) {
-            stockDailyCleanseService.cleanseHistBatch(batchJson, batchCodes);
-        }
-
-        String result = String.format("股票日线补采完成: 成功 %d 只，失败 %d 只（共 %d 只）",
-                success, failed, stocks.size());
+        String result = String.format("日线补采完成: %d 条记录，%d 天失败",
+                totalRecords, failedDays);
         log.info(result);
         return result;
     }

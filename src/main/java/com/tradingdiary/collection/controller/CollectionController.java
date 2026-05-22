@@ -6,7 +6,12 @@ import com.tradingdiary.collection.model.GapReportVO;
 import com.tradingdiary.collection.orchestrator.CollectionOrchestrator;
 import com.tradingdiary.entity.DataCollectionLog;
 import com.tradingdiary.entity.TradeCalendar;
+import com.tradingdiary.mapper.ConceptMapper;
 import com.tradingdiary.mapper.DataCollectionLogMapper;
+import com.tradingdiary.mapper.IndustryMapper;
+import com.tradingdiary.mapper.MarginDailyMapper;
+import com.tradingdiary.mapper.MarginMacroMapper;
+import com.tradingdiary.mapper.StockInfoMapper;
 import com.tradingdiary.mapper.TradeCalendarMapper;
 import com.tradingdiary.model.ApiResponse;
 import com.tradingdiary.service.GapDetectionService;
@@ -22,6 +27,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -50,17 +57,32 @@ public class CollectionController {
     private final CollectionOrchestrator orchestrator;
     private final ConstituentImportService constituentImportService;
     private final TradeCalendarMapper tradeCalendarMapper;
+    private final StockInfoMapper stockInfoMapper;
+    private final IndustryMapper industryMapper;
+    private final ConceptMapper conceptMapper;
+    private final MarginDailyMapper marginDailyMapper;
+    private final MarginMacroMapper marginMacroMapper;
 
     public CollectionController(DataCollectionLogMapper logMapper,
                                  GapDetectionService gapDetectionService,
                                  CollectionOrchestrator orchestrator,
                                  ConstituentImportService constituentImportService,
-                                 TradeCalendarMapper tradeCalendarMapper) {
+                                 TradeCalendarMapper tradeCalendarMapper,
+                                 StockInfoMapper stockInfoMapper,
+                                 IndustryMapper industryMapper,
+                                 ConceptMapper conceptMapper,
+                                 MarginDailyMapper marginDailyMapper,
+                                 MarginMacroMapper marginMacroMapper) {
         this.logMapper = logMapper;
         this.gapDetectionService = gapDetectionService;
         this.orchestrator = orchestrator;
         this.constituentImportService = constituentImportService;
         this.tradeCalendarMapper = tradeCalendarMapper;
+        this.stockInfoMapper = stockInfoMapper;
+        this.industryMapper = industryMapper;
+        this.conceptMapper = conceptMapper;
+        this.marginDailyMapper = marginDailyMapper;
+        this.marginMacroMapper = marginMacroMapper;
     }
 
     @Operation(summary = "获取所有数据类型的采集状态")
@@ -80,10 +102,46 @@ public class CollectionController {
             vo.setDataTypeLabel(label);
             vo.setLastFetch(buildJobStatus(fetchLog));
             vo.setLastCleanse(buildJobStatus(cleanseLog));
+            vo.setLastDataDate(queryLastDataDate(dataType));
             statusList.add(vo);
         }
 
         return ApiResponse.ok(statusList);
+    }
+
+    private LocalDateTime queryLastDataDate(String dataType) {
+        switch (dataType) {
+            case "STOCK_INFO": {
+                LocalDate d = stockInfoMapper.selectMaxTradeDate();
+                return d != null ? LocalDateTime.of(d, LocalTime.MIN) : null;
+            }
+            case "TRADE_CALENDAR": {
+                LocalDate d = tradeCalendarMapper.selectMaxCalDate();
+                return d != null ? LocalDateTime.of(d, LocalTime.MIN) : null;
+            }
+            case "INDUSTRY_NAME":
+                return industryMapper.selectMaxCreatedAt();
+            case "CONCEPT_NAME":
+                return conceptMapper.selectMaxCreatedAt();
+            case "MARGIN_DAILY_SSE": {
+                LocalDate d = marginDailyMapper.selectMaxTradeDate("SSE");
+                return d != null ? LocalDateTime.of(d, LocalTime.MIN) : null;
+            }
+            case "MARGIN_DAILY_SZSE": {
+                LocalDate d = marginDailyMapper.selectMaxTradeDate("SZSE");
+                return d != null ? LocalDateTime.of(d, LocalTime.MIN) : null;
+            }
+            case "MARGIN_MACRO_SSE": {
+                LocalDate d = marginMacroMapper.selectMaxTradeDate("SSE");
+                return d != null ? LocalDateTime.of(d, LocalTime.MIN) : null;
+            }
+            case "MARGIN_MACRO_SZSE": {
+                LocalDate d = marginMacroMapper.selectMaxTradeDate("SZSE");
+                return d != null ? LocalDateTime.of(d, LocalTime.MIN) : null;
+            }
+            default:
+                return null;
+        }
     }
 
     /**
@@ -114,7 +172,7 @@ public class CollectionController {
      *
      * @param start 开始日期
      * @param end 结束日期
-     * @param exchange 交易所，默认为 "SSE"（沪市），可选 "SZSE"（深市）
+     * @param dataType 数据类型（MARGIN_DAILY_SSE/SZSE 或 MARGIN_MACRO_SSE/SZSE），默认 MARGIN_DAILY_SSE
      * @return 数据缺口报告，包含每周的完整度统计和缺失日期列表
      */
     @Operation(summary = "检测指定日期范围内的数据缺口")
@@ -122,8 +180,8 @@ public class CollectionController {
     public ApiResponse<GapReportVO> gaps(
             @RequestParam LocalDate start,
             @RequestParam LocalDate end,
-            @RequestParam(defaultValue = "SSE") String exchange) {
-        GapReportVO report = gapDetectionService.getGaps(start, end, exchange);
+            @RequestParam(defaultValue = "MARGIN_DAILY_SSE") String dataType) {
+        GapReportVO report = gapDetectionService.getGaps(start, end, dataType);
         return ApiResponse.ok(report);
     }
 

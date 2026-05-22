@@ -26,7 +26,7 @@ scripts/check-env.sh
 
 # AKTools（行情数据源）
 pip3 install aktools
-aktools --host 127.0.0.1 --port 8081 &
+python3 -m aktools --host 127.0.0.1 --port 8081 &
 
 # 后端（必须激活 dev profile，否则 JWT 配置不加载）
 SPRING_PROFILES_ACTIVE=dev ./gradlew bootRun
