@@ -2,7 +2,7 @@ Status: ready-for-agent
 
 # PRD: 指数日线数据采集与K线+两融叠加图
 
-## Problem Statement
+## 问题陈述
 
 当前项目缺少以下核心能力：
 1. 无法查看上证指数、深证成指、创业板指等宽基指数的日K走势
@@ -10,7 +10,7 @@ Status: ready-for-agent
 3. 无法将指数走势与两融数据叠加对比，判断杠杆资金与价格走势的联动关系
 4. 行业/概念列表页只有单日快照数据，缺少历史K线+两融趋势图
 
-## Solution
+## 解决方案
 
 1. 扩展 `index_daily` 表，新增 `index_type` 字段，统一存储宽基/行业/概念三类指数日线数据
 2. 新增3个独立采集类型，分别从AKTools获取宽基指数、行业指数、概念指数的日线OHLCV
@@ -18,48 +18,48 @@ Status: ready-for-agent
 4. 新增行业/概念详情页，展示板块指数K线+板块两融叠加图
 5. 板块两融通过实时聚合 `margin_daily` + `stock_industry`/`stock_concept` 查询，不建物化表
 
-## User Stories
+## 用户故事
 
 ### 数据采集
 
-1. As an admin, I want to trigger MARKET_INDEX_DAILY collection, so that 上证指数/沪深300/中证500等宽基指数日线数据被采集入库
-2. As an admin, I want to trigger INDUSTRY_INDEX_DAILY collection, so that 同花顺446个行业指数日线数据被采集入库
-3. As an admin, I want to trigger CONCEPT_INDEX_DAILY collection, so that 同花顺400+概念指数日线数据被采集入库
-4. As an admin, I want to see collection status for all 3 new index types on the collection hub page, so that I know whether data is up to date
-5. As an admin, I want index daily data to be cleansed with change_pct calculated, so that 涨跌幅可直接查询无需实时计算
+1. 作为管理员，我希望触发 MARKET_INDEX_DAILY 采集，以便上证指数/沪深300/中证500等宽基指数日线数据被采集入库
+2. 作为管理员，我希望触发 INDUSTRY_INDEX_DAILY 采集，以便同花顺446个行业指数日线数据被采集入库
+3. 作为管理员，我希望触发 CONCEPT_INDEX_DAILY 采集，以便同花顺400+概念指数日线数据被采集入库
+4. 作为管理员，我希望在采集总览页看到3个新指数采集类型的状态，以便了解数据是否最新
+5. 作为管理员，我希望指数日线数据在清洗阶段计算 change_pct，以便涨跌幅可直接查询无需实时计算
 
 ### 指数分析概览页
 
-6. As a user, I want to visit /admin/index-analysis, so that I can see a dashboard of core market indices
-7. As a user, I want to see 上证指数 K线+沪市两融总额 叠加图, so that I can observe the relationship between Shanghai index movement and margin trading
-8. As a user, I want to see 深证成指 K线+深市两融总额 叠加图, so that I can observe the relationship between Shenzhen index movement and margin trading
-9. As a user, I want to see 创业板指 K线+深市两融总额 叠加图, so that I can observe growth stock leverage trends
-10. As a user, I want to see 沪深300 K线+两市两融总额 叠加图, so that I can observe the broad market leverage relationship
-11. As a user, I want to switch date range (1m/3m/6m/1y) on the index analysis page, so that I can focus on different time periods
-12. As a user, I want to see K线(左轴) + 成交量(底部) + 融资余额(右轴) + 融券余额(右轴) in the overlay chart, so that the chart is consistent with the stock detail page pattern
+6. 作为用户，我希望访问 /admin/index-analysis 页面，以便查看核心指数的大盘概览
+7. 作为用户，我希望看到上证指数K线+沪市两融总额叠加图，以便观察沪市走势与杠杆资金的关系
+8. 作为用户，我希望看到深证成指K线+深市两融总额叠加图，以便观察深市走势与杠杆资金的关系
+9. 作为用户，我希望看到创业板指K线+深市两融总额叠加图，以便观察成长股杠杆趋势
+10. 作为用户，我希望看到沪深300K线+两市两融总额叠加图，以便观察全市场杠杆关系
+11. 作为用户，我希望在指数分析页切换日期范围（1月/3月/6月/1年），以便聚焦不同时间段
+12. 作为用户，我希望叠加图展示K线(左轴)+成交量(底部)+融资余额(右轴)+融券余额(右轴)，以便与个股详情页图表模式一致
 
 ### 行业/概念详情页
 
-13. As a user, I want to click an industry name on /admin/industries to navigate to /admin/industries/[name], so that I can see the industry detail page
-14. As a user, I want to see the industry index K线 on the industry detail page, so that I can observe the industry's price trend
-15. As a user, I want to see the industry index K线 + 板块两融 叠加图 on the industry detail page, so that I can observe leverage flow into/out of this industry
-16. As a user, I want to click a concept name on /admin/concepts to navigate to /admin/concepts/[name], so that I can see the concept detail page
-17. As a user, I want to see the concept index K线 + 板块两融 叠加图 on the concept detail page, so that I can observe leverage flow into/out of this concept
-18. As a user, I want to switch date range and K-line period (daily/weekly/monthly) on industry/concept detail pages, so that I have flexible analysis views
-19. As a user, I want to see the constituent stocks list on the industry/concept detail page, so that I know which stocks belong to this sector
+13. 作为用户，我希望在行业列表页点击行业名称跳转到 /admin/industries/[name] 行业详情页
+14. 作为用户，我希望在行业详情页看到行业指数K线，以便观察该行业的价格走势
+15. 作为用户，我希望在行业详情页看到行业指数K线+板块两融叠加图，以便观察该行业的杠杆资金进出
+16. 作为用户，我希望在概念列表页点击概念名称跳转到 /admin/concepts/[name] 概念详情页
+17. 作为用户，我希望在概念详情页看到概念指数K线+板块两融叠加图，以便观察该概念的杠杆资金进出
+18. 作为用户，我希望在行业/概念详情页切换日期范围和K线周期（日K/周K/月K），以便灵活分析
+19. 作为用户，我希望在行业/概念详情页看到成分股列表，以便了解该板块包含哪些股票
 
 ### 板块两融
 
-20. As a user, I want to see sector margin data (融资余额汇总/融券余额汇总) as a time series on the overlay chart, so that I can see how leverage in this sector changes over time
-21. As a user, I want the sector margin to be calculated by aggregating all constituent stocks' margin_daily data, so that the data is accurate and consistent with individual stock data
-22. As a user, I want the sector margin to use current industry/concept affiliation (snapshot), so that the query is simple and fast even if historical affiliation changes are not tracked
+20. 作为用户，我希望在叠加图上看到板块两融数据（融资余额汇总/融券余额汇总）的时间序列，以便观察板块杠杆随时间的变化
+21. 作为用户，我希望板块两融通过聚合所有成分股的 margin_daily 数据计算，以便数据准确且与个股数据一致
+22. 作为用户，我希望板块两融使用当前的行业/概念归属快照计算，以便查询简单快速
 
 ### 指数列表
 
-23. As a user, I want to see a list of all tracked market indices with their latest values and change_pct on the index analysis page, so that I have a quick market overview
-24. As a user, I want to see P1 indices (上证50, 科创50, 中证1000) in addition to the core 5, so that I have broader market coverage
+23. 作为用户，我希望在指数分析页看到所有已跟踪指数的最新值和涨跌幅列表，以便快速了解市场全貌
+24. 作为用户，我希望在核心5个指数之外还能看到上证50、科创50、中证1000，以便覆盖更广的市场维度
 
-## Implementation Decisions
+## 实现决策
 
 ### 数据模型
 
@@ -100,13 +100,13 @@ Status: ready-for-agent
 
 ### 板块两融聚合
 
-- **聚合SQL**: JOIN `margin_daily` + `stock_industry`/`stock_concept`，按 `trade_date` + `sector_name` GROUP BY SUM
+- **聚合方式**: JOIN `margin_daily` + `stock_industry`/`stock_concept`，按 `trade_date` + `sector_name` GROUP BY SUM
 - **归属快照**: 使用当前 `stock_industry`/`stock_concept` 的归属关系，不追踪历史变更
 - **性能**: 5000股 × 100天 ≈ 50万行，MySQL聚合毫秒级，无需物化
 
-## Testing Decisions
+## 测试决策
 
-- **好的测试标准**: 只测试外部行为（API返回的数据是否正确），不测试内部实现（SQL怎么写、聚合怎么算）
+- **测试标准**: 只测试外部行为（API返回的数据是否正确），不测试内部实现（SQL怎么写、聚合怎么算）
 - **需测试的模块**:
   - 指数日线采集+清洗: 验证OHLCV数据入库、change_pct计算正确
   - 板块两融聚合查询: 验证聚合结果与手动SUM一致
@@ -114,7 +114,7 @@ Status: ready-for-agent
   - 行业/概念详情API: 验证返回的指数日线和板块两融数据匹配
 - **测试先例**: 参考现有 `MarginCleanseServiceImpl` 的测试模式（验证清洗后字段计算正确）
 
-## Out of Scope
+## 范围外
 
 - **全市场日交易量**: 不建 `market_overview_daily` 表，当前目标不需要
 - **行业归属时序追踪**: `stock_industry` 保持快照型，不加 `effective_date`
@@ -124,7 +124,7 @@ Status: ready-for-agent
 - **SSE/SZSE官方数据源替代**: 属于数据源优化，不在本次范围
 - **申万行业指数**: 可作为后续补充，本次只做同花顺行业/概念指数
 
-## Further Notes
+## 补充说明
 
 - 相关ADR: [ADR-0001](../docs/adr/0001-unified-index-daily-table.md) 指数日线统一表, [ADR-0002](../docs/adr/0002-sector-margin-realtime-aggregation.md) 板块两融实时聚合
 - 相关文档: [exchange-data-source-analysis.md](../docs/exchange-data-source-analysis.md) 沪深交易所数据源分析
