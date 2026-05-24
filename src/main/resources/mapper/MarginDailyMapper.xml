@@ -1,31 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 融资融券个股明细 Mapper，提供个股融资融券数据的查询与汇总统计 -->
 <mapper namespace="com.tradingdiary.mapper.MarginDailyMapper">
 
+    <!-- 查询指定日期范围和交易所的去重交易日期列表 -->
     <select id="selectDistinctTradeDates" resultType="java.time.LocalDate">
         SELECT DISTINCT trade_date FROM margin_daily WHERE trade_date BETWEEN #{start} AND #{end} AND exchange = #{exchange} AND is_deleted = 0 ORDER BY trade_date
     </select>
 
+    <!-- 汇总指定日期的融资余额，为空时汇总全部 -->
     <select id="sumMarginBalance" resultType="java.math.BigDecimal">
         SELECT COALESCE(SUM(margin_balance), 0) FROM margin_daily WHERE is_deleted = 0
         <if test="tradeDate != null">AND trade_date = #{tradeDate}</if>
     </select>
 
+    <!-- 汇总指定日期的融券余额，为空时汇总全部 -->
     <select id="sumShortBalance" resultType="java.math.BigDecimal">
         SELECT COALESCE(SUM(short_balance), 0) FROM margin_daily WHERE is_deleted = 0
         <if test="tradeDate != null">AND trade_date = #{tradeDate}</if>
     </select>
 
+    <!-- 汇总指定日期的融资融券余额合计，为空时汇总全部 -->
     <select id="sumTotalBalance" resultType="java.math.BigDecimal">
         SELECT COALESCE(SUM(total_balance), 0) FROM margin_daily WHERE is_deleted = 0
         <if test="tradeDate != null">AND trade_date = #{tradeDate}</if>
     </select>
 
+    <!-- 统计指定日期的去重股票数量，为空时统计全部 -->
     <select id="countDistinctStocks" resultType="java.lang.Integer">
         SELECT COUNT(DISTINCT stock_code) FROM margin_daily WHERE is_deleted = 0
         <if test="tradeDate != null">AND trade_date = #{tradeDate}</if>
     </select>
 
+    <!-- 查询指定交易所融资融券明细表的最大交易日期 -->
     <select id="selectMaxTradeDate" resultType="java.time.LocalDate">
         SELECT MAX(trade_date) FROM margin_daily WHERE exchange = #{exchange} AND is_deleted = 0
     </select>

@@ -10,6 +10,9 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+/**
+ * 全局异常处理器，统一捕获并转换为标准 API 响应格式
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -35,7 +38,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleException(Exception ex) {
         log.error("Unexpected error", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.fail(500000, "Internal Server Error"));
+                .body(ApiResponse.fail(500000, "服务器内部错误"));
     }
 
     private HttpStatus resolveHttpStatus(BaseException ex) {

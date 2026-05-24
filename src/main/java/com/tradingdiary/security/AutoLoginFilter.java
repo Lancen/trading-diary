@@ -19,13 +19,12 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 /**
- * Dev-mode auto-login filter.
+ * 开发模式自动登录过滤器。
  * <p>
- * Only active when {@code spring.profiles.active=dev}.
- * Automatically authenticates as the configured username so developers
- * don't need to manually log in during local development.
+ * 仅在 {@code spring.profiles.active=dev} 时激活。
+ * 自动以配置的用户名进行认证，开发者在本地开发时无需手动登录。
  * <p>
- * Executes BEFORE {@link JwtAuthFilter} in the security filter chain.
+ * 在安全过滤器链中位于 {@link JwtAuthFilter} 之前执行。
  */
 @Component
 @Profile("dev")
@@ -43,7 +42,7 @@ public class AutoLoginFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Package-private setter for testing without Spring context.
+     * 包内可见的 setter，用于不依赖 Spring 上下文的测试。
      */
     void setUsername(String username) {
         this.autoLoginUsername = username;

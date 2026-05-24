@@ -15,12 +15,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Loads {@code .env} files into Spring Environment before configuration is resolved.
+ * 在 Spring 配置解析之前将 {@code .env} 文件加载到 Environment 中。
  * <p>
- * Load order: {@code .env} first, then {@code .env.{profile}} overrides.
- * The {@code .env} file is git-ignored; use {@code .env.example} as template.
+ * 加载顺序：先 {@code .env}，再 {@code .env.{profile}} 覆盖。
+ * {@code .env} 文件已被 git 忽略；使用 {@code .env.example} 作为模板。
  * <p>
- * Register via {@code META-INF/spring.factories} or {@code spring.factories}.
+ * 通过 {@code META-INF/spring.factories} 或 {@code spring.factories} 注册。
  */
 public class DotenvConfig implements ApplicationListener<ApplicationEnvironmentPreparedEvent> {
 
@@ -55,7 +55,7 @@ public class DotenvConfig implements ApplicationListener<ApplicationEnvironmentP
                 if (eq < 0) continue;
                 String key = line.substring(0, eq).trim();
                 String value = line.substring(eq + 1).trim();
-                // strip quotes
+                // 去除引号
                 if ((value.startsWith("\"") && value.endsWith("\""))
                         || (value.startsWith("'") && value.endsWith("'"))) {
                     value = value.substring(1, value.length() - 1);

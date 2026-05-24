@@ -38,6 +38,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
+/**
+ * 数据采集编排器，协调采集（FETCH）和清洗（CLEANSE）两阶段的数据处理流程
+ */
 @Service
 public class CollectionOrchestrator {
 
@@ -142,13 +145,13 @@ public class CollectionOrchestrator {
                 return "执行成功（复用已有采集数据）";
             }
 
-            // Step 1: FETCH
+            // 第一步：FETCH（采集）
             Result fetchResult = executeFetch(dataType, tradeDate);
             if (!fetchResult.success) {
                 return "采集失败: " + fetchResult.errorMsg;
             }
 
-            // Step 2: CLEANSE
+            // 第二步：CLEANSE（清洗）
             executeCleanse(dataType, tradeDate, fetchResult.collectionLogId);
 
             // STOCK_INFO 完成后联动执行 STOCK_DAILY CLEANSE（复用同一份 FETCH 数据）
@@ -170,7 +173,7 @@ public class CollectionOrchestrator {
     }
 
     private Result executeFetch(String dataType, LocalDate tradeDate) {
-        // Create FETCH log
+        // 创建 FETCH 日志
         DataCollectionLog fetchLog = createLog(dataType, "FETCH", tradeDate);
         fetchLog.setStatus("RUNNING");
         fetchLog.setStartedAt(LocalDateTime.now());
@@ -180,7 +183,7 @@ public class CollectionOrchestrator {
         String errorMsg = null;
 
         try {
-            // Fetch data with retry
+            // 带重试机制的数据采集
             rawJson = fetchWithRetry(dataType, tradeDate, fetchLog.getId());
         } catch (Exception e) {
             errorMsg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
@@ -188,7 +191,7 @@ public class CollectionOrchestrator {
         }
 
         if (rawJson == null) {
-            // Fetch failed
+            // 采集失败
             fetchLog.setStatus("FAILED");
             fetchLog.setErrorMsg(errorMsg);
             fetchLog.setCompletedAt(LocalDateTime.now());
@@ -196,7 +199,7 @@ public class CollectionOrchestrator {
             return new Result(false, null, null, errorMsg);
         }
 
-        // Save raw data
+        // 保存原始数据
         RawData rawData = new RawData();
         rawData.setCollectionLogId(fetchLog.getId());
         rawData.setDataType(dataType);
@@ -206,7 +209,7 @@ public class CollectionOrchestrator {
         rawData.setFetchAt(LocalDateTime.now());
         rawDataMapper.insert(rawData);
 
-        // Update fetch log to SUCCESS
+        // 更新采集日志状态为成功
         fetchLog.setStatus("SUCCESS");
         fetchLog.setRecordCount(estimateRecordCount(rawJson));
         fetchLog.setCompletedAt(LocalDateTime.now());
@@ -257,12 +260,12 @@ public class CollectionOrchestrator {
             case "INDUSTRY_NAME":
                 return aktoolsClient.fetchIndustryNames();
             case "INDUSTRY_CONS":
-                // Multi-fetch handled in cleanse step; fetch step is a no-op
+                // 多次采集在清洗阶段处理；采集阶段为空操作
                 return "[]";
             case "CONCEPT_NAME":
                 return aktoolsClient.fetchConceptNames();
             case "CONCEPT_CONS":
-                // Multi-fetch handled in cleanse step; fetch step is a no-op
+                // 多次采集在清洗阶段处理；采集阶段为空操作
                 return "[]";
             case "TRADE_CALENDAR":
                 return aktoolsClient.fetchTradeCalendar();
@@ -280,7 +283,7 @@ public class CollectionOrchestrator {
     }
 
     private void executeCleanse(String dataType, LocalDate tradeDate, Long collectionLogId) {
-        // Create CLEANSE log
+        // 创建 CLEANSE 日志
         DataCollectionLog cleanseLog = createLog(dataType, "CLEANSE", tradeDate);
         cleanseLog.setStatus("RUNNING");
         cleanseLog.setStartedAt(LocalDateTime.now());
@@ -304,7 +307,7 @@ public class CollectionOrchestrator {
     }
 
     private int dispatchCleanse(String dataType, LocalDate tradeDate, Long collectionLogId) {
-        // Fetch the raw JSON from the FETCH step (query RawData by collection_log_id)
+        // 从 FETCH 阶段获取原始 JSON（通过 collection_log_id 查询 RawData）
         RawData rawData = rawDataMapper.selectOne(
                 new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<RawData>()
                         .eq(RawData::getCollectionLogId, collectionLogId)
@@ -355,7 +358,7 @@ public class CollectionOrchestrator {
     }
 
     /**
-     * Cleanse industry constituents into stock_industry table.
+     * 清洗行业成分股数据写入 stock_industry 表。
      *
      * 成分股数据已改为通过 Playwright 从同花顺抓取，不再通过 AKTools HTTP API 获取。
      * 请先运行 scripts/scrape_ths_constituents.py 生成 JSON，
@@ -381,7 +384,7 @@ public class CollectionOrchestrator {
     }
 
     /**
-     * Cleanse concept constituents into stock_concept table.
+     * 清洗概念成分股数据写入 stock_concept 表。
      *
      * 成分股数据已改为通过 Playwright 从同花顺抓取，不再通过 AKTools HTTP API 获取。
      * 请先运行 scripts/scrape_ths_constituents.py 生成 JSON，
@@ -412,7 +415,7 @@ public class CollectionOrchestrator {
     }
 
     /**
-     * Estimate the number of records in the raw JSON.
+     * 估算原始 JSON 中的记录数量。
      */
     private int estimateRecordCount(String rawJson) {
         if (rawJson == null || rawJson.isEmpty()) {
@@ -524,7 +527,7 @@ public class CollectionOrchestrator {
     }
 
     /**
-     * Check if a given date already has SUCCESS logs for both FETCH and CLEANSE.
+     * 检查给定日期是否已有成功的 FETCH 和 CLEANSE 日志。
      */
     private boolean isDateComplete(String dataType, LocalDate tradeDate) {
         DataCollectionLog fetchLog = logMapper.selectLatestByDataTypeAndJobTypeAndTradeDate(dataType, "FETCH", tradeDate);

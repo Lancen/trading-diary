@@ -23,6 +23,9 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 数据采集控制器，管理采集状态查询、任务触发、缺口检测和历史数据补采
+ */
 @RestController
 @RequestMapping("/api/v1/admin/collection")
 @PreAuthorize("hasRole('ADMIN')")

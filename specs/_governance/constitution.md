@@ -326,7 +326,6 @@ SaaS 产品必须以 JWT + Spring Security 实现无状态认证。
 | `.specify/memory/constitution.md` | Speckit 工具缓存副本（与本文档同步） |
 | `docs/standards/technical-standards.md` | 技术实现规范（本文档的配套细节） |
 | `CLAUDE.md` | 项目技术栈、AI 行为准则、日常命令 |
-| `docs/architecture/` | 架构设计决策记录 |
 
 ---
 

@@ -64,7 +64,7 @@ function BackfillDialog({
   const [endDate, setEndDate] = useState(initialValues?.endDate || today);
   const [submitting, setSubmitting] = useState(false);
 
-  // Reset form when initialValues change
+  // initialValues 变化时重置表单
   const [lastInit, setLastInit] = useState<string>("");
   const initKey = JSON.stringify(initialValues);
   if (initKey !== lastInit) {
@@ -191,7 +191,7 @@ export default function MarginPage() {
 
   function handleDialogClose() {
     setDialogOpen(false);
-    // Refresh gaps after backfill dialog closes so we can see updated status
+    // 补采对话框关闭后刷新缺口数据，查看更新状态
     fetchGaps();
   }
 

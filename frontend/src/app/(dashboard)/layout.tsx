@@ -45,11 +45,11 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen">
-      {/* Sidebar */}
+      {/* 侧边栏 */}
       <aside className="flex w-64 flex-col border-r bg-gray-50 p-4">
         <div className="mb-8">
           <Link href="/dashboard" className="text-xl font-bold">
-            Trading Diary
+            交易日记
           </Link>
         </div>
 
@@ -148,9 +148,9 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
         </Button>
       </aside>
 
-      {/* Main area */}
+      {/* 主内容区 */}
       <div className="flex flex-1 flex-col">
-        {/* Top bar */}
+        {/* 顶部栏 */}
         <header className="flex items-center justify-end border-b px-6 py-3">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

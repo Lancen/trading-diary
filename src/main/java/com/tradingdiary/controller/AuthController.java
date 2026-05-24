@@ -17,6 +17,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
+/**
+ * 认证控制器，处理用户登录、令牌刷新、登出和当前用户信息查询
+ */
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {

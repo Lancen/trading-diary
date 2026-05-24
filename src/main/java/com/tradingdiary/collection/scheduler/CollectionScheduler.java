@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
 /**
- * 定时采集调度器。
+ * 数据采集调度器，定时触发股票行情、板块分类和两融数据的采集与清洗任务。
  * 全部定时任务已暂停（@Scheduled 已注释），当前阶段使用手动触发。
  * 需要恢复时，取消注释 @Scheduled 注解即可。
  */
@@ -46,7 +46,7 @@ public class CollectionScheduler {
     }
 
     /**
-     * 16:00 on weekdays: Collect stock info and daily OHLCV data.
+     * 工作日 16:00：采集股票基础信息和日线 OHLCV 数据。
      * 已暂停定时执行，改为手动触发。
      */
     // @Scheduled(cron = "0 0 16 * * MON-FRI")
@@ -66,7 +66,7 @@ public class CollectionScheduler {
     }
 
     /**
-     * 17:00 on weekdays: Collect industry and concept classifications.
+     * 工作日 17:00：采集行业和概念板块分类数据。
      * 已暂停定时执行，改为手动触发。
      */
     // @Scheduled(cron = "0 0 17 * * MON-FRI")
@@ -92,7 +92,7 @@ public class CollectionScheduler {
     }
 
     /**
-     * 18:00 on weekdays: Collect margin trading details from SSE and SZSE.
+     * 工作日 18:00：采集上交所和深交所两融明细数据。
      * 已暂停定时执行，改为手动触发。
      */
     // @Scheduled(cron = "0 0 18 * * MON-FRI")
@@ -112,9 +112,9 @@ public class CollectionScheduler {
     }
 
     /**
-     * Monthly archive job: runs at 03:00 on the 1st of each month.
-     * Archives raw_data records older than 30 days to a GZIP JSON Lines file,
-     * then deletes those archived records.
+     * 每月归档任务：每月 1 日凌晨 3:00 执行。
+     * 将 30 天前的 raw_data 记录归档为 GZIP 压缩的 JSON Lines 文件，
+     * 然后删除已归档的记录。
      * 已暂停定时执行，改为手动触发。
      */
     // @Scheduled(cron = "0 0 3 1 * *")
@@ -150,7 +150,7 @@ public class CollectionScheduler {
                 }
             }
 
-            // Delete archived records
+            // 删除已归档的记录
             List<Long> ids = oldRecords.stream()
                     .map(RawData::getId)
                     .toList();
@@ -163,7 +163,7 @@ public class CollectionScheduler {
     }
 
     /**
-     * Check if the given date is a trading day by querying the trade calendar.
+     * 通过查询交易日历判断给定日期是否为交易日。
      */
     private boolean isTradeDay(LocalDate date) {
         Long count = tradeCalendarMapper.selectCount(

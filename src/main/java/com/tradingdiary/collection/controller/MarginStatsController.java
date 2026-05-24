@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
 
+/**
+ * 两融统计控制器，提供融资融券汇总数据查询
+ */
 @RestController
 @RequestMapping("/api/v1/admin/margin-stats")
 @PreAuthorize("hasRole('ADMIN')")

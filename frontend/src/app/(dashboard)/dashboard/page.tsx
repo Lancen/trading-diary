@@ -18,7 +18,7 @@ export default function DashboardPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>欢迎使用 Trading Diary</CardTitle>
+          <CardTitle>欢迎使用交易日记</CardTitle>
           <CardDescription>
             记录每一笔交易，持续改进投资决策
           </CardDescription>

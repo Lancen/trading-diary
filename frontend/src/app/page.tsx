@@ -20,7 +20,7 @@ export default function Home() {
     }
   }, [isLoading, shouldRedirect, router]);
 
-  // Show spinner while initializing
+  // 初始化时显示加载动画
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -29,14 +29,14 @@ export default function Home() {
     );
   }
 
-  // Will redirect via useEffect
+  // 通过 useEffect 重定向
   if (shouldRedirect) {
     return null;
   }
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <h1 className="text-4xl font-bold">Trading Diary</h1>
+      <h1 className="text-4xl font-bold">交易日记</h1>
       <p className="mt-4 text-lg text-muted-foreground">
         交易日记应用 — 记录每一笔交易，持续改进投资决策
       </p>

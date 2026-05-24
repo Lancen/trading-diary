@@ -15,6 +15,9 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Spring Security 用户详情服务实现，从数据库加载用户信息与角色
+ */
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService {
 
@@ -40,11 +43,11 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     private UserDetails buildUserDetails(SysUser sysUser, String identifier) {
         if (sysUser == null || Boolean.TRUE.equals(sysUser.getIsDeleted())) {
-            throw new UsernameNotFoundException("User not found: " + identifier);
+            throw new UsernameNotFoundException("用户不存在: " + identifier);
         }
 
         if (sysUser.getStatus() == 0) {
-            throw new DisabledException("User is disabled: " + identifier);
+            throw new DisabledException("用户已被禁用: " + identifier);
         }
 
         List<SysRole> roles = sysRoleMapper.selectByUserId(sysUser.getId());

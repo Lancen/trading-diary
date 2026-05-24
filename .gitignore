@@ -53,3 +53,23 @@ data/
 
 # Superpowers
 .superpowers/
+
+# Log files with date suffix
+*.log.*
+
+# Java build artifacts
+*.jar
+
+# Environment files
+.env.production
+.env.staging
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# QA screenshots
+qa-*.png
+
+# Playwright page snapshots
+page-*.yml

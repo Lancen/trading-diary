@@ -15,4 +15,4 @@
 
 ## 进行中
 
-暂无活跃 feature。
+暂无活跃 feature（活跃 spec 见 docs/superpowers/specs/）。

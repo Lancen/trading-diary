@@ -1,11 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 融资融券宏观数据 Mapper，提供市场整体融资融券汇总数据的查询 -->
 <mapper namespace="com.tradingdiary.mapper.MarginMacroMapper">
 
+    <!-- 查询指定日期范围和交易所的去重交易日期列表 -->
     <select id="selectDistinctTradeDates" resultType="java.time.LocalDate">
         SELECT DISTINCT trade_date FROM margin_macro WHERE trade_date BETWEEN #{start} AND #{end} AND exchange = #{exchange} ORDER BY trade_date
     </select>
 
+    <!-- 查询指定交易所融资融券宏观数据的最大交易日期 -->
     <select id="selectMaxTradeDate" resultType="java.time.LocalDate">
         SELECT MAX(trade_date) FROM margin_macro WHERE exchange = #{exchange}
     </select>

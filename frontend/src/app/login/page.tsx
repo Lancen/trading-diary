@@ -38,7 +38,7 @@ export default function LoginPage() {
           const body = await httpError.response.json();
           message = body?.message || message;
         } catch {
-          // Cannot parse error body, use default message
+          // 无法解析错误体，使用默认消息
         }
       }
       setError(message);
@@ -51,7 +51,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Trading Diary</CardTitle>
+          <CardTitle className="text-2xl">交易日记</CardTitle>
           <CardDescription>登录您的交易日记账户</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>

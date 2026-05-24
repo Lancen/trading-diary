@@ -4,6 +4,9 @@ import com.tradingdiary.collection.model.GapReportVO;
 
 import java.time.LocalDate;
 
+/**
+ * 数据缺口检测服务，封装两融数据缺失日期的检测与报告逻辑
+ */
 public interface GapDetectionService {
 
     /**

@@ -15,6 +15,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 import java.util.Map;
 
+/**
+ * 股票数据控制器，提供股票列表查询、个股详情和交易日历等管理端接口
+ */
 @RestController
 @RequestMapping("/api/v1/admin/stocks")
 @PreAuthorize("hasRole('ADMIN')")

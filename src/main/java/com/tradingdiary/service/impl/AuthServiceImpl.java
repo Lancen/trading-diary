@@ -192,7 +192,7 @@ public class AuthServiceImpl implements AuthService {
             }
             return hexString.toString();
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("SHA-256 algorithm not available", e);
+            throw new RuntimeException("SHA-256 算法不可用", e);
         }
     }
 }

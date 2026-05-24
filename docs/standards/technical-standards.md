@@ -1,6 +1,6 @@
 # Trading Diary 技术规范
 
-本文档是项目宪法的配套技术规范，包含日常开发中需要查阅的具体规则。宪法（`.specify/memory/constitution.md`）定义决策原则，本文档定义执行细节。
+本文档是项目宪法的配套技术规范，包含日常开发中需要查阅的具体规则。宪法（`specs/_governance/constitution.md`）定义决策原则，本文档定义执行细节。
 
 **适用阶段标记**：
 - 🟢 Phase 0：项目初始化阶段，立即生效

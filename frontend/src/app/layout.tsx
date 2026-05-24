@@ -3,7 +3,7 @@ import { Providers } from "./providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Trading Diary",
+  title: "交易日记",
   description: "交易日记应用",
 };
 

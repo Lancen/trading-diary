@@ -22,12 +22,12 @@ const api = ky.create({
     ],
     afterResponse: [
       async (request, _options, response) => {
-        // Only handle 401, skip auth endpoints
+        // 仅处理 401，跳过认证端点
         if (response.status !== 401 || request.url.includes("/auth/refresh")) {
           return;
         }
 
-        // Prevent concurrent refresh attempts
+        // 防止并发刷新
         if (isRefreshing) {
           return;
         }
@@ -57,7 +57,7 @@ const api = ky.create({
             localStorage.setItem("accessToken", refreshResponse.data.accessToken);
             localStorage.setItem("refreshToken", refreshResponse.data.refreshToken);
 
-            // Retry the original request with the new token
+            // 用新令牌重试原始请求
             request.headers.set(
               "Authorization",
               `Bearer ${refreshResponse.data.accessToken}`
@@ -65,12 +65,12 @@ const api = ky.create({
             return ky(request);
           }
         } catch {
-          // Refresh failed — fall through to cleanup
+          // 刷新失败 — 继续执行清理
         } finally {
           isRefreshing = false;
         }
 
-        // Clear tokens and redirect to login
+        // 清除令牌并重定向到登录页
         if (isBrowser()) {
           localStorage.removeItem("accessToken");
           localStorage.removeItem("refreshToken");

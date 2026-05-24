@@ -48,8 +48,8 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             );
 
-        // Both filters before UsernamePasswordAuthenticationFilter
-        // autoLoginFilter added first → executes before jwtAuthFilter
+        // 两个过滤器均位于 UsernamePasswordAuthenticationFilter 之前
+        // autoLoginFilter 先添加 → 在 jwtAuthFilter 之前执行
         if (autoLoginFilter != null) {
             http.addFilterBefore(autoLoginFilter, UsernamePasswordAuthenticationFilter.class);
         }

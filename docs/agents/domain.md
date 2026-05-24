@@ -17,7 +17,7 @@ Single-context repo (most repos):
 ```
 /
 ├── CONTEXT.md
-├── docs/adr/
+├── docs/adr/  ← created lazily, may not exist yet
 │   ├── 0001-event-sourced-orders.md
 │   └── 0002-postgres-for-write-model.md
 └── src/
@@ -28,7 +28,7 @@ Multi-context repo (presence of `CONTEXT-MAP.md` at the root):
 ```
 /
 ├── CONTEXT-MAP.md
-├── docs/adr/                          ← system-wide decisions
+├── docs/adr/                          ← system-wide decisions (created lazily)
 └── src/
     ├── ordering/
     │   ├── CONTEXT.md

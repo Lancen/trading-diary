@@ -11,17 +11,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (isDev) {
-      // Dev mode: backend AutoLoginFilter handles auth,
-      // just fetch the current user directly.
+      // 开发模式：后端 AutoLoginFilter 处理认证，直接获取当前用户。
       fetchUser();
     } else if (!accessToken) {
-      // No stored token — user needs to log in.
+      // 无已存储令牌 — 用户需要登录。
       setLoading(false);
     } else {
-      // Has stored token — verify it by fetching user.
+      // 有已存储令牌 — 通过获取用户信息验证。
       fetchUser();
     }
-    // Run once on mount
+    // 仅在挂载时执行
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

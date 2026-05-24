@@ -1,11 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 交易日历 Mapper，提供交易日查询和日历日期范围检索 -->
 <mapper namespace="com.tradingdiary.mapper.TradeCalendarMapper">
 
+    <!-- 查询指定日期范围内的所有交易日 -->
     <select id="selectTradingDays" resultType="com.tradingdiary.entity.TradeCalendar">
         SELECT * FROM trade_calendar WHERE trade_date BETWEEN #{start} AND #{end} AND is_trading_day = 1 AND is_deleted = 0 ORDER BY trade_date
     </select>
 
+    <!-- 查询交易日历表中的最大日期 -->
     <select id="selectMaxCalDate" resultType="java.time.LocalDate">
         SELECT MAX(trade_date) FROM trade_calendar WHERE is_deleted = 0
     </select>

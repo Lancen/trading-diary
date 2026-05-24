@@ -51,7 +51,7 @@ export const useAuth = create<AuthState>()((set, get) => ({
     try {
       await authApi.logout();
     } catch {
-      // Swallow errors — tokens may already be invalid
+      // 吞掉错误 — 令牌可能已失效
     }
     if (isBrowser()) {
       localStorage.removeItem("accessToken");

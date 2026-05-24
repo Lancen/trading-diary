@@ -13,6 +13,9 @@ import org.springframework.web.client.RestClient;
 
 import java.time.LocalDate;
 
+/**
+ * Tushare API 客户端，封装 Tushare Pro 数据接口的 HTTP 调用
+ */
 @Component
 public class TushareClient {
 
@@ -60,7 +63,7 @@ public class TushareClient {
             int code = root.path("code").asInt(-1);
             if (code != 0) {
                 String msg = root.path("msg").asText("");
-                throw new RuntimeException("Tushare daily API error: " + msg);
+                throw new RuntimeException("Tushare 日线接口错误: " + msg);
             }
 
             JsonNode data = root.path("data");

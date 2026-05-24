@@ -12,6 +12,9 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * AKTools API 客户端，封装东方财富数据接口的 HTTP 调用与限流逻辑
+ */
 @Component
 public class AKToolsClient {
 
@@ -21,12 +24,12 @@ public class AKToolsClient {
     private final String baseUrl;
 
     /**
-     * Minimum delay between AKTools API calls to avoid overwhelming the service (in milliseconds).
+     * AKTools API 调用最小间隔（毫秒），避免请求过于频繁。
      */
     private static final long RATE_LIMIT_DELAY_MS = 200;
 
     /**
-     * Timestamp of the last API call, used for rate limiting.
+     * 上次 API 调用的时间戳，用于限流。
      */
     private volatile long lastCallTimestamp = 0;
 
@@ -157,8 +160,8 @@ public class AKToolsClient {
     }
 
     /**
-     * Enforce rate limiting between AKTools API calls.
-     * Ensures a minimum delay of RATE_LIMIT_DELAY_MS between successive calls.
+     * 执行 AKTools API 调用之间的限流。
+     * 确保连续调用之间至少间隔 RATE_LIMIT_DELAY_MS 毫秒。
      */
     private void rateLimit() {
         long now = System.currentTimeMillis();
@@ -176,11 +179,11 @@ public class AKToolsClient {
     }
 
     /**
-     * Sleep between calls for rate limiting when doing sequential batch operations.
+     * 批量顺序调用时的间隔等待。
      */
     public void sleepBetweenCalls() {
-        // rateLimit() in get() already handles per-call delay,
-        // this ensures inter-call spacing in batch loops
+        // get() 中的 rateLimit() 已处理单次调用间隔，
+        // 此方法确保批量循环中的额外间隔
         try {
             Thread.sleep(RATE_LIMIT_DELAY_MS);
         } catch (InterruptedException e) {

@@ -4,7 +4,7 @@ import { useAuth } from "./useAuth";
 
 describe("useAuth", () => {
   beforeEach(() => {
-    // Reset store to initial state
+    // 重置 store 到初始状态
     useAuth.setState(useAuth.getInitialState());
     localStorage.clear();
   });
@@ -13,12 +13,12 @@ describe("useAuth", () => {
     const { result } = renderHook(() => useAuth());
     expect(result.current.accessToken).toBeNull();
     expect(result.current.user).toBeNull();
-    // Default isLoading is true (app starts in loading state before fetchUser completes)
+    // 默认 isLoading 为 true（应用启动时处于加载状态，等待 fetchUser 完成）
     expect(result.current.isLoading).toBe(true);
   });
 
   it("should have isDev false when env var is not set", () => {
-    // NEXT_PUBLIC_DEV_AUTO_LOGIN is not configured in test environment
+    // NEXT_PUBLIC_DEV_AUTO_LOGIN 在测试环境中未配置
     const { result } = renderHook(() => useAuth());
     expect(result.current.isDev).toBe(false);
   });
@@ -26,7 +26,7 @@ describe("useAuth", () => {
   it("should clear state on logout", () => {
     const { result } = renderHook(() => useAuth());
 
-    // Set some authenticated state first
+    // 先设置一些已认证的状态
     act(() => {
       useAuth.setState({
         accessToken: "test-token",
@@ -44,7 +44,7 @@ describe("useAuth", () => {
     expect(result.current.accessToken).toBe("test-token");
     expect(result.current.user).not.toBeNull();
 
-    // Simulate logout state clear
+    // 模拟登出状态清除
     act(() => {
       useAuth.setState({
         accessToken: null,

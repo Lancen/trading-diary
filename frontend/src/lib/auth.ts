@@ -21,7 +21,7 @@ interface ApiResponse<T> {
 }
 
 /**
- * Login with username and password.
+ * 用户名密码登录。
  * POST /api/v1/auth/login
  */
 export async function login(username: string, password: string): Promise<TokenVO> {
@@ -34,7 +34,7 @@ export async function login(username: string, password: string): Promise<TokenVO
 }
 
 /**
- * Refresh access token using refresh token.
+ * 使用 refresh token 刷新访问令牌。
  * POST /api/v1/auth/refresh
  */
 export async function refreshToken(refreshTokenValue: string): Promise<TokenVO> {
@@ -47,7 +47,7 @@ export async function refreshToken(refreshTokenValue: string): Promise<TokenVO> 
 }
 
 /**
- * Logout current user.
+ * 当前用户登出。
  * POST /api/v1/auth/logout
  */
 export async function logout(): Promise<void> {
@@ -55,7 +55,7 @@ export async function logout(): Promise<void> {
 }
 
 /**
- * Get current authenticated user info.
+ * 获取当前认证用户信息。
  * GET /api/v1/auth/me
  */
 export async function getMe(): Promise<UserInfoVO> {

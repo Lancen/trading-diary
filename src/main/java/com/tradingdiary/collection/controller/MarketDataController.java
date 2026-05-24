@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 import java.util.Map;
 
+/**
+ * 市场数据控制器，提供概念和行业维度的两融聚合数据查询
+ */
 @RestController
 @RequestMapping("/api/v1/admin/market")
 @PreAuthorize("hasRole('ADMIN')")
