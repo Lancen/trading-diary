@@ -7,6 +7,7 @@ import com.tradingdiary.mapper.ClassificationChangeLogMapper;
 import com.tradingdiary.mapper.ConceptMapper;
 import com.tradingdiary.mapper.StockConceptMapper;
 import com.tradingdiary.util.BatchSqlRunner;
+import com.tradingdiary.service.collection.impl.ConceptCleanseServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,7 +47,7 @@ class ConceptCleanseServiceTest {
         changeLogMapper = mock(ClassificationChangeLogMapper.class);
         batchSqlRunner = mock(BatchSqlRunner.class);
         objectMapper = new ObjectMapper();
-        service = new ConceptCleanseService(
+        service = new ConceptCleanseServiceImpl(
                 conceptMapper, stockConceptMapper, changeLogMapper, batchSqlRunner, objectMapper);
     }
 

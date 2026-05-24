@@ -5,6 +5,7 @@ import com.tradingdiary.entity.TradeCalendar;
 import com.tradingdiary.mapper.MarginDailyMapper;
 import com.tradingdiary.mapper.MarginMacroMapper;
 import com.tradingdiary.mapper.TradeCalendarMapper;
+import com.tradingdiary.service.impl.GapDetectionServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -33,7 +34,7 @@ class GapDetectionServiceTest {
     private MarginMacroMapper marginMacroMapper;
 
     @InjectMocks
-    private GapDetectionService gapDetectionService;
+    private GapDetectionServiceImpl gapDetectionService;
 
     @Test
     void shouldDetectGapsWhenSomeTradingDaysMissing() {
