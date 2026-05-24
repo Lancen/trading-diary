@@ -25,6 +25,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
@@ -204,6 +205,8 @@ class CollectionControllerTest {
     void shouldTriggerOrchestrationForValidDataType() throws Exception {
         when(collectionQueryService.isValidDataType("STOCK_INFO")).thenReturn(true);
         when(collectionQueryService.getLatestTradeDate()).thenReturn(LocalDate.of(2026, 5, 20));
+        when(orchestrator.orchestrateAsync(anyString(), any(LocalDate.class)))
+                .thenReturn(java.util.concurrent.CompletableFuture.completedFuture("SUCCESS"));
 
         mockMvc.perform(post("/api/v1/admin/collection/trigger/STOCK_INFO"))
                 .andExpect(status().isOk())
@@ -228,6 +231,8 @@ class CollectionControllerTest {
         request.setExchange("SSE");
         request.setStartDate(LocalDate.of(2026, 5, 4));
         request.setEndDate(LocalDate.of(2026, 5, 8));
+        when(orchestrator.backfillMarginByWeekAsync(any(BackfillRequest.class)))
+                .thenReturn(java.util.concurrent.CompletableFuture.completedFuture("SUCCESS"));
 
         mockMvc.perform(post("/api/v1/admin/collection/backfill")
                         .contentType(MediaType.APPLICATION_JSON)

@@ -5,22 +5,22 @@
 
     <!-- 查询指定数据类型和作业类型的最近一条采集日志 -->
     <select id="selectLatestByDataTypeAndJobType" resultType="com.tradingdiary.entity.DataCollectionLog">
-        SELECT * FROM data_collection_log WHERE data_type = #{dataType} AND job_type = #{jobType} ORDER BY id DESC LIMIT 1
+        SELECT id, data_type, job_type, status, trade_date, week_start, week_end, record_count, request_url, request_params, error_msg, remark, started_at, completed_at, created_at FROM data_collection_log WHERE data_type = #{dataType} AND job_type = #{jobType} ORDER BY id DESC LIMIT 1
     </select>
 
     <!-- 查询指定数据类型的最近 N 条采集日志 -->
     <select id="selectRecentByDataType" resultType="com.tradingdiary.entity.DataCollectionLog">
-        SELECT * FROM data_collection_log WHERE data_type = #{dataType} ORDER BY id DESC LIMIT #{limit}
+        SELECT id, data_type, job_type, status, trade_date, week_start, week_end, record_count, request_url, request_params, error_msg, remark, started_at, completed_at, created_at FROM data_collection_log WHERE data_type = #{dataType} ORDER BY id DESC LIMIT #{limit}
     </select>
 
     <!-- 查询指定数据类型、作业类型和交易日期的最近一条采集日志 -->
     <select id="selectLatestByDataTypeAndJobTypeAndTradeDate" resultType="com.tradingdiary.entity.DataCollectionLog">
-        SELECT * FROM data_collection_log WHERE data_type = #{dataType} AND job_type = #{jobType} AND trade_date = #{tradeDate} ORDER BY id DESC LIMIT 1
+        SELECT id, data_type, job_type, status, trade_date, week_start, week_end, record_count, request_url, request_params, error_msg, remark, started_at, completed_at, created_at FROM data_collection_log WHERE data_type = #{dataType} AND job_type = #{jobType} AND trade_date = #{tradeDate} ORDER BY id DESC LIMIT 1
     </select>
 
     <!-- 查询最近 N 条采集日志（不限数据类型） -->
     <select id="selectRecent" resultType="com.tradingdiary.entity.DataCollectionLog">
-        SELECT * FROM data_collection_log ORDER BY id DESC LIMIT #{limit}
+        SELECT id, data_type, job_type, status, trade_date, week_start, week_end, record_count, request_url, request_params, error_msg, remark, started_at, completed_at, created_at FROM data_collection_log ORDER BY id DESC LIMIT #{limit}
     </select>
 
 </mapper>

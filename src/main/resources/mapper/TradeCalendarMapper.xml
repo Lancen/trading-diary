@@ -5,7 +5,7 @@
 
     <!-- 查询指定日期范围内的所有交易日 -->
     <select id="selectTradingDays" resultType="com.tradingdiary.entity.TradeCalendar">
-        SELECT * FROM trade_calendar WHERE trade_date BETWEEN #{start} AND #{end} AND is_trading_day = 1 AND is_deleted = 0 ORDER BY trade_date
+        SELECT id, trade_date, is_trading_day, created_at, updated_at, is_deleted FROM trade_calendar WHERE trade_date BETWEEN #{start} AND #{end} AND is_trading_day = 1 AND is_deleted = 0 ORDER BY trade_date
     </select>
 
     <!-- 查询交易日历表中的最大日期 -->

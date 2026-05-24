@@ -23,3 +23,5 @@ app:
     admin-password: ${app.init.admin-password}
   auto-login:
     enabled: false
+  cors:
+    allowed-origins: ${app.cors.allowed-origins}

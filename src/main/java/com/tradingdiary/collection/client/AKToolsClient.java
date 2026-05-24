@@ -9,8 +9,6 @@ import org.springframework.web.client.RestClient;
 
 import java.net.http.HttpClient;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * AKTools API 客户端，封装东方财富数据接口的 HTTP 调用与限流逻辑
@@ -73,27 +71,9 @@ public class AKToolsClient {
         return get("/api/public/stock_board_industry_name_ths");
     }
 
-    /**
-     * @deprecated 东方财富接口被封，行业成分股改用同花顺 Playwright 抓取
-     */
-    @Deprecated
-    public String fetchIndustryCons(String symbol) {
-        log.warn("fetchIndustryCons is deprecated — 行业成分股已改为 Playwright 抓取同花顺");
-        return "[]";
-    }
-
     public String fetchConceptNames() {
         log.info("Fetching concept board names (同花顺)");
         return get("/api/public/stock_board_concept_name_ths");
-    }
-
-    /**
-     * @deprecated 东方财富接口被封，概念成分股改用同花顺 Playwright 抓取
-     */
-    @Deprecated
-    public String fetchConceptCons(String symbol) {
-        log.warn("fetchConceptCons is deprecated — 概念成分股已改为 Playwright 抓取同花顺");
-        return "[]";
     }
 
     public String fetchMacroMarginSh() {
@@ -119,32 +99,6 @@ public class AKToolsClient {
     public String fetchMarginDetailSzse(String date) {
         log.info("Fetching margin detail SZSE: date={}", date);
         return get("/api/public/stock_margin_detail_szse?date={date}", date);
-    }
-
-    /**
-     * @deprecated 东方财富接口被封，改用同花顺 Playwright 抓取
-     */
-    @Deprecated
-    public List<String> fetchIndustryConsBatch(List<String> symbols) {
-        log.warn("fetchIndustryConsBatch is deprecated");
-        List<String> results = new ArrayList<>();
-        for (int i = 0; i < symbols.size(); i++) {
-            results.add("[]");
-        }
-        return results;
-    }
-
-    /**
-     * @deprecated 东方财富接口被封，改用同花顺 Playwright 抓取
-     */
-    @Deprecated
-    public List<String> fetchConceptConsBatch(List<String> symbols) {
-        log.warn("fetchConceptConsBatch is deprecated");
-        List<String> results = new ArrayList<>();
-        for (int i = 0; i < symbols.size(); i++) {
-            results.add("[]");
-        }
-        return results;
     }
 
     private String get(String path, Object... uriVariables) {

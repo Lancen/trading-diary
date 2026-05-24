@@ -6,6 +6,7 @@ import com.tradingdiary.model.request.LoginRequest;
 import com.tradingdiary.model.vo.TokenVO;
 import com.tradingdiary.model.vo.UserInfoVO;
 import com.tradingdiary.service.AuthService;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -30,6 +31,7 @@ public class AuthController {
         this.authService = authService;
     }
 
+    @Operation(summary = "用户登录")
     @PostMapping("/login")
     public ApiResponse<TokenVO> login(@RequestBody @Valid LoginRequest request) {
         try {
@@ -42,6 +44,7 @@ public class AuthController {
         }
     }
 
+    @Operation(summary = "刷新令牌")
     @PostMapping("/refresh")
     public ApiResponse<TokenVO> refresh(@RequestBody Map<String, String> body) {
         String refreshToken = body.get("refreshToken");
@@ -58,6 +61,7 @@ public class AuthController {
         }
     }
 
+    @Operation(summary = "用户登出")
     @PostMapping("/logout")
     public ApiResponse<Void> logout() {
         Long userId = getCurrentUserId();
@@ -65,6 +69,7 @@ public class AuthController {
         return ApiResponse.ok(null, "登出成功");
     }
 
+    @Operation(summary = "获取当前用户信息")
     @GetMapping("/me")
     public ApiResponse<UserInfoVO> me() {
         Long userId = getCurrentUserId();

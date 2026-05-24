@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 系统角色 Mapper，提供角色数据的查询 -->
+<mapper namespace="com.tradingdiary.mapper.SysRoleMapper">
+
+    <!-- 根据用户ID查询其关联的所有角色 -->
+    <select id="selectByUserId" resultType="com.tradingdiary.entity.SysRole">
+        SELECT r.id, r.code, r.name, r.created_at, r.updated_at, r.is_deleted
+        FROM sys_role r
+        INNER JOIN sys_user_role ur ON r.id = ur.role_id
+        WHERE ur.user_id = #{userId}
+    </select>
+
+</mapper>

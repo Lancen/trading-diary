@@ -1,13 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "./gradlew test *",
-      "./gradlew compileJava",
-      "./gradlew flywayMigrate",
-      "./gradlew bootRun",
-      "pnpm exec tsc --noEmit",
-      "pnpm exec playwright *",
-      "pnpm dev",
+      "Bash(./gradlew test:*)",
+      "Bash(./gradlew compileJava:*)",
+      "Bash(./gradlew flywayMigrate:*)",
+      "Bash(./gradlew bootRun:*)",
+      "Bash(pnpm exec tsc --noEmit:*)",
+      "Bash(pnpm exec playwright:*)",
+      "Bash(pnpm dev:*)",
 
       "Bash(git add:*)",
       "Bash(git commit:*)",
@@ -36,8 +36,7 @@
       "Bash(lsof:*)",
       "Bash(kill:*)",
       "Bash(curl:*)",
-      "curl -s *",
-      "sed -i",
+      "Bash(sed:*)",
 
       "mcp__playwright__*",
       "mcp__plugin_claude-mem_mcp-search__*"

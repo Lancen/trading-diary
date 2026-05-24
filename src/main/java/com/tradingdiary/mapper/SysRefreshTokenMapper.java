@@ -4,8 +4,6 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.tradingdiary.entity.SysRefreshToken;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
-import org.apache.ibatis.annotations.Update;
 
 /**
  * 系统刷新令牌 Mapper，提供刷新令牌的查询与撤销操作
@@ -19,9 +17,6 @@ public interface SysRefreshTokenMapper extends BaseMapper<SysRefreshToken> {
      * @param userId 用户ID
      * @return 有效的刷新令牌，不存在时返回 null
      */
-    @Select("SELECT * FROM sys_refresh_token " +
-            "WHERE user_id = #{userId} AND revoked = 0 AND expires_at > NOW() " +
-            "ORDER BY created_at DESC LIMIT 1")
     SysRefreshToken selectValidByUserId(@Param("userId") Long userId);
 
     /**
@@ -30,7 +25,5 @@ public interface SysRefreshTokenMapper extends BaseMapper<SysRefreshToken> {
      * @param userId 用户ID
      * @return 受影响的行数
      */
-    @Update("UPDATE sys_refresh_token SET revoked = 1 " +
-            "WHERE user_id = #{userId} AND revoked = 0")
     int revokeByUserId(@Param("userId") Long userId);
 }

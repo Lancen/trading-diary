@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 数据采集控制器，管理采集状态查询、任务触发、缺口检测和历史数据补采
@@ -110,10 +111,8 @@ public class CollectionController {
             return ApiResponse.fail(400, "未知数据类型: " + dataType);
         }
         LocalDate tradeDate = collectionQueryService.getLatestTradeDate();
-        new Thread(() -> {
-            String result = orchestrator.orchestrate(dataType, tradeDate);
-            log.info("异步采集完成: {} {} → {}", dataType, tradeDate, result);
-        }, "collection-" + dataType).start();
+        orchestrator.orchestrateAsync(dataType, tradeDate)
+                .thenAccept(result -> log.info("异步采集完成: {} {} → {}", dataType, tradeDate, result));
         return ApiResponse.ok("任务已提交（交易日: " + tradeDate + "），正在后台执行");
     }
 
@@ -147,20 +146,18 @@ public class CollectionController {
         final String exchange = request.getExchange();
         final LocalDate start = request.getStartDate();
         final LocalDate end = request.getEndDate();
-        new Thread(() -> {
-            String result;
-            if ("STOCK_DAILY".equals(dt)) {
-                result = orchestrator.backfillStockDaily(start, end);
-            } else {
-                com.tradingdiary.collection.model.BackfillRequest req = new com.tradingdiary.collection.model.BackfillRequest();
-                req.setDataType(dt);
-                req.setExchange(exchange);
-                req.setStartDate(start);
-                req.setEndDate(end);
-                result = orchestrator.backfillMarginByWeek(req);
-            }
-            log.info("异步补采完成: {} {}~{} → {}", dt, start, end, result);
-        }, "backfill-" + dt).start();
+        CompletableFuture<String> future;
+        if ("STOCK_DAILY".equals(dt)) {
+            future = orchestrator.backfillStockDailyAsync(start, end);
+        } else {
+            com.tradingdiary.collection.model.BackfillRequest req = new com.tradingdiary.collection.model.BackfillRequest();
+            req.setDataType(dt);
+            req.setExchange(exchange);
+            req.setStartDate(start);
+            req.setEndDate(end);
+            future = orchestrator.backfillMarginByWeekAsync(req);
+        }
+        future.thenAccept(result -> log.info("异步补采完成: {} {}~{} → {}", dt, start, end, result));
         return ApiResponse.ok("补采任务已提交，正在后台执行");
     }
 

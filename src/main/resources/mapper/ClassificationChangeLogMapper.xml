@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 分类变更日志 Mapper，提供股票行业/概念分类变更记录的查询 -->
+<mapper namespace="com.tradingdiary.mapper.ClassificationChangeLogMapper">
+
+    <!-- 根据股票代码和分类类型查询变更日志 -->
+    <select id="selectByStockAndType" resultType="com.tradingdiary.entity.ClassificationChangeLog">
+        SELECT id, stock_code, classification_type, sector_code, action, snap_date, created_at
+        FROM classification_change_log
+        WHERE stock_code = #{stockCode} AND classification_type = #{type}
+        ORDER BY snap_date DESC
+    </select>
+
+    <!-- 查询指定日期范围内的分类变更日志 -->
+    <select id="selectByDateRange" resultType="com.tradingdiary.entity.ClassificationChangeLog">
+        SELECT id, stock_code, classification_type, sector_code, action, snap_date, created_at
+        FROM classification_change_log
+        WHERE snap_date BETWEEN #{start} AND #{end}
+        ORDER BY snap_date DESC
+    </select>
+
+</mapper>

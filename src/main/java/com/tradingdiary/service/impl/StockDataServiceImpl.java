@@ -1,4 +1,4 @@
-package com.tradingdiary.service;
+package com.tradingdiary.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.tradingdiary.collection.model.StockDetailVO;
@@ -13,6 +13,7 @@ import com.tradingdiary.mapper.StockConceptMapper;
 import com.tradingdiary.mapper.StockDailyMapper;
 import com.tradingdiary.mapper.StockIndustryMapper;
 import com.tradingdiary.mapper.StockInfoMapper;
+import com.tradingdiary.service.StockDataService;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;

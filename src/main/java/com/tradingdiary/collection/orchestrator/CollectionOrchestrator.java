@@ -25,6 +25,7 @@ import com.tradingdiary.service.collection.StockInfoCleanseService;
 import com.tradingdiary.service.collection.TradeCalendarService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -35,6 +36,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -97,6 +99,12 @@ public class CollectionOrchestrator {
         this.industryMapper = industryMapper;
         this.conceptMapper = conceptMapper;
         this.stockInfoMapper = stockInfoMapper;
+    }
+
+    @Async("collectionExecutor")
+    public CompletableFuture<String> orchestrateAsync(String dataType, LocalDate tradeDate) {
+        String result = orchestrate(dataType, tradeDate);
+        return CompletableFuture.completedFuture(result);
     }
 
     /**
@@ -430,6 +438,12 @@ public class CollectionOrchestrator {
         return count;
     }
 
+    @Async("collectionExecutor")
+    public CompletableFuture<String> backfillMarginByWeekAsync(BackfillRequest request) {
+        String result = backfillMarginByWeek(request);
+        return CompletableFuture.completedFuture(result);
+    }
+
     /**
      * 按周补采两融数据
      */
@@ -483,6 +497,12 @@ public class CollectionOrchestrator {
                 processedDates, orchestratedWeeks, skippedWeeks);
         log.info(result);
         return result;
+    }
+
+    @Async("collectionExecutor")
+    public CompletableFuture<String> backfillStockDailyAsync(LocalDate startDate, LocalDate endDate) {
+        String result = backfillStockDaily(startDate, endDate);
+        return CompletableFuture.completedFuture(result);
     }
 
     /**

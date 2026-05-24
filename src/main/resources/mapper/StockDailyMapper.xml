@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 股票日线行情 Mapper，提供股票日线数据的查询 -->
+<mapper namespace="com.tradingdiary.mapper.StockDailyMapper">
+
+    <!-- 查询指定日期范围内的去重交易日期列表 -->
+    <select id="selectDistinctTradeDates" resultType="java.time.LocalDate">
+        SELECT DISTINCT trade_date
+        FROM stock_daily
+        WHERE trade_date BETWEEN #{start} AND #{end} AND is_deleted = 0
+        ORDER BY trade_date
+    </select>
+
+</mapper>

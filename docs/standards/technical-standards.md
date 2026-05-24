@@ -117,8 +117,8 @@ public class Trade {
 - 布尔字段：`is_` 前缀，`tinyint(1)` 类型，1 表示是，0 表示否
 - 主键：统一使用 `bigint` 自增，命名为 `id`
 - 时间字段：`created_at`、`updated_at`，`datetime` 类型
-- 金额字段：`decimal(20,8)`，见宪法领域约束 §1
-- 所有业务表 MUST 包含 `user_id`（`bigint`，索引）、`is_deleted`（`tinyint(1)`，默认 0）
+- 金额字段：按数据类别区分精度，见宪法领域约束 §1
+- 用户私有数据表 MUST 包含 `user_id`（`bigint`，索引）、`is_deleted`（`tinyint(1)`，默认 0）；Phase 1 公共市场数据表豁免，见宪法领域约束 §3
 - 纯日志表（如 `data_collection_log`）可只含 `created_at`，不需要 `updated_at` 和 `is_deleted`
 - 原始数据暂存表（如 `raw_data`）同理，按实际场景判断
 - 禁止使用数据库保留字作为字段名
@@ -152,7 +152,7 @@ CREATE TABLE trade_record (
 | 联合索引 | `idx_字段1_字段2` | `idx_user_id_created_at` |
 
 - 查询频繁的字段建立索引
-- `user_id` MUST 在所有业务表中建立索引（最常见查询条件）
+- `user_id` MUST 在用户私有数据表中建立索引（最常见查询条件）；Phase 1 公共市场数据表豁免
 - 联合索引遵循最左前缀原则设计字段顺序
 - 每个索引必须有明确的查询场景支撑，禁止冗余索引
 
@@ -202,7 +202,7 @@ trade_record
 
 - 所有 API 响应使用统一格式 `ApiResponse<T>`，禁止直接返回实体对象
 - 分页响应额外包含 `page`、`size`、`total` 字段
-- 分页请求参数：`page`（页码，从 0 起，默认 0）+ `size`（每页条数，默认 20，最大 100）
+- 分页请求参数：`page`（页码，从 1 起，默认 1）+ `size`（每页条数，默认 20，最大 100）
   - MyBatis-Plus 默认参数为 `current`/`size`，需配置 `page-param-mapping: { current: "page" }` 统一对外接口
 - 时间戳使用 ISO 8601 格式，时区由请求头 `X-Timezone` 决定（默认 UTC）
 - 请求头示例：`X-Timezone: Asia/Shanghai`，无此头时按 UTC 输出

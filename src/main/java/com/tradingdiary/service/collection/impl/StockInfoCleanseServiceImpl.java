@@ -132,6 +132,7 @@ public class StockInfoCleanseServiceImpl implements StockInfoCleanseService {
             if (text == null || text.isEmpty() || "-".equals(text)) return null;
             return new BigDecimal(text);
         } catch (Exception e) {
+            log.debug("解析BigDecimal失败: field={}", field, e.getMessage());
             return null;
         }
     }
@@ -144,6 +145,7 @@ public class StockInfoCleanseServiceImpl implements StockInfoCleanseService {
             if (text == null || text.isEmpty() || "-".equals(text)) return null;
             return Long.parseLong(text);
         } catch (Exception e) {
+            log.debug("解析Long失败: field={}", field, e.getMessage());
             return null;
         }
     }

@@ -82,7 +82,7 @@ public class MarginMacroCleanseServiceImpl implements MarginMacroCleanseService 
                 if (dateStr == null) continue;
                 LocalDate date;
                 try { date = LocalDate.parse(dateStr.substring(0, 10)); }
-                catch (Exception e) { continue; }
+                catch (Exception e) { log.debug("跳过无效日期记录: {}", e.getMessage()); continue; }
 
                 MarginMacro m = new MarginMacro();
                 m.setTradeDate(date);
@@ -114,7 +114,7 @@ public class MarginMacroCleanseServiceImpl implements MarginMacroCleanseService 
             String text = fn.asText();
             if (text == null || text.isEmpty() || "None".equals(text)) return null;
             return new BigDecimal(text);
-        } catch (Exception e) { return null; }
+        } catch (Exception e) { log.debug("解析BigDecimal失败: field={}", field, e.getMessage()); return null; }
     }
 
     private Long safeLong(JsonNode node, String field) {
@@ -124,6 +124,6 @@ public class MarginMacroCleanseServiceImpl implements MarginMacroCleanseService 
             String text = fn.asText();
             if (text == null || text.isEmpty() || "None".equals(text)) return null;
             return Long.parseLong(text);
-        } catch (Exception e) { return null; }
+        } catch (Exception e) { log.debug("解析Long失败: field={}", field, e.getMessage()); return null; }
     }
 }

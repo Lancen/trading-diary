@@ -5,7 +5,7 @@
 
     <!-- 根据用户名查询用户信息 -->
     <select id="selectByUsername" resultType="com.tradingdiary.entity.SysUser">
-        SELECT * FROM sys_user WHERE username = #{username}
+        SELECT id, username, password, nickname, status, created_at, updated_at, is_deleted FROM sys_user WHERE username = #{username}
     </select>
 
 </mapper>

@@ -163,7 +163,12 @@ public List<TradeVO> getTrades() { ... }
 
 交易金额、价格、盈亏等涉及金钱的字段，一律使用 `BigDecimal`，禁止 `float`/`double`。
 
-**数据库映射**：`decimal(20,8)`，8 位小数精度可覆盖加密货币和外汇的精度需求。
+**数据库映射**：按数据类别区分精度
+
+| 数据类别 | 数据库精度 | 说明 |
+|---------|-----------|------|
+| 市场行情/两融数据 | `DECIMAL(16,2)` ~ `DECIMAL(24,2)` | 元级精度，2 位小数 |
+| 用户交易盈亏（Phase 2） | `DECIMAL(20,8)` | 覆盖加密货币和外汇精度需求 |
 
 **计算规则**：所有 `BigDecimal` 除法运算 MUST 指定 `RoundingMode.HALF_UP` 和精度，禁止使用无参 `divide()`：
 
@@ -197,6 +202,8 @@ BigDecimal roi = profit.divide(totalCost, 8, RoundingMode.HALF_UP);
 ### 3. 数据归属
 
 任何交易数据必须关联 `user_id`。所有查询必须带用户隔离条件。
+
+> **Phase 1 豁免**：市场公共数据表（`stock_info`、`stock_daily`、`margin_daily`、`margin_macro`、`industry`、`concept`、`trade_calendar` 等）为全市场共享数据，不需要 `user_id` 字段。此规则在 Phase 2 SaaS 化时生效，届时用户私有数据（交易记录、持仓、盈亏）必须关联 `user_id`。
 
 **为什么**：交易数据是敏感个人信息。一处遗漏就可能导致用户看到别人的交易记录。
 
@@ -252,9 +259,9 @@ SaaS 产品必须以 JWT + Spring Security 实现无状态认证。
 - 命名符合约定（技术规范 §1.2）
 - 数据库表设计符合建表规约（技术规范 §2.1），含软删除字段
 - API 响应使用统一格式 `ApiResponse<T>`（技术规范 §3.2）
-- 金额字段使用 `BigDecimal`，数据库字段 `decimal(20,8)`，除法指定 RoundingMode（领域约束 §1）
+- 金额字段使用 `BigDecimal`，数据库字段按数据类别区分精度（领域约束 §1），除法指定 RoundingMode
 - 时间字段 UTC 存储（领域约束 §2）
-- 所有业务表包含 `user_id` 字段（领域约束 §3）
+- 用户私有数据表包含 `user_id` 字段（领域约束 §3，Phase 1 公共市场数据表豁免）
 - 认证方案：JWT + Spring Security（领域约束 §5）
 - 异常体系继承 `BaseException`，有 `@ControllerAdvice` 全局处理器
 - 分层架构不可逆（核心原则 II）

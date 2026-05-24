@@ -225,6 +225,7 @@ public class StockDailyCleanseServiceImpl implements StockDailyCleanseService {
             if (text == null || text.isEmpty() || "-".equals(text)) return null;
             return new BigDecimal(text);
         } catch (Exception e) {
+            log.debug("解析BigDecimal失败: field={}", field, e.getMessage());
             return null;
         }
     }
@@ -322,6 +323,7 @@ public class StockDailyCleanseServiceImpl implements StockDailyCleanseService {
         try {
             return new BigDecimal(val.asText());
         } catch (Exception e) {
+            log.debug("解析BigDecimal失败: index={}", index, e.getMessage());
             return null;
         }
     }
@@ -333,6 +335,7 @@ public class StockDailyCleanseServiceImpl implements StockDailyCleanseService {
         try {
             return Long.parseLong(val.asText());
         } catch (Exception e) {
+            log.debug("解析Long失败: index={}", index, e.getMessage());
             return null;
         }
     }
@@ -345,6 +348,7 @@ public class StockDailyCleanseServiceImpl implements StockDailyCleanseService {
             if (text == null || text.isEmpty() || "-".equals(text)) return null;
             return Long.parseLong(text);
         } catch (Exception e) {
+            log.debug("解析Long失败: field={}", field, e.getMessage());
             return null;
         }
     }

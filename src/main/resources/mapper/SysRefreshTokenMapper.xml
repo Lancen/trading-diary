@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 系统刷新令牌 Mapper，提供刷新令牌的查询与撤销操作 -->
+<mapper namespace="com.tradingdiary.mapper.SysRefreshTokenMapper">
+
+    <!-- 查询指定用户的有效（未撤销且未过期）刷新令牌，取最近一条 -->
+    <select id="selectValidByUserId" resultType="com.tradingdiary.entity.SysRefreshToken">
+        SELECT id, user_id, token_hash, expires_at, revoked, created_at
+        FROM sys_refresh_token
+        WHERE user_id = #{userId} AND revoked = 0 AND expires_at > NOW()
+        ORDER BY created_at DESC LIMIT 1
+    </select>
+
+    <!-- 撤销指定用户的所有未撤销刷新令牌 -->
+    <update id="revokeByUserId">
+        UPDATE sys_refresh_token SET revoked = 1
+        WHERE user_id = #{userId} AND revoked = 0
+    </update>
+
+</mapper>

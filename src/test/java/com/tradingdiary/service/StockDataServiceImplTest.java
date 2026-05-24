@@ -14,6 +14,7 @@ import com.tradingdiary.mapper.StockConceptMapper;
 import com.tradingdiary.mapper.StockDailyMapper;
 import com.tradingdiary.mapper.StockIndustryMapper;
 import com.tradingdiary.mapper.StockInfoMapper;
+import com.tradingdiary.service.impl.StockDataServiceImpl;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
