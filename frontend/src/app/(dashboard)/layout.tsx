@@ -97,6 +97,16 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
               数据浏览
             </div>
             <Link
+              href="/admin/index-analysis"
+              className={`block rounded-lg px-6 py-2 text-sm font-medium transition-colors ${
+                isActive(pathname, "/admin/index-analysis")
+                  ? "bg-primary text-primary-foreground"
+                  : "text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              指数分析
+            </Link>
+            <Link
               href="/admin/stocks"
               className={`block rounded-lg px-6 py-2 text-sm font-medium transition-colors ${
                 isActive(pathname, "/admin/stocks")
