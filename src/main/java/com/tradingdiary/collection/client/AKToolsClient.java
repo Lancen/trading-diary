@@ -101,6 +101,12 @@ public class AKToolsClient {
         return get("/api/public/stock_margin_detail_szse?date={date}", date);
     }
 
+    public String fetchMarketIndexDaily(String symbol, String startDate, String endDate) {
+        log.info("Fetching market index daily: symbol={}, startDate={}, endDate={}", symbol, startDate, endDate);
+        return get("/api/public/stock_zh_index_daily?symbol={symbol}&start_date={startDate}&end_date={endDate}",
+                symbol, startDate, endDate);
+    }
+
     private String get(String path, Object... uriVariables) {
         rateLimit();
         try {

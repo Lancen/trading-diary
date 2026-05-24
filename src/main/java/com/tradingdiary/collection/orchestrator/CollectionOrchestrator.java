@@ -20,6 +20,7 @@ import com.tradingdiary.service.collection.ConceptCleanseService;
 import com.tradingdiary.service.collection.IndustryCleanseService;
 import com.tradingdiary.service.collection.MarginCleanseService;
 import com.tradingdiary.service.collection.MarginMacroCleanseService;
+import com.tradingdiary.service.collection.MarketIndexDailyCleanseService;
 import com.tradingdiary.service.collection.StockDailyCleanseService;
 import com.tradingdiary.service.collection.StockInfoCleanseService;
 import com.tradingdiary.service.collection.TradeCalendarService;
@@ -63,6 +64,7 @@ public class CollectionOrchestrator {
     private final ConceptCleanseService conceptCleanseService;
     private final MarginCleanseService marginCleanseService;
     private final MarginMacroCleanseService marginMacroCleanseService;
+    private final MarketIndexDailyCleanseService marketIndexDailyCleanseService;
     private final TradeCalendarService tradeCalendarService;
     private final TradeCalendarMapper tradeCalendarMapper;
     private final IndustryMapper industryMapper;
@@ -79,6 +81,7 @@ public class CollectionOrchestrator {
                                   ConceptCleanseService conceptCleanseService,
                                   MarginCleanseService marginCleanseService,
                                   MarginMacroCleanseService marginMacroCleanseService,
+                                  MarketIndexDailyCleanseService marketIndexDailyCleanseService,
                                   TradeCalendarService tradeCalendarService,
                                   TradeCalendarMapper tradeCalendarMapper,
                                   IndustryMapper industryMapper,
@@ -94,6 +97,7 @@ public class CollectionOrchestrator {
         this.conceptCleanseService = conceptCleanseService;
         this.marginCleanseService = marginCleanseService;
         this.marginMacroCleanseService = marginMacroCleanseService;
+        this.marketIndexDailyCleanseService = marketIndexDailyCleanseService;
         this.tradeCalendarService = tradeCalendarService;
         this.tradeCalendarMapper = tradeCalendarMapper;
         this.industryMapper = industryMapper;
@@ -285,6 +289,8 @@ public class CollectionOrchestrator {
                 return aktoolsClient.fetchMacroMarginSh();
             case "MARGIN_MACRO_SZSE":
                 return aktoolsClient.fetchMacroMarginSz();
+            case "MARKET_INDEX_DAILY":
+                return fetchAllMarketIndices(tradeDate);
             default:
                 throw new IllegalArgumentException("未知数据类型: " + dataType);
         }
@@ -357,6 +363,9 @@ public class CollectionOrchestrator {
             case "MARGIN_MACRO_SZSE":
                 recordCount = marginMacroCleanseService.cleanse(rawJson, "SZSE");
                 break;
+            case "MARKET_INDEX_DAILY":
+                recordCount = cleanseAllMarketIndices(tradeDate);
+                break;
             default:
                 throw new IllegalArgumentException("未知数据类型: " + dataType);
         }
@@ -412,6 +421,51 @@ public class CollectionOrchestrator {
         log.info("概念成分股变化检测: {} 个概念（成分股数据需通过 Playwright 预先导入）", concepts.size());
         // 成分股通过 Playwright 抓取后直接写入 stock_concept 表
         return 0;
+    }
+
+    private static final List<String> MARKET_INDEX_CODES = List.of(
+            "sh000001", "sz399001", "sz399006", "sh000300", "sh000905",
+            "sh000016", "sh000688", "sh000852"
+    );
+
+    private String fetchAllMarketIndices(LocalDate tradeDate) {
+        String dateStr = tradeDate != null ? tradeDate.format(YMD) : "";
+        StringBuilder combined = new StringBuilder("[");
+        for (int i = 0; i < MARKET_INDEX_CODES.size(); i++) {
+            String code = MARKET_INDEX_CODES.get(i);
+            try {
+                String json = aktoolsClient.fetchMarketIndexDaily(code, dateStr, dateStr);
+                if (json != null && !json.equals("[]")) {
+                    if (combined.length() > 1) combined.append(",");
+                    combined.append("\"").append(code).append("\":").append(json);
+                }
+                aktoolsClient.sleepBetweenCalls();
+            } catch (Exception e) {
+                log.error("Failed to fetch market index daily for {}: {}", code, e.getMessage());
+            }
+        }
+        combined.append("]");
+        return combined.toString();
+    }
+
+    private int cleanseAllMarketIndices(LocalDate tradeDate) {
+        int totalRecords = 0;
+        for (String indexCode : MARKET_INDEX_CODES) {
+            try {
+                String startDate = tradeDate != null ? tradeDate.format(YMD) : "";
+                String endDate = startDate;
+                String rawJson = aktoolsClient.fetchMarketIndexDaily(indexCode, startDate, endDate);
+                if (rawJson != null && !rawJson.equals("[]")) {
+                    int count = marketIndexDailyCleanseService.cleanse(rawJson, indexCode);
+                    totalRecords += count;
+                    log.info("Market index daily cleanse: {} → {} records", indexCode, count);
+                }
+                aktoolsClient.sleepBetweenCalls();
+            } catch (Exception e) {
+                log.error("Failed to cleanse market index daily for {}: {}", indexCode, e.getMessage());
+            }
+        }
+        return totalRecords;
     }
 
     private DataCollectionLog createLog(String dataType, String jobType, LocalDate tradeDate) {
