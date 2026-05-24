@@ -40,10 +40,10 @@ Status: ready-for-agent
 
 ### 行业/概念详情页
 
-13. 作为用户，我希望在行业列表页点击行业名称跳转到 /admin/industries/[name] 行业详情页
+13. 作为用户，我希望在行业列表页点击行业名称跳转到 /admin/industries/[code] 行业详情页
 14. 作为用户，我希望在行业详情页看到行业指数K线，以便观察该行业的价格走势
 15. 作为用户，我希望在行业详情页看到行业指数K线+板块两融叠加图，以便观察该行业的杠杆资金进出
-16. 作为用户，我希望在概念列表页点击概念名称跳转到 /admin/concepts/[name] 概念详情页
+16. 作为用户，我希望在概念列表页点击概念名称跳转到 /admin/concepts/[code] 概念详情页
 17. 作为用户，我希望在概念详情页看到概念指数K线+板块两融叠加图，以便观察该概念的杠杆资金进出
 18. 作为用户，我希望在行业/概念详情页切换日期范围和K线周期（日K/周K/月K），以便灵活分析
 19. 作为用户，我希望在行业/概念详情页看到成分股列表，以便了解该板块包含哪些股票
@@ -65,8 +65,8 @@ Status: ready-for-agent
 
 - **`index_daily` 表保持原样不动**: 不写入新数据，避免影响现有采集状态追踪
 - **新增 `market_index_daily` 表**: 存宽基指数日线，`index_code` 为标准交易所代码（如 sh000001），唯一键 `(index_code, trade_date)`
-- **新增 `sector_index_daily` 表**: 存行业/概念指数日线数据，含 `sector_type`（INDUSTRY/CONCEPT）+ `sector_name`（板块名称）字段，唯一键 `(sector_type, sector_name, trade_date)`
-- **分表原因**: 采集Hub按数据类型追踪采集状态，表与采集类型应一一对应；宽基指数有标准交易所代码，行业/概念指数无标准代码只能用名称标识；数量级差异大（8 vs 446 vs 400+）（ADR-0001）
+- **新增 `sector_index_daily` 表**: 存行业/概念指数日线数据，含 `sector_type`（INDUSTRY/CONCEPT）+ `sector_code`（板块编码，关联 `industry.code`/`concept.code`）字段，唯一键 `(sector_type, sector_code, trade_date)`
+- **分表原因**: 采集Hub按数据类型追踪采集状态，表与采集类型应一一对应；宽基指数有标准交易所代码，行业/概念指数用 `sector_code` 标识（关联 `industry.code`/`concept.code`）；数量级差异大（8 vs 446 vs 400+）（ADR-0001）
 - **不建板块两融物化表**: 板块两融通过实时聚合查询，不建 `sector_margin_daily`（ADR-0002）
 
 ### 采集层
@@ -82,27 +82,27 @@ Status: ready-for-agent
 ### 清洗层
 
 - **change_pct 计算**: `(今日close - 昨日close) / 昨日close * 100`，首日无前值则为null
-- **板块指数标识**: `sector_index_daily` 使用 `sector_name` 作为主要标识，无需生成伪代码
+- **板块指数标识**: `sector_index_daily` 使用 `sector_code` 作为主要标识，关联 `industry.code`/`concept.code`，采集时从 `industry`/`concept` 表读取 code→name 映射，用 name 调用 AKTools 接口
 
 ### API层
 
 - **指数日线查询**: `GET /api/v1/admin/market-index-daily?indexCode=sh000001&startDate=...&endDate=...`
-- **板块指数日线查询**: `GET /api/v1/admin/sector-index-daily?sectorType=INDUSTRY&sectorName=银行&startDate=...&endDate=...`
+- **板块指数日线查询**: `GET /api/v1/admin/sector-index-daily?sectorType=INDUSTRY&sectorCode=BK0475&startDate=...&endDate=...`
 - **指数列表查询**: `GET /api/v1/admin/index-list` 返回所有已采集宽基指数的最新行情
-- **板块两融聚合查询**: `GET /api/v1/admin/sector-margin?sectorType=INDUSTRY&sectorName=银行&startDate=...&endDate=...` 实时聚合 margin_daily + stock_industry
-- **行业/概念详情**: `GET /api/v1/admin/industries/{name}` 和 `GET /api/v1/admin/concepts/{name}` 扩展返回板块指数日线+板块两融数据
+- **板块两融聚合查询**: `GET /api/v1/admin/sector-margin?sectorType=INDUSTRY&sectorCode=BK0475&startDate=...&endDate=...` 实时聚合 margin_daily + stock_industry
+- **行业/概念详情**: `GET /api/v1/admin/industries/{code}` 和 `GET /api/v1/admin/concepts/{code}` 扩展返回板块指数日线+板块两融数据
 
 ### 前端
 
 - **指数分析页**: `/admin/index-analysis`，展示5-8个核心指数的K线+两融叠加图
-- **行业详情页**: `/admin/industries/[name]`，展示行业指数K线+板块两融叠加图+成分股列表
-- **概念详情页**: `/admin/concepts/[name]`，展示概念指数K线+板块两融叠加图+成分股列表
+- **行业详情页**: `/admin/industries/[code]`，展示行业指数K线+板块两融叠加图+成分股列表
+- **概念详情页**: `/admin/concepts/[code]`，展示概念指数K线+板块两融叠加图+成分股列表
 - **图表模式**: 统一双轴叠加 — K线(左轴) + 成交量(底部) + 融资余额(右轴,绝对值) + 融券余额(右轴,绝对值)，与个股详情页一致
 - **图表组件**: 复用 `lightweight-charts`，提取可复用的 KlineMarginOverlay 组件，接收统一的OHLCV数据格式，不关心数据来自 `market_index_daily` 还是 `sector_index_daily`
 
 ### 板块两融聚合
 
-- **聚合方式**: JOIN `margin_daily` + `stock_industry`/`stock_concept`，按 `trade_date` + `sector_name` GROUP BY SUM
+- **聚合方式**: JOIN `margin_daily` + `stock_industry`/`stock_concept`，按 `trade_date` + `sector_code` GROUP BY SUM
 - **归属快照**: 使用当前 `stock_industry`/`stock_concept` 的归属关系，不追踪历史变更
 - **性能**: 5000股 × 100天 ≈ 50万行，MySQL聚合毫秒级，无需物化
 
@@ -114,7 +114,7 @@ Status: ready-for-agent
   - 板块指数日线采集+清洗: 验证行业/概念指数数据入库、sector_type区分正确
   - 板块两融聚合查询: 验证聚合结果与手动SUM一致
   - 指数日线API: 验证日期范围过滤正确
-  - 板块指数日线API: 验证按sectorType和sectorName过滤正确
+  - 板块指数日线API: 验证按sectorType和sectorCode过滤正确
   - 行业/概念详情API: 验证返回的板块指数日线和板块两融数据匹配
 - **测试先例**: 参考现有 `MarginCleanseServiceImpl` 的测试模式（验证清洗后字段计算正确）
 
