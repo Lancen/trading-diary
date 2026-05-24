@@ -39,6 +39,9 @@ Thumbs.db
 # Claude Code
 .claude/settings.local.json
 
+# Agent skills (跨 agent 通用 skill 目录)
+.agents/
+
 # Temp / debug
 /tmp/
 *.tmp

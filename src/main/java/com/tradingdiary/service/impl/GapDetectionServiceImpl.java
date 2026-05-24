@@ -20,6 +20,9 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+/**
+ * 数据缺口检测服务实现，对比交易日历与实际采集数据，按周统计缺失情况
+ */
 @Service
 public class GapDetectionServiceImpl implements GapDetectionService {
 

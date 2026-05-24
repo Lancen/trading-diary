@@ -20,6 +20,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * 交易日历服务实现，按月生成日历视图并标注数据覆盖状态
+ */
 @Service
 public class CalendarServiceImpl implements CalendarService {
 

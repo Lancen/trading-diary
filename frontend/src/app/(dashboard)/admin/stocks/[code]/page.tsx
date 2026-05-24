@@ -34,7 +34,7 @@ function aggregateKlines(klines: Kline[], period: "daily" | "weekly" | "monthly"
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key)!.push(k);
   }
-  return Array.from(groups.entries()).map(([key, bars]) => ({
+  return Array.from(groups.entries()).map(([, bars]) => ({
     tradeDate: bars[bars.length - 1].tradeDate,
     open: bars[0].open,
     high: Math.max(...bars.map(b => b.high)),

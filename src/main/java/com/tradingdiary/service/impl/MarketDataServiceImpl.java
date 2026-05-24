@@ -11,6 +11,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 市场数据服务实现，提供概念和行业维度的两融聚合数据查询与分页
+ */
 @Service
 public class MarketDataServiceImpl implements MarketDataService {
 

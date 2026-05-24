@@ -29,6 +29,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 认证服务实现，处理登录、令牌刷新、登出和用户信息查询
+ */
 @Service
 public class AuthServiceImpl implements AuthService {
 

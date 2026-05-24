@@ -24,6 +24,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * 股票数据服务实现，提供股票列表查询、个股详情（日线+两融+行业概念）等管理端接口
+ */
 @Service
 public class StockDataServiceImpl implements StockDataService {
 
