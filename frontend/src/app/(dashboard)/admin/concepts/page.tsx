@@ -67,7 +67,7 @@ export default function ConceptsPage() {
              data.map((item) => (
               <tr key={item.code} className="border-b hover:bg-gray-50">
                 <td className="px-3 py-2 font-mono text-xs text-gray-500">{item.code}</td>
-                <td className="px-3 py-2">{item.name}</td>
+                <td className="px-3 py-2 text-blue-600 cursor-pointer hover:underline" onClick={() => router.push(`/admin/concepts/${item.code}`)}>{item.name}</td>
                 <td className="px-3 py-2 text-center text-blue-600 cursor-pointer underline" onClick={() => router.push(`/admin/stocks?concept=${item.name}`)}>{item.stockCount}</td>
                 <td className="px-3 py-2 text-right text-blue-600 cursor-pointer" onClick={() => router.push(`/admin/margin-stats/concept/${item.code}`)}>{fmt(item.marginBalance)}</td>
                 <td className={`px-3 py-2 text-right cursor-pointer ${item.marginChange > 0 ? "text-red-600" : "text-green-600"}`} onClick={() => router.push(`/admin/margin-stats/concept/${item.code}`)}>{item.marginChange > 0 ? "↑" : "↓"}{fmt(Math.abs(item.marginChange))}</td>
