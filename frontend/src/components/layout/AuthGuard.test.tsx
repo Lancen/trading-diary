@@ -3,24 +3,31 @@ import { render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 import { AuthGuard } from "./AuthGuard";
 
-// 模拟 next/navigation
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
     replace: vi.fn(),
   }),
 }));
 
-// 共享可变状态，useAuth mock 返回此对象（支持 selector 模式）
-let mockState: { isLoading: boolean; user: unknown; isDev: boolean };
+const { mockUseAuth, mockState } = vi.hoisted(() => {
+  const mockUseAuth = vi.fn();
+  const mockState = {
+    isLoading: false,
+    user: null as unknown,
+    isDev: false,
+  };
+  return { mockUseAuth, mockState };
+});
 
-const mockUseAuth = vi.fn();
 vi.mock("@/hooks/useAuth", () => ({
   useAuth: mockUseAuth,
 }));
 
 describe("AuthGuard", () => {
   beforeEach(() => {
-    mockState = { isLoading: false, user: null, isDev: false };
+    mockState.isLoading = false;
+    mockState.user = null;
+    mockState.isDev = false;
     mockUseAuth.mockImplementation(
       (selector?: (s: typeof mockState) => unknown) => {
         return selector ? selector(mockState) : mockState;
@@ -64,7 +71,6 @@ describe("AuthGuard", () => {
         <div>Content</div>
       </AuthGuard>,
     );
-    // 当 !isDev 且 !user 且加载完成时，组件返回 null
     expect(container.firstChild).toBeNull();
   });
 });
