@@ -1,14 +1,10 @@
 package com.tradingdiary.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tradingdiary.entity.SysUser;
-import com.tradingdiary.mapper.SysUserMapper;
 import com.tradingdiary.model.request.LoginRequest;
 import com.tradingdiary.model.vo.TokenVO;
 import com.tradingdiary.model.vo.UserInfoVO;
 import com.tradingdiary.security.JwtAuthFilter;
-import com.tradingdiary.security.JwtTokenProvider;
-import com.tradingdiary.security.UserDetailsServiceImpl;
 import com.tradingdiary.service.AuthService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -45,9 +41,6 @@ class AuthControllerTest {
 
     @MockBean
     private AuthService authService;
-
-    @MockBean
-    private SysUserMapper sysUserMapper;
 
     @MockBean
     private JwtAuthFilter jwtAuthFilter;
@@ -108,9 +101,11 @@ class AuthControllerTest {
 
     @Test
     void shouldReturnUserInfoForAuthenticatedUser() throws Exception {
-        SysUser sysUser = new SysUser();
-        sysUser.setId(1L);
-        sysUser.setUsername("testuser");
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                "testuser", null, List.of(new SimpleGrantedAuthority("ROLE_USER")));
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
+        when(authService.getUserIdByUsername("testuser")).thenReturn(1L);
 
         UserInfoVO userInfoVO = new UserInfoVO();
         userInfoVO.setId(1L);
@@ -118,12 +113,6 @@ class AuthControllerTest {
         userInfoVO.setNickname("Test User");
         userInfoVO.setRoles(List.of("USER"));
 
-        // Set up SecurityContext with authenticated user
-        Authentication auth = new UsernamePasswordAuthenticationToken(
-                "testuser", null, List.of(new SimpleGrantedAuthority("ROLE_USER")));
-        SecurityContextHolder.getContext().setAuthentication(auth);
-
-        when(sysUserMapper.selectByUsername("testuser")).thenReturn(sysUser);
         when(authService.getCurrentUser(1L)).thenReturn(userInfoVO);
 
         mockMvc.perform(get("/api/v1/auth/me"))
@@ -135,7 +124,6 @@ class AuthControllerTest {
 
     @Test
     void shouldReturn401WithoutAuthentication() throws Exception {
-        // SecurityContext is empty (cleared in tearDown)
         mockMvc.perform(get("/api/v1/auth/me"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value(100101));
@@ -145,15 +133,11 @@ class AuthControllerTest {
 
     @Test
     void shouldLogoutSuccessfully() throws Exception {
-        SysUser sysUser = new SysUser();
-        sysUser.setId(42L);
-        sysUser.setUsername("logoutuser");
-
         Authentication auth = new UsernamePasswordAuthenticationToken(
                 "logoutuser", null, List.of(new SimpleGrantedAuthority("ROLE_USER")));
         SecurityContextHolder.getContext().setAuthentication(auth);
 
-        when(sysUserMapper.selectByUsername("logoutuser")).thenReturn(sysUser);
+        when(authService.getUserIdByUsername("logoutuser")).thenReturn(42L);
 
         mockMvc.perform(post("/api/v1/auth/logout"))
                 .andExpect(status().isOk())
@@ -165,7 +149,6 @@ class AuthControllerTest {
 
     @Test
     void logoutWithoutAuthenticationShouldReturn401() throws Exception {
-        // SecurityContext is empty
         mockMvc.perform(post("/api/v1/auth/logout"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value(100101));

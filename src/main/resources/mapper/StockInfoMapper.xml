@@ -49,4 +49,8 @@
         ORDER BY snapshot_date
     </select>
 
+    <select id="selectMaxTradeDate" resultType="java.time.LocalDate">
+        SELECT MAX(snapshot_date) FROM stock_info WHERE is_deleted = 0
+    </select>
+
 </mapper>

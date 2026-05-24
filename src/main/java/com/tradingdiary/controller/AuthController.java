@@ -1,8 +1,6 @@
 package com.tradingdiary.controller;
 
-import com.tradingdiary.entity.SysUser;
 import com.tradingdiary.exception.UnauthorizedException;
-import com.tradingdiary.mapper.SysUserMapper;
 import com.tradingdiary.model.ApiResponse;
 import com.tradingdiary.model.request.LoginRequest;
 import com.tradingdiary.model.vo.TokenVO;
@@ -25,11 +23,8 @@ public class AuthController {
 
     private final AuthService authService;
 
-    private final SysUserMapper sysUserMapper;
-
-    public AuthController(AuthService authService, SysUserMapper sysUserMapper) {
+    public AuthController(AuthService authService) {
         this.authService = authService;
-        this.sysUserMapper = sysUserMapper;
     }
 
     @PostMapping("/login")
@@ -80,10 +75,10 @@ public class AuthController {
             throw new UnauthorizedException("用户未登录");
         }
         String username = authentication.getName();
-        SysUser sysUser = sysUserMapper.selectByUsername(username);
-        if (sysUser == null) {
+        Long userId = authService.getUserIdByUsername(username);
+        if (userId == null) {
             throw new UnauthorizedException("用户不存在");
         }
-        return sysUser.getId();
+        return userId;
     }
 }

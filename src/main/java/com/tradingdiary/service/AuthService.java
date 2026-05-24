@@ -13,4 +13,12 @@ public interface AuthService {
     void logout(Long userId);
 
     UserInfoVO getCurrentUser(Long userId);
+
+    /**
+     * 根据用户名查询用户ID
+     *
+     * @param username 用户名
+     * @return 用户ID，若用户不存在则返回 null
+     */
+    Long getUserIdByUsername(String username);
 }

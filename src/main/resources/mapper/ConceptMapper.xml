@@ -29,4 +29,8 @@
         <if test='keyword != null and keyword != ""'>AND c.name LIKE CONCAT('%', #{keyword}, '%')</if>
     </select>
 
+    <select id="selectMaxCreatedAt" resultType="java.time.LocalDateTime">
+        SELECT MAX(created_at) FROM concept WHERE is_deleted = 0
+    </select>
+
 </mapper>

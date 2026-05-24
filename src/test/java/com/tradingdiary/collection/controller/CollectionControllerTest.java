@@ -2,37 +2,31 @@ package com.tradingdiary.collection.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tradingdiary.collection.model.BackfillRequest;
+import com.tradingdiary.collection.model.CollectionStatusVO;
 import com.tradingdiary.collection.model.GapReportVO;
 import com.tradingdiary.collection.orchestrator.CollectionOrchestrator;
 import com.tradingdiary.entity.DataCollectionLog;
-import com.tradingdiary.entity.TradeCalendar;
-import com.tradingdiary.mapper.ConceptMapper;
-import com.tradingdiary.mapper.DataCollectionLogMapper;
-import com.tradingdiary.mapper.IndustryMapper;
-import com.tradingdiary.mapper.MarginDailyMapper;
-import com.tradingdiary.mapper.MarginMacroMapper;
-import com.tradingdiary.mapper.StockInfoMapper;
-import com.tradingdiary.mapper.TradeCalendarMapper;
+import com.tradingdiary.model.ApiResponse;
+import com.tradingdiary.security.JwtAuthFilter;
 import com.tradingdiary.service.GapDetectionService;
+import com.tradingdiary.service.collection.CollectionQueryService;
+import com.tradingdiary.service.collection.ConstituentImportService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-
-import com.tradingdiary.security.JwtAuthFilter;
-import com.tradingdiary.service.collection.ConstituentImportService;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -54,7 +48,7 @@ class CollectionControllerTest {
     private ObjectMapper objectMapper;
 
     @MockBean
-    private DataCollectionLogMapper logMapper;
+    private CollectionQueryService collectionQueryService;
 
     @MockBean
     private GapDetectionService gapDetectionService;
@@ -63,35 +57,12 @@ class CollectionControllerTest {
     private CollectionOrchestrator orchestrator;
 
     @MockBean
-    private TradeCalendarMapper tradeCalendarMapper;
-
-    @MockBean
     private ConstituentImportService constituentImportService;
-
-    @MockBean
-    private StockInfoMapper stockInfoMapper;
-
-    @MockBean
-    private IndustryMapper industryMapper;
-
-    @MockBean
-    private ConceptMapper conceptMapper;
-
-    @MockBean
-    private MarginDailyMapper marginDailyMapper;
-
-    @MockBean
-    private MarginMacroMapper marginMacroMapper;
-
-    private static final String[] EXPECTED_TYPES = {
-            "STOCK_INFO", "TRADE_CALENDAR", "INDUSTRY_NAME", "CONCEPT_NAME",
-            "MARGIN_DAILY_SSE", "MARGIN_DAILY_SZSE", "MARGIN_MACRO_SSE", "MARGIN_MACRO_SZSE"
-    };
 
     @Test
     void shouldReturnStatusWithEightCards() throws Exception {
-        when(logMapper.selectLatestByDataTypeAndJobType(anyString(), anyString()))
-                .thenReturn(null);
+        when(collectionQueryService.getCollectionStatus())
+                .thenReturn(buildStatusList());
 
         mockMvc.perform(get("/api/v1/admin/collection/status"))
                 .andExpect(status().isOk())
@@ -102,15 +73,19 @@ class CollectionControllerTest {
 
     @Test
     void shouldReturnStatusWithSuccessfulLogs() throws Exception {
-        DataCollectionLog fetchLog = buildLog("MARGIN_DAILY_SSE", "FETCH", "SUCCESS", 100);
-        DataCollectionLog cleanseLog = buildLog("MARGIN_DAILY_SSE", "CLEANSE", "SUCCESS", 100);
+        List<CollectionStatusVO> statusList = buildStatusList();
+        CollectionStatusVO marginDailySse = statusList.get(4);
+        CollectionStatusVO.JobStatus fetchStatus = new CollectionStatusVO.JobStatus();
+        fetchStatus.setStatus("SUCCESS");
+        fetchStatus.setRecordCount(100);
+        CollectionStatusVO.JobStatus cleanseStatus = new CollectionStatusVO.JobStatus();
+        cleanseStatus.setStatus("SUCCESS");
+        cleanseStatus.setRecordCount(100);
+        marginDailySse.setLastFetch(fetchStatus);
+        marginDailySse.setLastCleanse(cleanseStatus);
 
-        when(logMapper.selectLatestByDataTypeAndJobType(anyString(), anyString()))
-                .thenReturn(null);
-        when(logMapper.selectLatestByDataTypeAndJobType("MARGIN_DAILY_SSE", "FETCH"))
-                .thenReturn(fetchLog);
-        when(logMapper.selectLatestByDataTypeAndJobType("MARGIN_DAILY_SSE", "CLEANSE"))
-                .thenReturn(cleanseLog);
+        when(collectionQueryService.getCollectionStatus())
+                .thenReturn(statusList);
 
         mockMvc.perform(get("/api/v1/admin/collection/status"))
                 .andExpect(status().isOk())
@@ -121,13 +96,16 @@ class CollectionControllerTest {
 
     @Test
     void shouldReturnStatusWithFailedLogs() throws Exception {
-        DataCollectionLog fetchLog = buildLog("MARGIN_DAILY_SSE", "FETCH", "FAILED", 0);
-        fetchLog.setErrorMsg("Connection timeout");
+        List<CollectionStatusVO> statusList = buildStatusList();
+        CollectionStatusVO marginDailySse = statusList.get(4);
+        CollectionStatusVO.JobStatus fetchStatus = new CollectionStatusVO.JobStatus();
+        fetchStatus.setStatus("FAILED");
+        fetchStatus.setRecordCount(0);
+        fetchStatus.setErrorMsg("Connection timeout");
+        marginDailySse.setLastFetch(fetchStatus);
 
-        when(logMapper.selectLatestByDataTypeAndJobType(anyString(), anyString()))
-                .thenReturn(null);
-        when(logMapper.selectLatestByDataTypeAndJobType("MARGIN_DAILY_SSE", "FETCH"))
-                .thenReturn(fetchLog);
+        when(collectionQueryService.getCollectionStatus())
+                .thenReturn(statusList);
 
         mockMvc.perform(get("/api/v1/admin/collection/status"))
                 .andExpect(status().isOk())
@@ -142,7 +120,7 @@ class CollectionControllerTest {
                 buildLog("STOCK_INFO", "CLEANSE", "SUCCESS", 5000)
         );
 
-        when(logMapper.selectRecentByDataType("STOCK_INFO", 10))
+        when(collectionQueryService.getRecentLogs("STOCK_INFO", 10))
                 .thenReturn(logs);
 
         mockMvc.perform(get("/api/v1/admin/collection/logs")
@@ -157,7 +135,7 @@ class CollectionControllerTest {
 
     @Test
     void shouldReturnLogsWithDefaultValues() throws Exception {
-        when(logMapper.selectRecentByDataType("STOCK_INFO", 10))
+        when(collectionQueryService.getRecentLogs("STOCK_INFO", 10))
                 .thenReturn(List.of());
 
         mockMvc.perform(get("/api/v1/admin/collection/logs"))
@@ -224,11 +202,8 @@ class CollectionControllerTest {
 
     @Test
     void shouldTriggerOrchestrationForValidDataType() throws Exception {
-        TradeCalendar cal = new TradeCalendar();
-        cal.setTradeDate(LocalDate.of(2026, 5, 20));
-        cal.setIsTradingDay(1);
-        when(tradeCalendarMapper.selectOne(any()))
-                .thenReturn(cal);
+        when(collectionQueryService.isValidDataType("STOCK_INFO")).thenReturn(true);
+        when(collectionQueryService.getLatestTradeDate()).thenReturn(LocalDate.of(2026, 5, 20));
 
         mockMvc.perform(post("/api/v1/admin/collection/trigger/STOCK_INFO"))
                 .andExpect(status().isOk())
@@ -238,6 +213,8 @@ class CollectionControllerTest {
 
     @Test
     void shouldReturn400ForInvalidDataTypeOnTrigger() throws Exception {
+        when(collectionQueryService.isValidDataType("UNKNOWN_TYPE")).thenReturn(false);
+
         mockMvc.perform(post("/api/v1/admin/collection/trigger/UNKNOWN_TYPE"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(400))
@@ -313,6 +290,25 @@ class CollectionControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(400))
                 .andExpect(jsonPath("$.message").value("endDate 不能早于 startDate"));
+    }
+
+    private static List<CollectionStatusVO> buildStatusList() {
+        String[] types = {
+                "STOCK_INFO", "TRADE_CALENDAR", "INDUSTRY_NAME", "CONCEPT_NAME",
+                "MARGIN_DAILY_SSE", "MARGIN_DAILY_SZSE", "MARGIN_MACRO_SSE", "MARGIN_MACRO_SZSE"
+        };
+        String[] labels = {
+                "股票行情（含日线）", "交易日历", "行业板块分类", "概念板块分类",
+                "两融明细(沪市)", "两融明细(深市)", "两融总量(沪市)", "两融总量(深市)"
+        };
+        List<CollectionStatusVO> list = new ArrayList<>();
+        for (int i = 0; i < types.length; i++) {
+            CollectionStatusVO vo = new CollectionStatusVO();
+            vo.setDataType(types[i]);
+            vo.setDataTypeLabel(labels[i]);
+            list.add(vo);
+        }
+        return list;
     }
 
     private static DataCollectionLog buildLog(String dataType, String jobType, String status, int recordCount) {

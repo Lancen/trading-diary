@@ -5,7 +5,6 @@ import com.tradingdiary.collection.model.ConceptIndustryVO;
 import com.tradingdiary.entity.Industry;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,6 +21,5 @@ public interface IndustryMapper extends BaseMapper<Industry> {
 
     long countIndustryList(@Param("keyword") String keyword, @Param("tradeDate") String tradeDate);
 
-    @Select("SELECT MAX(created_at) FROM industry WHERE is_deleted = 0")
     LocalDateTime selectMaxCreatedAt();
 }

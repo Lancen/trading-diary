@@ -5,16 +5,9 @@ import com.tradingdiary.collection.model.CollectionStatusVO;
 import com.tradingdiary.collection.model.GapReportVO;
 import com.tradingdiary.collection.orchestrator.CollectionOrchestrator;
 import com.tradingdiary.entity.DataCollectionLog;
-import com.tradingdiary.entity.TradeCalendar;
-import com.tradingdiary.mapper.ConceptMapper;
-import com.tradingdiary.mapper.DataCollectionLogMapper;
-import com.tradingdiary.mapper.IndustryMapper;
-import com.tradingdiary.mapper.MarginDailyMapper;
-import com.tradingdiary.mapper.MarginMacroMapper;
-import com.tradingdiary.mapper.StockInfoMapper;
-import com.tradingdiary.mapper.TradeCalendarMapper;
 import com.tradingdiary.model.ApiResponse;
 import com.tradingdiary.service.GapDetectionService;
+import com.tradingdiary.service.collection.CollectionQueryService;
 import com.tradingdiary.service.collection.ConstituentImportService;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,10 +20,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -39,109 +28,26 @@ import java.util.Map;
 @PreAuthorize("hasRole('ADMIN')")
 public class CollectionController {
 
-    private static final Map<String, String> DATA_TYPE_LABELS = new LinkedHashMap<>();
-
-    static {
-        DATA_TYPE_LABELS.put("STOCK_INFO", "股票行情（含日线）");
-        DATA_TYPE_LABELS.put("TRADE_CALENDAR", "交易日历");
-        DATA_TYPE_LABELS.put("INDUSTRY_NAME", "行业板块分类");
-        DATA_TYPE_LABELS.put("CONCEPT_NAME", "概念板块分类");
-        DATA_TYPE_LABELS.put("MARGIN_DAILY_SSE", "两融明细(沪市)");
-        DATA_TYPE_LABELS.put("MARGIN_DAILY_SZSE", "两融明细(深市)");
-        DATA_TYPE_LABELS.put("MARGIN_MACRO_SSE", "两融总量(沪市)");
-        DATA_TYPE_LABELS.put("MARGIN_MACRO_SZSE", "两融总量(深市)");
-    }
-
-    private final DataCollectionLogMapper logMapper;
+    private final CollectionQueryService collectionQueryService;
     private final GapDetectionService gapDetectionService;
     private final CollectionOrchestrator orchestrator;
     private final ConstituentImportService constituentImportService;
-    private final TradeCalendarMapper tradeCalendarMapper;
-    private final StockInfoMapper stockInfoMapper;
-    private final IndustryMapper industryMapper;
-    private final ConceptMapper conceptMapper;
-    private final MarginDailyMapper marginDailyMapper;
-    private final MarginMacroMapper marginMacroMapper;
 
-    public CollectionController(DataCollectionLogMapper logMapper,
+    public CollectionController(CollectionQueryService collectionQueryService,
                                  GapDetectionService gapDetectionService,
                                  CollectionOrchestrator orchestrator,
-                                 ConstituentImportService constituentImportService,
-                                 TradeCalendarMapper tradeCalendarMapper,
-                                 StockInfoMapper stockInfoMapper,
-                                 IndustryMapper industryMapper,
-                                 ConceptMapper conceptMapper,
-                                 MarginDailyMapper marginDailyMapper,
-                                 MarginMacroMapper marginMacroMapper) {
-        this.logMapper = logMapper;
+                                 ConstituentImportService constituentImportService) {
+        this.collectionQueryService = collectionQueryService;
         this.gapDetectionService = gapDetectionService;
         this.orchestrator = orchestrator;
         this.constituentImportService = constituentImportService;
-        this.tradeCalendarMapper = tradeCalendarMapper;
-        this.stockInfoMapper = stockInfoMapper;
-        this.industryMapper = industryMapper;
-        this.conceptMapper = conceptMapper;
-        this.marginDailyMapper = marginDailyMapper;
-        this.marginMacroMapper = marginMacroMapper;
     }
 
     @Operation(summary = "获取所有数据类型的采集状态")
     @GetMapping("/status")
     public ApiResponse<List<CollectionStatusVO>> status() {
-        List<CollectionStatusVO> statusList = new ArrayList<>();
-
-        for (Map.Entry<String, String> entry : DATA_TYPE_LABELS.entrySet()) {
-            String dataType = entry.getKey();
-            String label = entry.getValue();
-
-            DataCollectionLog fetchLog = logMapper.selectLatestByDataTypeAndJobType(dataType, "FETCH");
-            DataCollectionLog cleanseLog = logMapper.selectLatestByDataTypeAndJobType(dataType, "CLEANSE");
-
-            CollectionStatusVO vo = new CollectionStatusVO();
-            vo.setDataType(dataType);
-            vo.setDataTypeLabel(label);
-            vo.setLastFetch(buildJobStatus(fetchLog));
-            vo.setLastCleanse(buildJobStatus(cleanseLog));
-            vo.setLastDataDate(queryLastDataDate(dataType));
-            statusList.add(vo);
-        }
-
+        List<CollectionStatusVO> statusList = collectionQueryService.getCollectionStatus();
         return ApiResponse.ok(statusList);
-    }
-
-    private LocalDateTime queryLastDataDate(String dataType) {
-        switch (dataType) {
-            case "STOCK_INFO": {
-                LocalDate d = stockInfoMapper.selectMaxTradeDate();
-                return d != null ? LocalDateTime.of(d, LocalTime.MIN) : null;
-            }
-            case "TRADE_CALENDAR": {
-                LocalDate d = tradeCalendarMapper.selectMaxCalDate();
-                return d != null ? LocalDateTime.of(d, LocalTime.MIN) : null;
-            }
-            case "INDUSTRY_NAME":
-                return industryMapper.selectMaxCreatedAt();
-            case "CONCEPT_NAME":
-                return conceptMapper.selectMaxCreatedAt();
-            case "MARGIN_DAILY_SSE": {
-                LocalDate d = marginDailyMapper.selectMaxTradeDate("SSE");
-                return d != null ? LocalDateTime.of(d, LocalTime.MIN) : null;
-            }
-            case "MARGIN_DAILY_SZSE": {
-                LocalDate d = marginDailyMapper.selectMaxTradeDate("SZSE");
-                return d != null ? LocalDateTime.of(d, LocalTime.MIN) : null;
-            }
-            case "MARGIN_MACRO_SSE": {
-                LocalDate d = marginMacroMapper.selectMaxTradeDate("SSE");
-                return d != null ? LocalDateTime.of(d, LocalTime.MIN) : null;
-            }
-            case "MARGIN_MACRO_SZSE": {
-                LocalDate d = marginMacroMapper.selectMaxTradeDate("SZSE");
-                return d != null ? LocalDateTime.of(d, LocalTime.MIN) : null;
-            }
-            default:
-                return null;
-        }
     }
 
     /**
@@ -159,7 +65,7 @@ public class CollectionController {
     public ApiResponse<List<DataCollectionLog>> logs(
             @RequestParam(defaultValue = "STOCK_INFO") String dataType,
             @RequestParam(defaultValue = "10") int limit) {
-        List<DataCollectionLog> logs = logMapper.selectRecentByDataType(dataType, limit);
+        List<DataCollectionLog> logs = collectionQueryService.getRecentLogs(dataType, limit);
         return ApiResponse.ok(logs);
     }
 
@@ -197,27 +103,15 @@ public class CollectionController {
     @Operation(summary = "触发指定数据类型的采集任务")
     @PostMapping("/trigger/{dataType}")
     public ApiResponse<String> trigger(@PathVariable String dataType) {
-        if (!DATA_TYPE_LABELS.containsKey(dataType)) {
+        if (!collectionQueryService.isValidDataType(dataType)) {
             return ApiResponse.fail(400, "未知数据类型: " + dataType);
         }
-        // 取最近交易日（非交易日无数据）
-        LocalDate tradeDate = getLatestTradeDate();
+        LocalDate tradeDate = collectionQueryService.getLatestTradeDate();
         new Thread(() -> {
             String result = orchestrator.orchestrate(dataType, tradeDate);
             log.info("异步采集完成: {} {} → {}", dataType, tradeDate, result);
         }, "collection-" + dataType).start();
         return ApiResponse.ok("任务已提交（交易日: " + tradeDate + "），正在后台执行");
-    }
-
-    private LocalDate getLatestTradeDate() {
-        TradeCalendar cal = tradeCalendarMapper.selectOne(
-                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<TradeCalendar>()
-                        .eq(TradeCalendar::getIsTradingDay, 1)
-                        .le(TradeCalendar::getTradeDate, LocalDate.now())
-                        .orderByDesc(TradeCalendar::getTradeDate)
-                        .last("LIMIT 1")
-        );
-        return cal != null ? cal.getTradeDate() : LocalDate.now();
     }
 
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(CollectionController.class);
@@ -246,7 +140,6 @@ public class CollectionController {
         if (request.getEndDate().isBefore(request.getStartDate())) {
             return ApiResponse.fail(400, "endDate 不能早于 startDate");
         }
-        // 异步执行补采（耗时可能很长）
         final String dt = request.getDataType();
         final String exchange = request.getExchange();
         final LocalDate start = request.getStartDate();
@@ -300,18 +193,5 @@ public class CollectionController {
             return ApiResponse.fail(500, "导入失败: " + result.get("error"));
         }
         return ApiResponse.ok(result);
-    }
-
-    private CollectionStatusVO.JobStatus buildJobStatus(DataCollectionLog log) {
-        if (log == null) {
-            return null;
-        }
-        CollectionStatusVO.JobStatus js = new CollectionStatusVO.JobStatus();
-        js.setStatus(log.getStatus());
-        js.setStartedAt(log.getStartedAt());
-        js.setCompletedAt(log.getCompletedAt());
-        js.setRecordCount(log.getRecordCount());
-        js.setErrorMsg(log.getErrorMsg());
-        return js;
     }
 }

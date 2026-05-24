@@ -166,6 +166,12 @@ public class AuthServiceImpl implements AuthService {
         return userInfoVO;
     }
 
+    @Override
+    public Long getUserIdByUsername(String username) {
+        SysUser sysUser = sysUserMapper.selectByUsername(username);
+        return sysUser != null ? sysUser.getId() : null;
+    }
+
     private void storeRefreshToken(Long userId, String rawToken) {
         SysRefreshToken token = new SysRefreshToken();
         token.setUserId(userId);

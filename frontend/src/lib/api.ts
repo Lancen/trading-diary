@@ -1,11 +1,13 @@
 import ky from "ky";
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
+
 const isBrowser = (): boolean => typeof window !== "undefined";
 
 let isRefreshing = false;
 
 const api = ky.create({
-  prefixUrl: "http://localhost:8080",
+  prefixUrl: API_BASE_URL,
   timeout: 10000,
   hooks: {
     beforeRequest: [
@@ -42,7 +44,7 @@ const api = ky.create({
           }
 
           const refreshResponse = await ky
-            .post("http://localhost:8080/api/v1/auth/refresh", {
+            .post(`${API_BASE_URL}/api/v1/auth/refresh`, {
               json: { refreshToken: storedRefreshToken },
               timeout: 10000,
             })

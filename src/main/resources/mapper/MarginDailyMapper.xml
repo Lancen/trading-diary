@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tradingdiary.mapper.MarginDailyMapper">
+
+    <select id="selectDistinctTradeDates" resultType="java.time.LocalDate">
+        SELECT DISTINCT trade_date FROM margin_daily WHERE trade_date BETWEEN #{start} AND #{end} AND exchange = #{exchange} AND is_deleted = 0 ORDER BY trade_date
+    </select>
+
+    <select id="sumMarginBalance" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(margin_balance), 0) FROM margin_daily WHERE is_deleted = 0
+        <if test="tradeDate != null">AND trade_date = #{tradeDate}</if>
+    </select>
+
+    <select id="sumShortBalance" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(short_balance), 0) FROM margin_daily WHERE is_deleted = 0
+        <if test="tradeDate != null">AND trade_date = #{tradeDate}</if>
+    </select>
+
+    <select id="sumTotalBalance" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(total_balance), 0) FROM margin_daily WHERE is_deleted = 0
+        <if test="tradeDate != null">AND trade_date = #{tradeDate}</if>
+    </select>
+
+    <select id="countDistinctStocks" resultType="java.lang.Integer">
+        SELECT COUNT(DISTINCT stock_code) FROM margin_daily WHERE is_deleted = 0
+        <if test="tradeDate != null">AND trade_date = #{tradeDate}</if>
+    </select>
+
+    <select id="selectMaxTradeDate" resultType="java.time.LocalDate">
+        SELECT MAX(trade_date) FROM margin_daily WHERE exchange = #{exchange} AND is_deleted = 0
+    </select>
+
+</mapper>

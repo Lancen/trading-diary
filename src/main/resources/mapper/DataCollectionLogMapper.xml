@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tradingdiary.mapper.DataCollectionLogMapper">
+
+    <select id="selectLatestByDataTypeAndJobType" resultType="com.tradingdiary.entity.DataCollectionLog">
+        SELECT * FROM data_collection_log WHERE data_type = #{dataType} AND job_type = #{jobType} ORDER BY id DESC LIMIT 1
+    </select>
+
+    <select id="selectRecentByDataType" resultType="com.tradingdiary.entity.DataCollectionLog">
+        SELECT * FROM data_collection_log WHERE data_type = #{dataType} ORDER BY id DESC LIMIT #{limit}
+    </select>
+
+    <select id="selectLatestByDataTypeAndJobTypeAndTradeDate" resultType="com.tradingdiary.entity.DataCollectionLog">
+        SELECT * FROM data_collection_log WHERE data_type = #{dataType} AND job_type = #{jobType} AND trade_date = #{tradeDate} ORDER BY id DESC LIMIT 1
+    </select>
+
+    <select id="selectRecent" resultType="com.tradingdiary.entity.DataCollectionLog">
+        SELECT * FROM data_collection_log ORDER BY id DESC LIMIT #{limit}
+    </select>
+
+</mapper>
