@@ -12,7 +12,7 @@ Status: ready-for-agent
 
 ## 解决方案
 
-1. `index_daily` 表保持不变，仅存宽基指数；新增 `sector_index_daily` 表存行业/概念指数日线数据
+1. `index_daily` 表保持原样不动；新增 `market_index_daily` 表存宽基指数日线；新增 `sector_index_daily` 表存行业/概念指数日线数据
 2. 新增3个独立采集类型，分别从AKTools获取宽基指数、行业指数、概念指数的日线OHLCV
 3. 新增"指数分析"概览页，展示核心指数K线+全市场两融叠加图
 4. 新增行业/概念详情页，展示板块指数K线+板块两融叠加图
@@ -63,9 +63,10 @@ Status: ready-for-agent
 
 ### 数据模型
 
-- **`index_daily` 表保持不变**: 仅存宽基指数，`index_code` 继续使用标准交易所代码（如 sh000001），唯一键 `(index_code, trade_date)` 不变
+- **`index_daily` 表保持原样不动**: 不写入新数据，避免影响现有采集状态追踪
+- **新增 `market_index_daily` 表**: 存宽基指数日线，`index_code` 为标准交易所代码（如 sh000001），唯一键 `(index_code, trade_date)`
 - **新增 `sector_index_daily` 表**: 存行业/概念指数日线数据，含 `sector_type`（INDUSTRY/CONCEPT）+ `sector_name`（板块名称）字段，唯一键 `(sector_type, sector_name, trade_date)`
-- **分表原因**: 宽基指数有标准交易所代码，行业/概念指数无标准代码只能用名称标识；数量级差异大（8 vs 850+）；混入会污染 `index_code` 语义且宽基查询必须带过滤条件（ADR-0001）
+- **分表原因**: 采集Hub按数据类型追踪采集状态，表与采集类型应一一对应；宽基指数有标准交易所代码，行业/概念指数无标准代码只能用名称标识；数量级差异大（8 vs 446 vs 400+）（ADR-0001）
 - **不建板块两融物化表**: 板块两融通过实时聚合查询，不建 `sector_margin_daily`（ADR-0002）
 
 ### 采集层
@@ -85,7 +86,7 @@ Status: ready-for-agent
 
 ### API层
 
-- **指数日线查询**: `GET /api/v1/admin/index-daily?indexCode=sh000001&startDate=...&endDate=...`
+- **指数日线查询**: `GET /api/v1/admin/market-index-daily?indexCode=sh000001&startDate=...&endDate=...`
 - **板块指数日线查询**: `GET /api/v1/admin/sector-index-daily?sectorType=INDUSTRY&sectorName=银行&startDate=...&endDate=...`
 - **指数列表查询**: `GET /api/v1/admin/index-list` 返回所有已采集宽基指数的最新行情
 - **板块两融聚合查询**: `GET /api/v1/admin/sector-margin?sectorType=INDUSTRY&sectorName=银行&startDate=...&endDate=...` 实时聚合 margin_daily + stock_industry
@@ -97,7 +98,7 @@ Status: ready-for-agent
 - **行业详情页**: `/admin/industries/[name]`，展示行业指数K线+板块两融叠加图+成分股列表
 - **概念详情页**: `/admin/concepts/[name]`，展示概念指数K线+板块两融叠加图+成分股列表
 - **图表模式**: 统一双轴叠加 — K线(左轴) + 成交量(底部) + 融资余额(右轴,绝对值) + 融券余额(右轴,绝对值)，与个股详情页一致
-- **图表组件**: 复用 `lightweight-charts`，提取可复用的 KlineMarginOverlay 组件，接收统一的OHLCV数据格式，不关心数据来自 `index_daily` 还是 `sector_index_daily`
+- **图表组件**: 复用 `lightweight-charts`，提取可复用的 KlineMarginOverlay 组件，接收统一的OHLCV数据格式，不关心数据来自 `market_index_daily` 还是 `sector_index_daily`
 
 ### 板块两融聚合
 
