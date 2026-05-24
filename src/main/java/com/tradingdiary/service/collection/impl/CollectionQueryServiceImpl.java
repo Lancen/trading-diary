@@ -37,6 +37,8 @@ public class CollectionQueryServiceImpl implements CollectionQueryService {
         DATA_TYPE_LABELS.put("MARGIN_MACRO_SSE", "两融总量(沪市)");
         DATA_TYPE_LABELS.put("MARGIN_MACRO_SZSE", "两融总量(深市)");
         DATA_TYPE_LABELS.put("MARKET_INDEX_DAILY", "宽基指数日线");
+        DATA_TYPE_LABELS.put("INDUSTRY_INDEX_DAILY", "行业指数日线");
+        DATA_TYPE_LABELS.put("CONCEPT_INDEX_DAILY", "概念指数日线");
     }
 
     private final DataCollectionLogMapper logMapper;

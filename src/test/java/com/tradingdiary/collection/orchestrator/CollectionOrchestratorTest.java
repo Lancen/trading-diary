@@ -16,6 +16,7 @@ import com.tradingdiary.service.collection.IndustryCleanseService;
 import com.tradingdiary.service.collection.MarginCleanseService;
 import com.tradingdiary.service.collection.MarginMacroCleanseService;
 import com.tradingdiary.service.collection.MarketIndexDailyCleanseService;
+import com.tradingdiary.service.collection.SectorIndexDailyCleanseService;
 import com.tradingdiary.service.collection.StockDailyCleanseService;
 import com.tradingdiary.service.collection.StockInfoCleanseService;
 import com.tradingdiary.service.collection.TradeCalendarService;
@@ -63,6 +64,7 @@ class CollectionOrchestratorTest {
         MarginCleanseService marginCleanseService = mock(MarginCleanseService.class);
         MarginMacroCleanseService marginMacroCleanseService = mock(MarginMacroCleanseService.class);
         MarketIndexDailyCleanseService marketIndexDailyCleanseService = mock(MarketIndexDailyCleanseService.class);
+        SectorIndexDailyCleanseService sectorIndexDailyCleanseService = mock(SectorIndexDailyCleanseService.class);
         TradeCalendarService tradeCalendarService = mock(TradeCalendarService.class);
         IndustryMapper industryMapper = mock(IndustryMapper.class);
         ConceptMapper conceptMapper = mock(ConceptMapper.class);
@@ -74,7 +76,7 @@ class CollectionOrchestratorTest {
                 stockInfoCleanseService, stockDailyCleanseService,
                 industryCleanseService, conceptCleanseService,
                 marginCleanseService, marginMacroCleanseService, marketIndexDailyCleanseService,
-                tradeCalendarService,
+                sectorIndexDailyCleanseService, tradeCalendarService,
                 tradeCalendarMapper, industryMapper, conceptMapper,
                 stockInfoMapper
         );

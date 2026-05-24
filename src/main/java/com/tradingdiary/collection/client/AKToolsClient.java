@@ -107,6 +107,18 @@ public class AKToolsClient {
                 symbol, startDate, endDate);
     }
 
+    public String fetchIndustryIndexDaily(String industryName, String startDate, String endDate) {
+        log.info("Fetching industry index daily: industry={}, startDate={}, endDate={}", industryName, startDate, endDate);
+        return get("/api/public/stock_board_industry_index_ths?symbol={industryName}&start_date={startDate}&end_date={endDate}",
+                industryName, startDate, endDate);
+    }
+
+    public String fetchConceptIndexDaily(String conceptName, String startDate, String endDate) {
+        log.info("Fetching concept index daily: concept={}, startDate={}, endDate={}", conceptName, startDate, endDate);
+        return get("/api/public/stock_board_concept_index_ths?symbol={conceptName}&start_date={startDate}&end_date={endDate}",
+                conceptName, startDate, endDate);
+    }
+
     private String get(String path, Object... uriVariables) {
         rateLimit();
         try {

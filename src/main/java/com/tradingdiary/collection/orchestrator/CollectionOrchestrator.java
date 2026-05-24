@@ -21,6 +21,7 @@ import com.tradingdiary.service.collection.IndustryCleanseService;
 import com.tradingdiary.service.collection.MarginCleanseService;
 import com.tradingdiary.service.collection.MarginMacroCleanseService;
 import com.tradingdiary.service.collection.MarketIndexDailyCleanseService;
+import com.tradingdiary.service.collection.SectorIndexDailyCleanseService;
 import com.tradingdiary.service.collection.StockDailyCleanseService;
 import com.tradingdiary.service.collection.StockInfoCleanseService;
 import com.tradingdiary.service.collection.TradeCalendarService;
@@ -65,6 +66,7 @@ public class CollectionOrchestrator {
     private final MarginCleanseService marginCleanseService;
     private final MarginMacroCleanseService marginMacroCleanseService;
     private final MarketIndexDailyCleanseService marketIndexDailyCleanseService;
+    private final SectorIndexDailyCleanseService sectorIndexDailyCleanseService;
     private final TradeCalendarService tradeCalendarService;
     private final TradeCalendarMapper tradeCalendarMapper;
     private final IndustryMapper industryMapper;
@@ -82,6 +84,7 @@ public class CollectionOrchestrator {
                                   MarginCleanseService marginCleanseService,
                                   MarginMacroCleanseService marginMacroCleanseService,
                                   MarketIndexDailyCleanseService marketIndexDailyCleanseService,
+                                  SectorIndexDailyCleanseService sectorIndexDailyCleanseService,
                                   TradeCalendarService tradeCalendarService,
                                   TradeCalendarMapper tradeCalendarMapper,
                                   IndustryMapper industryMapper,
@@ -98,6 +101,7 @@ public class CollectionOrchestrator {
         this.marginCleanseService = marginCleanseService;
         this.marginMacroCleanseService = marginMacroCleanseService;
         this.marketIndexDailyCleanseService = marketIndexDailyCleanseService;
+        this.sectorIndexDailyCleanseService = sectorIndexDailyCleanseService;
         this.tradeCalendarService = tradeCalendarService;
         this.tradeCalendarMapper = tradeCalendarMapper;
         this.industryMapper = industryMapper;
@@ -291,6 +295,10 @@ public class CollectionOrchestrator {
                 return aktoolsClient.fetchMacroMarginSz();
             case "MARKET_INDEX_DAILY":
                 return fetchAllMarketIndices(tradeDate);
+            case "INDUSTRY_INDEX_DAILY":
+                return "[]";
+            case "CONCEPT_INDEX_DAILY":
+                return "[]";
             default:
                 throw new IllegalArgumentException("未知数据类型: " + dataType);
         }
@@ -365,6 +373,12 @@ public class CollectionOrchestrator {
                 break;
             case "MARKET_INDEX_DAILY":
                 recordCount = cleanseAllMarketIndices(tradeDate);
+                break;
+            case "INDUSTRY_INDEX_DAILY":
+                recordCount = cleanseAllSectorIndices("INDUSTRY", tradeDate);
+                break;
+            case "CONCEPT_INDEX_DAILY":
+                recordCount = cleanseAllSectorIndices("CONCEPT", tradeDate);
                 break;
             default:
                 throw new IllegalArgumentException("未知数据类型: " + dataType);
@@ -466,6 +480,49 @@ public class CollectionOrchestrator {
             }
         }
         return totalRecords;
+    }
+
+    private int cleanseAllSectorIndices(String sectorType, LocalDate tradeDate) {
+        String startDate = tradeDate != null ? tradeDate.format(YMD) : "";
+        String endDate = startDate;
+
+        if ("INDUSTRY".equals(sectorType)) {
+            List<Industry> sectors = industryMapper.selectList(
+                    new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Industry>()
+                            .eq(Industry::getIsDeleted, false)
+            );
+            int total = 0;
+            for (Industry sector : sectors) {
+                try {
+                    String rawJson = aktoolsClient.fetchIndustryIndexDaily(sector.getName(), startDate, endDate);
+                    if (rawJson != null && !rawJson.equals("[]")) {
+                        total += sectorIndexDailyCleanseService.cleanse(rawJson, "INDUSTRY", sector.getCode());
+                    }
+                    aktoolsClient.sleepBetweenCalls();
+                } catch (Exception e) {
+                    log.error("Failed to cleanse industry index daily for {}: {}", sector.getCode(), e.getMessage());
+                }
+            }
+            return total;
+        } else {
+            List<Concept> sectors = conceptMapper.selectList(
+                    new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Concept>()
+                            .eq(Concept::getIsDeleted, false)
+            );
+            int total = 0;
+            for (Concept sector : sectors) {
+                try {
+                    String rawJson = aktoolsClient.fetchConceptIndexDaily(sector.getName(), startDate, endDate);
+                    if (rawJson != null && !rawJson.equals("[]")) {
+                        total += sectorIndexDailyCleanseService.cleanse(rawJson, "CONCEPT", sector.getCode());
+                    }
+                    aktoolsClient.sleepBetweenCalls();
+                } catch (Exception e) {
+                    log.error("Failed to cleanse concept index daily for {}: {}", sector.getCode(), e.getMessage());
+                }
+            }
+            return total;
+        }
     }
 
     private DataCollectionLog createLog(String dataType, String jobType, LocalDate tradeDate) {
