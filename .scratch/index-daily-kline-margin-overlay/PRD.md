@@ -12,7 +12,7 @@ Status: ready-for-agent
 
 ## 解决方案
 
-1. 扩展 `index_daily` 表，新增 `index_type` 字段，统一存储宽基/行业/概念三类指数日线数据
+1. `index_daily` 表保持不变，仅存宽基指数；新增 `sector_index_daily` 表存行业/概念指数日线数据
 2. 新增3个独立采集类型，分别从AKTools获取宽基指数、行业指数、概念指数的日线OHLCV
 3. 新增"指数分析"概览页，展示核心指数K线+全市场两融叠加图
 4. 新增行业/概念详情页，展示板块指数K线+板块两融叠加图
@@ -63,9 +63,9 @@ Status: ready-for-agent
 
 ### 数据模型
 
-- **`index_daily` 表扩展**: 新增 `index_type VARCHAR(10) NOT NULL` 字段，取值 MARKET/INDUSTRY/CONCEPT。唯一键从 `(index_code, trade_date)` 扩展为 `(index_code, index_type, trade_date)`
-- **`index_daily` 新增字段**: `amount DECIMAL(16,2)` (成交额), `change_pct DECIMAL(6,2)` (涨跌幅，清洗阶段计算)
-- **不新增独立表**: 行业/概念指数日线统一存入 `index_daily`，不建 `industry_index_daily` 或 `concept_index_daily`（ADR-0001）
+- **`index_daily` 表保持不变**: 仅存宽基指数，`index_code` 继续使用标准交易所代码（如 sh000001），唯一键 `(index_code, trade_date)` 不变
+- **新增 `sector_index_daily` 表**: 存行业/概念指数日线数据，含 `sector_type`（INDUSTRY/CONCEPT）+ `sector_name`（板块名称）字段，唯一键 `(sector_type, sector_name, trade_date)`
+- **分表原因**: 宽基指数有标准交易所代码，行业/概念指数无标准代码只能用名称标识；数量级差异大（8 vs 850+）；混入会污染 `index_code` 语义且宽基查询必须带过滤条件（ADR-0001）
 - **不建板块两融物化表**: 板块两融通过实时聚合查询，不建 `sector_margin_daily`（ADR-0002）
 
 ### 采集层
@@ -81,14 +81,15 @@ Status: ready-for-agent
 ### 清洗层
 
 - **change_pct 计算**: `(今日close - 昨日close) / 昨日close * 100`，首日无前值则为null
-- **行业/概念指数代码生成**: 需要建立行业/概念名称到指数代码的映射关系（同花顺行业指数无标准代码，需自行生成或使用名称作为标识）
+- **板块指数标识**: `sector_index_daily` 使用 `sector_name` 作为主要标识，无需生成伪代码
 
 ### API层
 
-- **指数日线查询**: `GET /api/v1/admin/index-daily?indexCode=sh000001&indexType=MARKET&startDate=...&endDate=...`
-- **指数列表查询**: `GET /api/v1/admin/index-list` 返回所有已采集指数的最新行情
+- **指数日线查询**: `GET /api/v1/admin/index-daily?indexCode=sh000001&startDate=...&endDate=...`
+- **板块指数日线查询**: `GET /api/v1/admin/sector-index-daily?sectorType=INDUSTRY&sectorName=银行&startDate=...&endDate=...`
+- **指数列表查询**: `GET /api/v1/admin/index-list` 返回所有已采集宽基指数的最新行情
 - **板块两融聚合查询**: `GET /api/v1/admin/sector-margin?sectorType=INDUSTRY&sectorName=银行&startDate=...&endDate=...` 实时聚合 margin_daily + stock_industry
-- **行业/概念详情**: `GET /api/v1/admin/industries/{name}` 和 `GET /api/v1/admin/concepts/{name}` 扩展返回指数日线+板块两融数据
+- **行业/概念详情**: `GET /api/v1/admin/industries/{name}` 和 `GET /api/v1/admin/concepts/{name}` 扩展返回板块指数日线+板块两融数据
 
 ### 前端
 
@@ -96,7 +97,7 @@ Status: ready-for-agent
 - **行业详情页**: `/admin/industries/[name]`，展示行业指数K线+板块两融叠加图+成分股列表
 - **概念详情页**: `/admin/concepts/[name]`，展示概念指数K线+板块两融叠加图+成分股列表
 - **图表模式**: 统一双轴叠加 — K线(左轴) + 成交量(底部) + 融资余额(右轴,绝对值) + 融券余额(右轴,绝对值)，与个股详情页一致
-- **图表组件**: 复用 `lightweight-charts`，提取可复用的 KlineMarginOverlay 组件
+- **图表组件**: 复用 `lightweight-charts`，提取可复用的 KlineMarginOverlay 组件，接收统一的OHLCV数据格式，不关心数据来自 `index_daily` 还是 `sector_index_daily`
 
 ### 板块两融聚合
 
@@ -109,9 +110,11 @@ Status: ready-for-agent
 - **测试标准**: 只测试外部行为（API返回的数据是否正确），不测试内部实现（SQL怎么写、聚合怎么算）
 - **需测试的模块**:
   - 指数日线采集+清洗: 验证OHLCV数据入库、change_pct计算正确
+  - 板块指数日线采集+清洗: 验证行业/概念指数数据入库、sector_type区分正确
   - 板块两融聚合查询: 验证聚合结果与手动SUM一致
-  - 指数日线API: 验证按indexType过滤正确、日期范围过滤正确
-  - 行业/概念详情API: 验证返回的指数日线和板块两融数据匹配
+  - 指数日线API: 验证日期范围过滤正确
+  - 板块指数日线API: 验证按sectorType和sectorName过滤正确
+  - 行业/概念详情API: 验证返回的板块指数日线和板块两融数据匹配
 - **测试先例**: 参考现有 `MarginCleanseServiceImpl` 的测试模式（验证清洗后字段计算正确）
 
 ## 范围外
@@ -126,7 +129,6 @@ Status: ready-for-agent
 
 ## 补充说明
 
-- 相关ADR: [ADR-0001](../docs/adr/0001-unified-index-daily-table.md) 指数日线统一表, [ADR-0002](../docs/adr/0002-sector-margin-realtime-aggregation.md) 板块两融实时聚合
+- 相关ADR: [ADR-0001](../docs/adr/0001-unified-index-daily-table.md) 指数日线分表存储, [ADR-0002](../docs/adr/0002-sector-margin-realtime-aggregation.md) 板块两融实时聚合
 - 相关文档: [exchange-data-source-analysis.md](../docs/exchange-data-source-analysis.md) 沪深交易所数据源分析
-- 行业/概念指数无标准代码体系，需在清洗阶段建立名称→代码的映射。建议使用 `ths_ind_{序号}` / `ths_cpt_{序号}` 格式生成，或直接使用行业/概念名称的hash作为代码
 - 行业指数约446个，概念指数约400+个，全量采集可能耗时较长。建议行业/概念指数采集支持增量模式（只采集有新交易日的数据）

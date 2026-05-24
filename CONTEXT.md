@@ -20,7 +20,8 @@
 | **行业** | 行业板块分类（如 银行、房地产）。与"概念"处理逻辑相同，仅分类维度不同 | Industry |
 | **交易日** | A股实际开市交易日期。交易日历三态：已采集✓ / 交易日缺数据✗ / 非交易日 | Trade Date |
 | **日线** | 单日 OHLCV（开盘/最高/最低/收盘/成交量）数据 | Daily Kline |
-| **指数日线** | 统一存于 `index_daily` 表，`index_type` 区分三类：MARKET（宽基，如上证指数）、INDUSTRY（行业，如银行）、CONCEPT（概念，如新能源车）。字段与日线一致（OHLCV + 成交额），`change_pct` 在清洗阶段计算。采集拆为3个独立类型：`MARKET_INDEX_DAILY`、`INDUSTRY_INDEX_DAILY`、`CONCEPT_INDEX_DAILY` | Index Daily Kline |
+| **指数日线** | 宽基指数（上证指数、沪深300等）日线数据，存于 `index_daily` 表，`index_code` 为标准交易所代码（如 sh000001）。`change_pct` 在清洗阶段计算 | Index Daily Kline |
+| **板块指数日线** | 行业/概念指数日线数据，存于 `sector_index_daily` 表，`sector_type` 区分 INDUSTRY/CONCEPT，`sector_name` 为板块名称。与指数日线分表存储，因标识体系不同（标准代码 vs 名称）且数量级差异大（8 vs 850+）。采集拆为3个独立类型：`MARKET_INDEX_DAILY`、`INDUSTRY_INDEX_DAILY`、`CONCEPT_INDEX_DAILY` | Sector Index Daily Kline |
 | **K线+两融叠加图** | 统一图表模式：K线(左轴) + 成交量(底部) + 融资余额(右轴,绝对值) + 融券余额(右轴,绝对值)。个股/指数/行业/概念均使用此模式，`lightweight-charts` 双轴叠加实现 | Dual-Axis Overlay |
 | **周K** | 日线按 ISO 周聚合：开盘=周一开盘，收盘=周五收盘，最高/最低=周内极值，成交量=周总和 | Weekly Kline |
 | **月K** | 日线按自然月聚合：开盘=首日开盘，收盘=末日收盘，最高/最低=月内极值，成交量=月总和 | Monthly Kline |
