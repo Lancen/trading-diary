@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
-import { CandlestickSeries, ColorType, createChart, CrosshairMode, HistogramSeries, LineSeries } from "lightweight-charts";
+import { CandlestickData, CandlestickSeries, ColorType, createChart, CrosshairMode, HistogramData, HistogramSeries, LineData, LineSeries, Time } from "lightweight-charts";
 
 interface Kline { tradeDate: string; open: number; high: number; low: number; close: number; volume: number; }
 interface Margin { tradeDate: string; marginBalance: number; marginChange: number; shortBalance: number; shortChange: number; }
@@ -97,26 +97,26 @@ export default function StockDetailPage() {
 
     const klines = aggregateKlines(detail.dailyKlines, period);
 
-    const candleData = klines.map((k) => ({ time: k.tradeDate, open: k.open, high: k.high, low: k.low, close: k.close }));
-    const volumeData = klines.map((k) => ({ time: k.tradeDate, value: k.volume, color: k.close >= k.open ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)" }));
+    const candleData: CandlestickData<Time>[] = klines.map((k) => ({ time: k.tradeDate as Time, open: k.open, high: k.high, low: k.low, close: k.close }));
+    const volumeData: HistogramData<Time>[] = klines.map((k) => ({ time: k.tradeDate as Time, value: k.volume, color: k.close >= k.open ? "rgba(34,197,94,0.3)" : "rgba(239,68,68,0.3)" }));
 
     const candleSeries = chart.addSeries(CandlestickSeries, { upColor: "#dc2626", downColor: "#16a34a", borderUpColor: "#dc2626", borderDownColor: "#16a34a", wickUpColor: "#dc2626", wickDownColor: "#16a34a" });
-    candleSeries.setData(candleData as any);
+    candleSeries.setData(candleData);
 
     const volSeries = chart.addSeries(HistogramSeries, { priceFormat: { type: "volume" }, priceScaleId: "" });
-    volSeries.setData(volumeData as any);
+    volSeries.setData(volumeData);
     volSeries.priceScale().applyOptions({ scaleMargins: { top: 0.85, bottom: 0 } });
 
     if (detail.dailyMargins?.length) {
       const marginMap = new Map(detail.dailyMargins.map((m) => [m.tradeDate, m]));
-      const marginBalanceData = klines.map((k) => ({ time: k.tradeDate, value: marginMap.get(k.tradeDate)?.marginBalance ?? undefined }));
-      const shortBalanceData = klines.map((k) => ({ time: k.tradeDate, value: marginMap.get(k.tradeDate)?.shortBalance ?? undefined }));
+      const marginBalanceData: LineData<Time>[] = klines.map((k) => ({ time: k.tradeDate as Time, value: marginMap.get(k.tradeDate)?.marginBalance ?? undefined })).filter((d): d is LineData<Time> => d.value != null);
+      const shortBalanceData: LineData<Time>[] = klines.map((k) => ({ time: k.tradeDate as Time, value: marginMap.get(k.tradeDate)?.shortBalance ?? undefined })).filter((d): d is LineData<Time> => d.value != null);
 
       const marginSeries = chart.addSeries(LineSeries, { priceScaleId: "margin", color: "#2563eb", lineWidth: 1 });
-      marginSeries.setData(marginBalanceData.filter((d) => d.value != null) as any);
+      marginSeries.setData(marginBalanceData);
 
       const shortSeries = chart.addSeries(LineSeries, { priceScaleId: "margin", color: "#7c3aed", lineWidth: 1, lineStyle: 2 });
-      shortSeries.setData(shortBalanceData.filter((d) => d.value != null) as any);
+      shortSeries.setData(shortBalanceData);
     }
 
     chart.timeScale().fitContent();

@@ -14,6 +14,12 @@ interface JobStatus {
   errorMsg: string | null;
 }
 
+interface StatusItem {
+  dataType: string;
+  lastFetch: JobStatus | null;
+  lastDataDate: string | null;
+}
+
 interface CalendarDay {
   date: string; tradingDay: boolean; hasData: boolean;
   status: "COLLECTED" | "MISSING" | "NON_TRADING";
@@ -104,10 +110,10 @@ export default function CollectionDetailPage() {
     setLoading(true);
     try {
       const [statusRes, logsRes] = await Promise.all([
-        api.get("api/v1/admin/collection/status").json<{ code: number; data: any[] }>(),
+        api.get("api/v1/admin/collection/status").json<{ code: number; data: StatusItem[] }>(),
         api.get("api/v1/admin/collection/logs", { searchParams: { dataType, limit: 20 } }).json<{ code: number; data: CollectionLog[] }>(),
       ]);
-      const item = (statusRes.data || []).find((s: any) => s.dataType === dataType);
+      const item = (statusRes.data || []).find((s: StatusItem) => s.dataType === dataType);
       setFetchStatus(item?.lastFetch || null);
       setLastDataDate(item?.lastDataDate || null);
       setLogs(logsRes.data || []);

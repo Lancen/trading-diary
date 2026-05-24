@@ -14,6 +14,11 @@ interface ConstituentFile {
   imported: boolean;
 }
 
+interface ImportResult {
+  industryRelations: number;
+  conceptRelations: number;
+}
+
 export default function ConstituentsPage() {
   const [files, setFiles] = useState<ConstituentFile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,7 +41,7 @@ export default function ConstituentsPage() {
     try {
       const res = await api.post("api/v1/admin/collection/constituents/import", {
         json: { filename },
-      }).json<{ code: number; data?: any; msg?: string }>();
+      }).json<{ code: number; data?: ImportResult; msg?: string }>();
       if (res.code === 200) {
         toast(`导入成功: ${res.data?.industryRelations || 0} 行业 + ${res.data?.conceptRelations || 0} 概念`, "success");
         fetchFiles();

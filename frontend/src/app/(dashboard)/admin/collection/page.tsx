@@ -19,6 +19,15 @@ interface CollectionStatus {
   lastDataDate: string | null;
 }
 
+interface ConstituentFile {
+  filename: string;
+  fetchedDate: string | null;
+  industryCount: number;
+  conceptCount: number;
+  totalRelations: number;
+  imported: boolean;
+}
+
 function StatusBadge({ status }: { status: string | null }) {
   if (!status) return <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-400">未触发</span>;
   if (status === "SUCCESS") return <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700">正常</span>;
@@ -37,7 +46,7 @@ function formatTime(iso: string | null): string {
 export default function CollectionHubPage() {
   const [statusList, setStatusList] = useState<CollectionStatus[]>([]);
   const [loading, setLoading] = useState(true);
-  const [constituentFiles, setConstituentFiles] = useState<any[]>([]);
+  const [constituentFiles, setConstituentFiles] = useState<ConstituentFile[]>([]);
   const router = useRouter();
 
   useEffect(() => { fetchStatus(); fetchConstituentFiles(); }, []);
@@ -53,7 +62,7 @@ export default function CollectionHubPage() {
 
   async function fetchConstituentFiles() {
     try {
-      const res = await api.get("api/v1/admin/collection/constituents/files").json<{ code: number; data: any[] }>();
+      const res = await api.get("api/v1/admin/collection/constituents/files").json<{ code: number; data: ConstituentFile[] }>();
       setConstituentFiles(res.data || []);
     } catch (e) { console.error(e); }
   }
