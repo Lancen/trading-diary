@@ -51,6 +51,7 @@ DataCollectionLog fetchLog = new DataCollectionLog();
 
 - 后端异常消息、错误提示 → 中文（如 `"服务器内部错误"` 而非 `"Internal Server Error"`）
 - 前端 UI 文本（按钮、标题、提示）→ 中文
+- Git commit message → 中文（标题和正文均使用中文，技术术语如 API 路径、类名可保留英文）
 - 日志消息 → 可保留英文（项目规则"日志除外"）
 - API 路径、JSON key → 保留英文
 
