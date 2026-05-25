@@ -9,6 +9,8 @@ import com.tradingdiary.mapper.DataCollectionLogMapper;
 import com.tradingdiary.mapper.IndustryMapper;
 import com.tradingdiary.mapper.MarginDailyMapper;
 import com.tradingdiary.mapper.MarginMacroMapper;
+import com.tradingdiary.mapper.MarketIndexDailyMapper;
+import com.tradingdiary.mapper.SectorIndexDailyMapper;
 import com.tradingdiary.mapper.StockInfoMapper;
 import com.tradingdiary.mapper.TradeCalendarMapper;
 import com.tradingdiary.service.collection.CollectionQueryService;
@@ -48,6 +50,8 @@ public class CollectionQueryServiceImpl implements CollectionQueryService {
     private final ConceptMapper conceptMapper;
     private final MarginDailyMapper marginDailyMapper;
     private final MarginMacroMapper marginMacroMapper;
+    private final MarketIndexDailyMapper marketIndexDailyMapper;
+    private final SectorIndexDailyMapper sectorIndexDailyMapper;
 
     public CollectionQueryServiceImpl(DataCollectionLogMapper logMapper,
                                        TradeCalendarMapper tradeCalendarMapper,
@@ -55,7 +59,9 @@ public class CollectionQueryServiceImpl implements CollectionQueryService {
                                        IndustryMapper industryMapper,
                                        ConceptMapper conceptMapper,
                                        MarginDailyMapper marginDailyMapper,
-                                       MarginMacroMapper marginMacroMapper) {
+                                       MarginMacroMapper marginMacroMapper,
+                                       MarketIndexDailyMapper marketIndexDailyMapper,
+                                       SectorIndexDailyMapper sectorIndexDailyMapper) {
         this.logMapper = logMapper;
         this.tradeCalendarMapper = tradeCalendarMapper;
         this.stockInfoMapper = stockInfoMapper;
@@ -63,6 +69,8 @@ public class CollectionQueryServiceImpl implements CollectionQueryService {
         this.conceptMapper = conceptMapper;
         this.marginDailyMapper = marginDailyMapper;
         this.marginMacroMapper = marginMacroMapper;
+        this.marketIndexDailyMapper = marketIndexDailyMapper;
+        this.sectorIndexDailyMapper = sectorIndexDailyMapper;
     }
 
     @Override
@@ -138,6 +146,18 @@ public class CollectionQueryServiceImpl implements CollectionQueryService {
             }
             case "MARGIN_MACRO_SZSE": {
                 LocalDate d = marginMacroMapper.selectMaxTradeDate("SZSE");
+                return d != null ? LocalDateTime.of(d, LocalTime.MIN) : null;
+            }
+            case "MARKET_INDEX_DAILY": {
+                LocalDate d = marketIndexDailyMapper.selectMaxTradeDate();
+                return d != null ? LocalDateTime.of(d, LocalTime.MIN) : null;
+            }
+            case "INDUSTRY_INDEX_DAILY": {
+                LocalDate d = sectorIndexDailyMapper.selectMaxTradeDateByType("INDUSTRY");
+                return d != null ? LocalDateTime.of(d, LocalTime.MIN) : null;
+            }
+            case "CONCEPT_INDEX_DAILY": {
+                LocalDate d = sectorIndexDailyMapper.selectMaxTradeDateByType("CONCEPT");
                 return d != null ? LocalDateTime.of(d, LocalTime.MIN) : null;
             }
             default:

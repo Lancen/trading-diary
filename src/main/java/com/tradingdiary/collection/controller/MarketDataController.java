@@ -2,28 +2,31 @@ package com.tradingdiary.collection.controller;
 
 import com.tradingdiary.model.ApiResponse;
 import com.tradingdiary.service.MarketDataService;
+import com.tradingdiary.service.market.SectorStockItem;
+import com.tradingdiary.service.market.SectorStockService;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 
-/**
- * 市场数据控制器，提供概念和行业维度的两融聚合数据查询
- */
 @RestController
 @RequestMapping("/api/v1/admin/market")
 @PreAuthorize("hasRole('ADMIN')")
 public class MarketDataController {
 
     private final MarketDataService marketDataService;
+    private final SectorStockService sectorStockService;
 
-    public MarketDataController(MarketDataService marketDataService) {
+    public MarketDataController(MarketDataService marketDataService, SectorStockService sectorStockService) {
         this.marketDataService = marketDataService;
+        this.sectorStockService = sectorStockService;
     }
 
     @Operation(summary = "获取概念列表（含两融聚合）")
@@ -48,5 +51,17 @@ public class MarketDataController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "50") int size) {
         return ApiResponse.ok(marketDataService.listIndustries(keyword, tradeDate, sortBy, sortDir, page, size));
+    }
+
+    @Operation(summary = "获取行业成分股列表")
+    @GetMapping("/industries/{code}/stocks")
+    public ApiResponse<List<SectorStockItem>> industryStocks(@PathVariable String code) {
+        return ApiResponse.ok(sectorStockService.listIndustryStocks(code));
+    }
+
+    @Operation(summary = "获取概念成分股列表")
+    @GetMapping("/concepts/{code}/stocks")
+    public ApiResponse<List<SectorStockItem>> conceptStocks(@PathVariable String code) {
+        return ApiResponse.ok(sectorStockService.listConceptStocks(code));
     }
 }

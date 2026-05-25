@@ -88,9 +88,10 @@ Status: ready-for-agent
 
 - **指数日线查询**: `GET /api/v1/admin/market-index-daily?indexCode=sh000001&startDate=...&endDate=...`
 - **板块指数日线查询**: `GET /api/v1/admin/sector-index-daily?sectorType=INDUSTRY&sectorCode=BK0475&startDate=...&endDate=...`
-- **指数列表查询**: `GET /api/v1/admin/index-list` 返回所有已采集宽基指数的最新行情
+- **指数列表查询**: `GET /api/v1/admin/market-index-daily/latest` 返回所有已采集宽基指数的最新行情
 - **板块两融聚合查询**: `GET /api/v1/admin/sector-margin?sectorType=INDUSTRY&sectorCode=BK0475&startDate=...&endDate=...` 实时聚合 margin_daily + stock_industry
-- **行业/概念详情**: `GET /api/v1/admin/industries/{code}` 和 `GET /api/v1/admin/concepts/{code}` 扩展返回板块指数日线+板块两融数据
+- **行业/概念成分股**: `GET /api/v1/admin/market/industries/{code}/stocks` 和 `GET /api/v1/admin/market/concepts/{code}/stocks` 返回成分股列表
+- **全市场两融聚合**: `GET /api/v1/admin/margin-macro/sse?startDate=...&endDate=...` 返回两市两融总额时间序列
 
 ### 前端
 

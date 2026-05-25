@@ -60,14 +60,7 @@ export default function IndexAnalysisPage() {
       const res = await api.get("api/v1/admin/market-index-daily/latest")
         .json<{ code: number; data: MarketIndexDaily[] }>();
       const data = res.data || [];
-      const grouped = new Map<string, MarketIndexDaily>();
-      for (const d of data) {
-        const existing = grouped.get(d.indexCode);
-        if (!existing || d.tradeDate > existing.tradeDate) {
-          grouped.set(d.indexCode, d);
-        }
-      }
-      setLatestQuotes(Array.from(grouped.values()).map(d => ({
+      setLatestQuotes(data.map(d => ({
         indexCode: d.indexCode,
         tradeDate: d.tradeDate,
         open: d.open,

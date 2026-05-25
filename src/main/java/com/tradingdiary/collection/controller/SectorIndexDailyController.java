@@ -13,11 +13,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/v1/admin/sector-index-daily")
 @PreAuthorize("hasRole('ADMIN')")
 public class SectorIndexDailyController {
+
+    private static final Set<String> VALID_SECTOR_TYPES = Set.of("INDUSTRY", "CONCEPT");
 
     private final SectorIndexDailyMapper sectorIndexDailyMapper;
 
@@ -32,6 +35,9 @@ public class SectorIndexDailyController {
             @RequestParam String sectorCode,
             @RequestParam(required = false) LocalDate startDate,
             @RequestParam(required = false) LocalDate endDate) {
+        if (!VALID_SECTOR_TYPES.contains(sectorType)) {
+            return ApiResponse.fail(400, "Invalid sectorType: " + sectorType + ", must be INDUSTRY or CONCEPT");
+        }
         LambdaQueryWrapper<SectorIndexDaily> wrapper = new LambdaQueryWrapper<SectorIndexDaily>()
                 .eq(SectorIndexDaily::getSectorType, sectorType)
                 .eq(SectorIndexDaily::getSectorCode, sectorCode)
