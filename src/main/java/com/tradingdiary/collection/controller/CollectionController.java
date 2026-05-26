@@ -9,6 +9,7 @@ import com.tradingdiary.model.ApiResponse;
 import com.tradingdiary.service.GapDetectionService;
 import com.tradingdiary.service.collection.CollectionQueryService;
 import com.tradingdiary.service.collection.ConstituentImportService;
+import com.tradingdiary.service.collection.SystemConfigService;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,9 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-/**
- * 数据采集控制器，管理采集状态查询、任务触发、缺口检测和历史数据补采
- */
 @RestController
 @RequestMapping("/api/v1/admin/collection")
 @PreAuthorize("hasRole('ADMIN')")
@@ -36,15 +34,18 @@ public class CollectionController {
     private final GapDetectionService gapDetectionService;
     private final CollectionOrchestrator orchestrator;
     private final ConstituentImportService constituentImportService;
+    private final SystemConfigService systemConfigService;
 
     public CollectionController(CollectionQueryService collectionQueryService,
                                  GapDetectionService gapDetectionService,
                                  CollectionOrchestrator orchestrator,
-                                 ConstituentImportService constituentImportService) {
+                                 ConstituentImportService constituentImportService,
+                                 SystemConfigService systemConfigService) {
         this.collectionQueryService = collectionQueryService;
         this.gapDetectionService = gapDetectionService;
         this.orchestrator = orchestrator;
         this.constituentImportService = constituentImportService;
+        this.systemConfigService = systemConfigService;
     }
 
     @Operation(summary = "获取所有数据类型的采集状态")
@@ -192,6 +193,23 @@ public class CollectionController {
         Map<String, Object> result = constituentImportService.importFromFile(filename);
         if ("failed".equals(result.get("status"))) {
             return ApiResponse.fail(500, "导入失败: " + result.get("error"));
+        }
+        return ApiResponse.ok(result);
+    }
+
+    @Operation(summary = "获取同花顺Cookie状态")
+    @GetMapping("/config/cookie")
+    public ApiResponse<Map<String, Object>> getCookieStatus() {
+        return ApiResponse.ok(systemConfigService.getThsCookieStatus());
+    }
+
+    @Operation(summary = "设置同花顺Cookie")
+    @PostMapping("/config/cookie")
+    public ApiResponse<Map<String, Object>> setCookie(@RequestBody Map<String, String> body) {
+        String cookie = body.get("cookie");
+        Map<String, Object> result = systemConfigService.setThsCookie(cookie);
+        if ("failed".equals(result.get("status"))) {
+            return ApiResponse.fail(500, "保存失败: " + result.get("error"));
         }
         return ApiResponse.ok(result);
     }

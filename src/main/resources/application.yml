@@ -5,7 +5,6 @@ spring:
   application:
     name: trading-diary
   datasource:
-    # 默认值，.env 中的同名属性会覆盖（DotenvConfig 以最高优先级加载）
     url: jdbc:mysql://localhost:3306/trading_diary?useSSL=true&serverTimezone=UTC&characterEncoding=UTF-8&rewriteBatchedStatements=true
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
@@ -24,6 +23,11 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+
+app:
+  collection:
+    scripts-dir: scripts
+    constituents-dir: data/constituents
 
 mybatis-plus:
   mapper-locations: classpath:mapper/*.xml

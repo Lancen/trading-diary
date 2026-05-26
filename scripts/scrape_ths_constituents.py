@@ -13,6 +13,17 @@
     python3 scripts/scrape_ths_constituents.py --type industry --code 881121
     python3 scripts/scrape_ths_constituents.py --type concept --code 308614
 
+    # 使用 Cookie 登录（获取完整数据）
+    python3 scripts/scrape_ths_constituents.py --cookie "name1=value1; name2=value2"
+    python3 scripts/scrape_ths_constituents.py --cookie-file cookies.json
+
+Cookie 获取方法:
+    1. 在浏览器中登录同花顺 (https://q.10jqka.com.cn)
+    2. 打开开发者工具 (F12) -> Application -> Cookies
+    3. 复制关键 Cookie: v, u, plog_id, hm_lvt_*, hm_lpvt_*
+    4. 格式: "v=xxx; u=xxx; plog_id=xxx"
+    或保存为 JSON 文件: [{"name": "v", "value": "xxx", "domain": ".10jqka.com.cn"}, ...]
+
 输出 JSON 格式:
 {
   "fetched_at": "2026-05-17T15:00:00",
@@ -47,6 +58,55 @@ except ImportError:
 BASE = "https://q.10jqka.com.cn"
 CONCEPT_LIST = f"{BASE}/gn/"
 INDUSTRY_LIST = f"{BASE}/thshy/"
+
+
+def parse_cookie_string(cookie_str):
+    cookies = []
+    for part in cookie_str.split(";"):
+        part = part.strip()
+        if "=" in part:
+            name, value = part.split("=", 1)
+            cookies.append({
+                "name": name.strip(),
+                "value": value.strip(),
+                "domain": ".10jqka.com.cn",
+                "path": "/"
+            })
+    return cookies
+
+
+def load_cookie_file(cookie_file):
+    with open(cookie_file, "r", encoding="utf-8") as f:
+        cookies = json.load(f)
+    for cookie in cookies:
+        if "domain" not in cookie:
+            cookie["domain"] = ".10jqka.com.cn"
+        if "path" not in cookie:
+            cookie["path"] = "/"
+    return cookies
+
+
+async def create_browser_context(playwright, cookies=None):
+    browser = await playwright.chromium.launch(
+        headless=True,
+        args=[
+            '--disable-blink-features=AutomationControlled',
+            '--disable-dev-shm-usage',
+            '--no-sandbox',
+        ]
+    )
+    context = await browser.new_context(
+        viewport={"width": 1920, "height": 1080},
+        user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+                   "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        locale="zh-CN",
+        timezone_id="Asia/Shanghai",
+        geolocation={"latitude": 31.2304, "longitude": 121.4737},
+        permissions=["geolocation"],
+    )
+    if cookies:
+        await context.add_cookies(cookies)
+    return browser, context
 
 
 async def extract_board_links(page, list_url, detail_path):
@@ -94,9 +154,38 @@ async def scrape_board_stocks(page, board, detail_path):
 
         for page_num in range(1, total_pages + 1):
             if page_num > 1:
-                page_url = f"{BASE}/{detail_path}/detail/field/stock/order/asc/page/{page_num}/ajax/1/code/{code}/"
-                await page.goto(page_url, wait_until="domcontentloaded")
-                await page.wait_for_timeout(1000)
+                clicked = await page.evaluate("""
+                    () => {
+                        const pager = document.querySelector('.m-pager');
+                        if (pager) {
+                            const links = pager.querySelectorAll('a.changePage');
+                            for (const link of links) {
+                                if (link.textContent.includes('下一页')) {
+                                    link.click();
+                                    return true;
+                                }
+                            }
+                        }
+                        return false;
+                    }
+                """)
+                
+                if clicked:
+                    await page.wait_for_timeout(500)
+                    for _ in range(20):
+                        cur_page = await page.evaluate("""
+                            () => {
+                                const pager = document.querySelector('.m-pager');
+                                if (pager) {
+                                    const cur = pager.querySelector('a.cur');
+                                    return cur ? parseInt(cur.getAttribute('page')) : 0;
+                                }
+                                return 0;
+                            }
+                        """)
+                        if cur_page == page_num:
+                            break
+                        await page.wait_for_timeout(200)
 
             page_stocks = await page.evaluate("""
                 () => {
@@ -119,19 +208,21 @@ async def scrape_board_stocks(page, board, detail_path):
     except Exception as e:
         print(f"ERROR: {board['name']}({code}) 抓取出错: {e}", file=sys.stderr, flush=True)
 
-    return all_stocks
+    seen = set()
+    unique_stocks = []
+    for stock in all_stocks:
+        if stock not in seen:
+            seen.add(stock)
+            unique_stocks.append(stock)
+
+    return unique_stocks
 
 
-async def scrape_single(board_type, code):
+async def scrape_single(board_type, code, cookies=None):
     detail_path = "thshy" if board_type == "industry" else "gn"
 
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        context = await browser.new_context(
-            viewport={"width": 1400, "height": 900},
-            user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
-                       "(KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36",
-        )
+        browser, context = await create_browser_context(p, cookies)
         page = await context.new_page()
 
         try:
@@ -154,7 +245,7 @@ async def scrape_single(board_type, code):
     return result
 
 
-async def scrape_batch(do_industry, do_concept, limit, output_path):
+async def scrape_batch(do_industry, do_concept, limit, output_path, cookies=None):
     result = {
         "fetched_at": datetime.now(timezone.utc).isoformat(),
         "fetched_date": date.today().isoformat(),
@@ -164,12 +255,7 @@ async def scrape_batch(do_industry, do_concept, limit, output_path):
     }
 
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        context = await browser.new_context(
-            viewport={"width": 1400, "height": 900},
-            user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
-                       "(KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36",
-        )
+        browser, context = await create_browser_context(p, cookies)
         page = await context.new_page()
 
         try:
@@ -240,15 +326,23 @@ def main():
     parser.add_argument("--type", dest="board_type", choices=["industry", "concept"],
                         help="单板块抓取时的板块类型")
     parser.add_argument("--code", help="单板块抓取时的板块代码")
+    parser.add_argument("--cookie", help="Cookie 字符串 (格式: name1=value1; name2=value2)")
+    parser.add_argument("--cookie-file", dest="cookie_file", help="Cookie JSON 文件路径")
     args = parser.parse_args()
 
+    cookies = None
+    if args.cookie:
+        cookies = parse_cookie_string(args.cookie)
+    elif args.cookie_file:
+        cookies = load_cookie_file(args.cookie_file)
+
     if args.board_type and args.code:
-        result = asyncio.run(scrape_single(args.board_type, args.code))
+        result = asyncio.run(scrape_single(args.board_type, args.code, cookies))
         print(json.dumps(result, ensure_ascii=False), flush=True)
     else:
         do_concept = args.concept or (not args.industry)
         do_industry = args.industry or (not args.concept)
-        asyncio.run(scrape_batch(do_industry, do_concept, args.limit, args.output))
+        asyncio.run(scrape_batch(do_industry, do_concept, args.limit, args.output, cookies))
 
 
 if __name__ == "__main__":

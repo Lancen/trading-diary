@@ -8,11 +8,11 @@ import com.tradingdiary.entity.StockIndustry;
 import com.tradingdiary.mapper.StockConceptMapper;
 import com.tradingdiary.mapper.StockIndustryMapper;
 import com.tradingdiary.service.collection.ConstituentScrapeService;
+import com.tradingdiary.service.collection.SystemConfigService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -20,7 +20,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,17 +41,20 @@ public class ConstituentScrapeServiceImpl implements ConstituentScrapeService {
     private final StockIndustryMapper stockIndustryMapper;
     private final StockConceptMapper stockConceptMapper;
     private final ObjectMapper objectMapper;
+    private final SystemConfigService systemConfigService;
     private final String scriptPath;
     private final Path dataDir;
 
     public ConstituentScrapeServiceImpl(StockIndustryMapper stockIndustryMapper,
                                          StockConceptMapper stockConceptMapper,
                                          ObjectMapper objectMapper,
+                                         SystemConfigService systemConfigService,
                                          @Value("${app.collection.scripts-dir:scripts}") String scriptsDir,
                                          @Value("${app.collection.constituents-dir:data/constituents}") String dataDir) {
         this.stockIndustryMapper = stockIndustryMapper;
         this.stockConceptMapper = stockConceptMapper;
         this.objectMapper = objectMapper;
+        this.systemConfigService = systemConfigService;
         this.scriptPath = Paths.get(scriptsDir, "scrape_ths_constituents.py").toString();
         this.dataDir = Paths.get(dataDir);
     }
@@ -138,11 +143,21 @@ public class ConstituentScrapeServiceImpl implements ConstituentScrapeService {
     private String runScraper(String boardType, String code) {
         log.info("Running scraper: type={}, code={}", boardType, code);
         try {
-            ProcessBuilder pb = new ProcessBuilder(
-                    "python3", scriptPath,
-                    "--type", boardType,
-                    "--code", code
-            );
+            String thsCookie = systemConfigService.getThsCookie();
+            
+            List<String> command = new ArrayList<>();
+            command.add("python3");
+            command.add(scriptPath);
+            command.add("--type");
+            command.add(boardType);
+            command.add("--code");
+            command.add(code);
+            if (thsCookie != null && !thsCookie.isBlank()) {
+                command.add("--cookie");
+                command.add(thsCookie);
+            }
+
+            ProcessBuilder pb = new ProcessBuilder(command);
             pb.redirectErrorStream(true);
             pb.environment().put("PYTHONUNBUFFERED", "1");
 
