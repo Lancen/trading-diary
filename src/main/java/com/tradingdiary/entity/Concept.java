@@ -32,4 +32,8 @@ public class Concept implements Serializable {
     private LocalDateTime updatedAt;
 
     private Boolean isDeleted = false;
+
+    private Boolean pinned = false;
+
+    private Integer pinOrder;
 }

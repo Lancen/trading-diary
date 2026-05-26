@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<!-- 行业分类 Mapper，提供行业分类数据的查询与统计 -->
 <mapper namespace="com.tradingdiary.mapper.IndustryMapper">
 
-    <!-- 分页查询行业列表，关联股票行业和融资融券汇总数据，支持关键词筛选和排序 -->
     <select id="selectIndustryList" resultType="com.tradingdiary.collection.model.ConceptIndustryVO">
-        SELECT ind.code, ind.name, COUNT(DISTINCT sci.stock_code) AS stockCount,
+        SELECT ind.code, ind.name, ind.pinned, ind.pin_order,
+               COUNT(DISTINCT sci.stock_code) AS stockCount,
                SUM(md.margin_balance) AS marginBalance, SUM(md.margin_change) AS marginChange,
                SUM(md.short_balance) AS shortBalance, SUM(md.short_change) AS shortChange,
                MAX(sci.snap_date) AS snapDate
@@ -16,12 +15,11 @@
             <if test="tradeDate == null">AND md.trade_date = (SELECT MAX(trade_date) FROM margin_daily WHERE is_deleted = 0)</if>
         WHERE ind.is_deleted = 0
         <if test='keyword != null and keyword != ""'>AND ind.name LIKE CONCAT('%', #{keyword}, '%')</if>
-        GROUP BY ind.code, ind.name
-        ORDER BY ${sortBy} ${sortDir}
+        GROUP BY ind.code, ind.name, ind.pinned, ind.pin_order
+        ORDER BY ind.pinned DESC, ind.pin_order ASC, ${sortBy} ${sortDir}
         LIMIT #{offset}, #{size}
     </select>
 
-    <!-- 统计符合筛选条件的行业总数 -->
     <select id="countIndustryList" resultType="long">
         SELECT COUNT(DISTINCT ind.id) FROM industry ind
         LEFT JOIN stock_industry sci ON ind.code = sci.industry_code AND sci.is_deleted = 0
@@ -32,7 +30,6 @@
         <if test='keyword != null and keyword != ""'>AND ind.name LIKE CONCAT('%', #{keyword}, '%')</if>
     </select>
 
-    <!-- 查询行业表中的最新创建时间 -->
     <select id="selectMaxCreatedAt" resultType="java.time.LocalDateTime">
         SELECT MAX(created_at) FROM industry WHERE is_deleted = 0
     </select>

@@ -3,6 +3,7 @@ package com.tradingdiary.collection.controller;
 import com.tradingdiary.model.ApiResponse;
 import com.tradingdiary.service.MarketDataService;
 import com.tradingdiary.service.collection.ConstituentScrapeService;
+import com.tradingdiary.service.market.PinService;
 import com.tradingdiary.service.market.SectorStockItem;
 import com.tradingdiary.service.market.SectorStockService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -10,6 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -26,13 +28,16 @@ public class MarketDataController {
     private final MarketDataService marketDataService;
     private final SectorStockService sectorStockService;
     private final ConstituentScrapeService constituentScrapeService;
+    private final PinService pinService;
 
     public MarketDataController(MarketDataService marketDataService,
                                  SectorStockService sectorStockService,
-                                 ConstituentScrapeService constituentScrapeService) {
+                                 ConstituentScrapeService constituentScrapeService,
+                                 PinService pinService) {
         this.marketDataService = marketDataService;
         this.sectorStockService = sectorStockService;
         this.constituentScrapeService = constituentScrapeService;
+        this.pinService = pinService;
     }
 
     @Operation(summary = "获取概念列表（含两融聚合）")
@@ -99,5 +104,35 @@ public class MarketDataController {
             return ApiResponse.fail(400, "type 仅支持 industry 或 concept");
         }
         return ApiResponse.ok(constituentScrapeService.getScrapeStatus(type, code));
+    }
+
+    @Operation(summary = "置顶/取消置顶行业或概念")
+    @PostMapping("/pin")
+    public ApiResponse<Map<String, Object>> togglePin(@RequestBody Map<String, String> body) {
+        String type = body.get("type");
+        String code = body.get("code");
+        Boolean pinned = Boolean.valueOf(body.getOrDefault("pinned", "true"));
+        if (!"industry".equals(type) && !"concept".equals(type)) {
+            return ApiResponse.fail(400, "type 仅支持 industry 或 concept");
+        }
+        if (code == null || code.isBlank()) {
+            return ApiResponse.fail(400, "板块代码不能为空");
+        }
+        return ApiResponse.ok(pinService.togglePin(type, code, pinned));
+    }
+
+    @Operation(summary = "调整置顶排序")
+    @PostMapping("/pin/reorder")
+    public ApiResponse<Map<String, Object>> reorderPin(@RequestBody Map<String, Object> body) {
+        String type = (String) body.get("type");
+        @SuppressWarnings("unchecked")
+        List<String> codes = (List<String>) body.get("codes");
+        if (!"industry".equals(type) && !"concept".equals(type)) {
+            return ApiResponse.fail(400, "type 仅支持 industry 或 concept");
+        }
+        if (codes == null || codes.isEmpty()) {
+            return ApiResponse.fail(400, "codes 不能为空");
+        }
+        return ApiResponse.ok(pinService.reorderPinned(type, codes));
     }
 }
