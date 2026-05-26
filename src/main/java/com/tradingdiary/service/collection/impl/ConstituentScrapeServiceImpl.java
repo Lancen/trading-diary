@@ -3,16 +3,19 @@ package com.tradingdiary.service.collection.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tradingdiary.collection.CollectionConstants;
 import com.tradingdiary.entity.StockConcept;
 import com.tradingdiary.entity.StockIndustry;
 import com.tradingdiary.mapper.StockConceptMapper;
 import com.tradingdiary.mapper.StockIndustryMapper;
 import com.tradingdiary.service.collection.ConstituentScrapeService;
 import com.tradingdiary.service.collection.SystemConfigService;
+import com.tradingdiary.util.BatchSqlRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -21,9 +24,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -42,6 +47,7 @@ public class ConstituentScrapeServiceImpl implements ConstituentScrapeService {
     private final StockConceptMapper stockConceptMapper;
     private final ObjectMapper objectMapper;
     private final SystemConfigService systemConfigService;
+    private final BatchSqlRunner batchSqlRunner;
     private final String scriptPath;
     private final Path dataDir;
 
@@ -49,12 +55,14 @@ public class ConstituentScrapeServiceImpl implements ConstituentScrapeService {
                                          StockConceptMapper stockConceptMapper,
                                          ObjectMapper objectMapper,
                                          SystemConfigService systemConfigService,
+                                         BatchSqlRunner batchSqlRunner,
                                          @Value("${app.collection.scripts-dir:scripts}") String scriptsDir,
                                          @Value("${app.collection.constituents-dir:data/constituents}") String dataDir) {
         this.stockIndustryMapper = stockIndustryMapper;
         this.stockConceptMapper = stockConceptMapper;
         this.objectMapper = objectMapper;
         this.systemConfigService = systemConfigService;
+        this.batchSqlRunner = batchSqlRunner;
         this.scriptPath = Paths.get(scriptsDir, "scrape_ths_constituents.py").toString();
         this.dataDir = Paths.get(dataDir);
     }
@@ -144,7 +152,7 @@ public class ConstituentScrapeServiceImpl implements ConstituentScrapeService {
         log.info("Running scraper: type={}, code={}", boardType, code);
         try {
             String thsCookie = systemConfigService.getThsCookie();
-            
+
             List<String> command = new ArrayList<>();
             command.add("python3");
             command.add(scriptPath);
@@ -213,72 +221,140 @@ public class ConstituentScrapeServiceImpl implements ConstituentScrapeService {
         }
     }
 
-    private int importToDatabase(JsonNode root, String boardType, LocalDate snapDate) {
+    @Transactional
+    protected int importToDatabase(JsonNode root, String boardType, LocalDate snapDate) {
         String key = "industry".equals(boardType) ? "industries" : "concepts";
-        int totalRelations = 0;
+        if (!root.has(key)) {
+            return 0;
+        }
 
-        if (root.has(key)) {
-            for (JsonNode board : root.get(key)) {
-                String boardCode = board.get("code").asText();
-                if (board.has("stocks")) {
-                    for (JsonNode stock : board.get("stocks")) {
-                        String stockCode = stock.asText();
-                        if (stockCode == null || stockCode.isEmpty()) continue;
-                        if ("industry".equals(boardType)) {
-                            totalRelations += upsertStockIndustry(stockCode, boardCode, snapDate);
-                        } else {
-                            totalRelations += upsertStockConcept(stockCode, boardCode, snapDate);
-                        }
+        List<String> allStockCodes = new ArrayList<>();
+        String boardCode = null;
+        for (JsonNode board : root.get(key)) {
+            boardCode = board.get("code").asText();
+            if (board.has("stocks")) {
+                for (JsonNode stock : board.get("stocks")) {
+                    String stockCode = stock.asText();
+                    if (stockCode != null && !stockCode.isEmpty()) {
+                        allStockCodes.add(stockCode);
                     }
                 }
             }
         }
 
-        log.info("Imported {} constituent relations for {}/{}", totalRelations, boardType, root.get(key).get(0).get("code").asText());
-        return totalRelations;
+        if (allStockCodes.isEmpty() || boardCode == null) {
+            return 0;
+        }
+
+        if ("industry".equals(boardType)) {
+            return batchUpsertStockIndustry(allStockCodes, boardCode, snapDate);
+        } else {
+            return batchUpsertStockConcept(allStockCodes, boardCode, snapDate);
+        }
     }
 
-    private int upsertStockIndustry(String stockCode, String industryCode, LocalDate snapDate) {
-        StockIndustry existing = stockIndustryMapper.selectOne(
+    private int batchUpsertStockIndustry(List<String> stockCodes, String industryCode, LocalDate snapDate) {
+        List<StockIndustry> existing = stockIndustryMapper.selectList(
                 new LambdaQueryWrapper<StockIndustry>()
-                        .eq(StockIndustry::getStockCode, stockCode)
                         .eq(StockIndustry::getIndustryCode, industryCode)
                         .eq(StockIndustry::getIsDeleted, false)
         );
 
-        if (existing != null) {
-            existing.setSnapDate(snapDate);
-            stockIndustryMapper.updateById(existing);
-            return 0;
-        } else {
-            StockIndustry si = new StockIndustry();
-            si.setStockCode(stockCode);
-            si.setIndustryCode(industryCode);
-            si.setSnapDate(snapDate);
-            stockIndustryMapper.insert(si);
-            return 1;
+        Set<String> existingKeys = new HashSet<>();
+        List<StockIndustry> toUpdate = new ArrayList<>();
+        for (StockIndustry si : existing) {
+            existingKeys.add(si.getStockCode() + ":" + si.getIndustryCode());
         }
+
+        List<StockIndustry> toInsert = new ArrayList<>();
+        for (String stockCode : stockCodes) {
+            String compositeKey = stockCode + ":" + industryCode;
+            if (existingKeys.contains(compositeKey)) {
+                StockIndustry si = new StockIndustry();
+                si.setStockCode(stockCode);
+                si.setIndustryCode(industryCode);
+                si.setSnapDate(snapDate);
+                toUpdate.add(si);
+            } else {
+                StockIndustry si = new StockIndustry();
+                si.setStockCode(stockCode);
+                si.setIndustryCode(industryCode);
+                si.setSnapDate(snapDate);
+                si.setIsDeleted(false);
+                toInsert.add(si);
+            }
+        }
+
+        if (!toInsert.isEmpty()) {
+            batchSqlRunner.batchInsert(toInsert);
+            log.info("Batch inserted {} stock_industry records for industry {}", toInsert.size(), industryCode);
+        }
+
+        if (!toUpdate.isEmpty()) {
+            List<StockIndustry> updateWithId = new ArrayList<>();
+            for (StockIndustry target : toUpdate) {
+                for (StockIndustry ex : existing) {
+                    if (ex.getStockCode().equals(target.getStockCode())
+                            && ex.getIndustryCode().equals(target.getIndustryCode())) {
+                        ex.setSnapDate(snapDate);
+                        updateWithId.add(ex);
+                        break;
+                    }
+                }
+            }
+            if (!updateWithId.isEmpty()) {
+                batchSqlRunner.batchUpdate(updateWithId);
+                log.info("Batch updated {} stock_industry records for industry {}", updateWithId.size(), industryCode);
+            }
+        }
+
+        return toInsert.size();
     }
 
-    private int upsertStockConcept(String stockCode, String conceptCode, LocalDate snapDate) {
-        StockConcept existing = stockConceptMapper.selectOne(
+    private int batchUpsertStockConcept(List<String> stockCodes, String conceptCode, LocalDate snapDate) {
+        List<StockConcept> existing = stockConceptMapper.selectList(
                 new LambdaQueryWrapper<StockConcept>()
-                        .eq(StockConcept::getStockCode, stockCode)
                         .eq(StockConcept::getConceptCode, conceptCode)
                         .eq(StockConcept::getIsDeleted, false)
         );
 
-        if (existing != null) {
-            existing.setSnapDate(snapDate);
-            stockConceptMapper.updateById(existing);
-            return 0;
-        } else {
-            StockConcept sc = new StockConcept();
-            sc.setStockCode(stockCode);
-            sc.setConceptCode(conceptCode);
-            sc.setSnapDate(snapDate);
-            stockConceptMapper.insert(sc);
-            return 1;
+        Set<String> existingKeys = new HashSet<>();
+        for (StockConcept sc : existing) {
+            existingKeys.add(sc.getStockCode() + ":" + sc.getConceptCode());
         }
+
+        List<StockConcept> toInsert = new ArrayList<>();
+        List<StockConcept> toUpdate = new ArrayList<>();
+        for (String stockCode : stockCodes) {
+            String compositeKey = stockCode + ":" + conceptCode;
+            if (existingKeys.contains(compositeKey)) {
+                for (StockConcept ex : existing) {
+                    if (ex.getStockCode().equals(stockCode) && ex.getConceptCode().equals(conceptCode)) {
+                        ex.setSnapDate(snapDate);
+                        toUpdate.add(ex);
+                        break;
+                    }
+                }
+            } else {
+                StockConcept sc = new StockConcept();
+                sc.setStockCode(stockCode);
+                sc.setConceptCode(conceptCode);
+                sc.setSnapDate(snapDate);
+                sc.setIsDeleted(false);
+                toInsert.add(sc);
+            }
+        }
+
+        if (!toInsert.isEmpty()) {
+            batchSqlRunner.batchInsert(toInsert);
+            log.info("Batch inserted {} stock_concept records for concept {}", toInsert.size(), conceptCode);
+        }
+
+        if (!toUpdate.isEmpty()) {
+            batchSqlRunner.batchUpdate(toUpdate);
+            log.info("Batch updated {} stock_concept records for concept {}", toUpdate.size(), conceptCode);
+        }
+
+        return toInsert.size();
     }
 }
