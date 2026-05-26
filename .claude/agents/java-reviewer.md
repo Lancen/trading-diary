@@ -44,6 +44,13 @@ You DO NOT refactor or rewrite code — you report findings only.
 
 ## Review Priorities
 
+### CRITICAL -- Batch Write Compliance
+- **Loop-based DB writes**: Any `for` / `while` loop containing `mapper.insert()`, `mapper.updateById()`, `mapper.deleteById()`, or `mapper.selectOne()` + insert/update pattern is a CRITICAL violation
+- **Required pattern**: Collect entities into `List`, then use `batchSqlRunner.batchInsert()` / `batchSqlRunner.batchUpdate()`
+- **Batch size**: Must use `CollectionConstants.DB_BATCH_SIZE`, no hardcoded values
+- **Transaction**: Batch write methods must have `@Transactional`
+- **Reference**: See `.claude/rules/batch-db-write.md` for detailed patterns
+
 ### CRITICAL -- Security
 - **SQL injection**: String concatenation in queries — use bind parameters (`:param` or `?`)
   - **[SPRING]**: Watch for `@Query`, `JdbcTemplate`, `NamedParameterJdbcTemplate`
