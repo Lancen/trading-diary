@@ -9,6 +9,9 @@ public record SectorMarginDaily(
         String sectorCode,
         BigDecimal marginBalance,
         BigDecimal shortBalance,
-        BigDecimal totalBalance
+        BigDecimal totalBalance,
+        BigDecimal marginBalanceChange,
+        BigDecimal shortBalanceChange,
+        BigDecimal totalBalanceChange
 ) {
 }

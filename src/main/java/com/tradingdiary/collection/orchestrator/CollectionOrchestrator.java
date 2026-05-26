@@ -115,6 +115,41 @@ public class CollectionOrchestrator {
         return CompletableFuture.completedFuture(result);
     }
 
+    @Async("collectionExecutor")
+    public CompletableFuture<String> orchestrateDailyAsync(List<String> dataTypes, LocalDate tradeDate) {
+        int skipped = 0;
+        int success = 0;
+        int failed = 0;
+        List<String> failedTypes = new ArrayList<>();
+        for (String dataType : dataTypes) {
+            if (isDateComplete(dataType, tradeDate)) {
+                skipped++;
+                log.info("一键采集: 跳过 {} ({}) — 已完成", dataType, tradeDate);
+                continue;
+            }
+            try {
+                log.info("一键采集: 开始 {} ({})", dataType, tradeDate);
+                String result = orchestrate(dataType, tradeDate);
+                if (result.contains("成功") || result.contains("复用")) {
+                    success++;
+                    log.info("一键采集: 完成 {} → {}", dataType, result);
+                } else {
+                    failed++;
+                    failedTypes.add(dataType);
+                    log.warn("一键采集: 失败 {} → {}", dataType, result);
+                }
+            } catch (Exception e) {
+                failed++;
+                failedTypes.add(dataType);
+                log.error("一键采集: 异常 {} → {}", dataType, e.getMessage());
+            }
+        }
+        String summary = String.format("一键采集完成: %d 成功, %d 跳过(已完成), %d 失败%s",
+                success, skipped, failed, failedTypes.isEmpty() ? "" : " (失败: " + String.join(", ", failedTypes) + ")");
+        log.info(summary);
+        return CompletableFuture.completedFuture(summary);
+    }
+
     /**
      * 编排执行数据采集和清洗流程
      * <p>
@@ -147,6 +182,23 @@ public class CollectionOrchestrator {
                 log.info("STOCK_DAILY 复用 STOCK_INFO FETCH 数据: tradeDate={}, logId={}", tradeDate, stockInfoLogId);
                 executeCleanse(dataType, tradeDate, stockInfoLogId);
                 return "执行成功（复用股票基础信息采集数据）";
+            }
+
+            // 板块指数K线：FETCH阶段遍历所有板块逐个调API，每板块一条raw_data
+            if ("INDUSTRY_INDEX_DAILY".equals(dataType) || "CONCEPT_INDEX_DAILY".equals(dataType)) {
+                String sectorType = "INDUSTRY_INDEX_DAILY".equals(dataType) ? "INDUSTRY" : "CONCEPT";
+                Long reuseLogId = findExistingFetchLog(dataType, tradeDate);
+                if (reuseLogId != null) {
+                    log.info("复用已有 FETCH 数据: dataType={}, tradeDate={}, logId={}", dataType, tradeDate, reuseLogId);
+                    executeCleanse(dataType, tradeDate, reuseLogId);
+                    return "执行成功（复用已有采集数据）";
+                }
+                Long fetchLogId = executeSectorIndexFetch(dataType, sectorType, tradeDate, tradeDate);
+                if (fetchLogId == null) {
+                    return "采集失败: 无板块数据";
+                }
+                executeCleanse(dataType, tradeDate, fetchLogId);
+                return "执行成功";
             }
 
             // 检查是否已有成功的 FETCH，有则复用 raw_data 跳过重复采集
@@ -296,9 +348,8 @@ public class CollectionOrchestrator {
             case "MARKET_INDEX_DAILY":
                 return fetchAllMarketIndices(tradeDate);
             case "INDUSTRY_INDEX_DAILY":
-                return "[]";
             case "CONCEPT_INDEX_DAILY":
-                return "[]";
+                throw new IllegalStateException(dataType + " 应通过 executeSectorIndexFetch 处理，不应走到 dispatchFetch");
             default:
                 throw new IllegalArgumentException("未知数据类型: " + dataType);
         }
@@ -482,7 +533,127 @@ public class CollectionOrchestrator {
         return totalRecords;
     }
 
+    private Long executeSectorIndexFetch(String dataType, String sectorType, LocalDate startDate, LocalDate endDate) {
+        DataCollectionLog fetchLog = createLog(dataType, "FETCH", endDate);
+        fetchLog.setStatus("RUNNING");
+        fetchLog.setStartedAt(LocalDateTime.now());
+        logMapper.insert(fetchLog);
+
+        int successCount;
+        try {
+            successCount = fetchSectorIndexDaily(sectorType, startDate, endDate, fetchLog.getId());
+        } catch (Exception e) {
+            fetchLog.setStatus("FAILED");
+            fetchLog.setErrorMsg(e.getMessage());
+            fetchLog.setCompletedAt(LocalDateTime.now());
+            logMapper.updateById(fetchLog);
+            return null;
+        }
+
+        fetchLog.setStatus("SUCCESS");
+        fetchLog.setRecordCount(successCount);
+        fetchLog.setCompletedAt(LocalDateTime.now());
+        logMapper.updateById(fetchLog);
+        return fetchLog.getId();
+    }
+
+    int fetchSectorIndexDaily(String sectorType, LocalDate startDate, LocalDate endDate) {
+        return fetchSectorIndexDaily(sectorType, startDate, endDate, null);
+    }
+
+    int fetchSectorIndexDaily(String sectorType, LocalDate startDate, LocalDate endDate, Long collectionLogId) {
+        String startStr = startDate != null ? startDate.format(YMD) : "";
+        String endStr = endDate != null ? endDate.format(YMD) : "";
+
+        if ("INDUSTRY".equals(sectorType)) {
+            List<Industry> sectors = industryMapper.selectList(
+                    new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Industry>()
+                            .eq(Industry::getIsDeleted, false)
+            );
+            if (sectors.isEmpty()) {
+                throw new IllegalStateException("行业表为空，请先采集行业名称（INDUSTRY_NAME）");
+            }
+            int total = 0;
+            for (Industry sector : sectors) {
+                try {
+                    String rawJson = aktoolsClient.fetchIndustryIndexDaily(sector.getName(), startStr, endStr);
+                    if (rawJson != null && !rawJson.equals("[]")) {
+                        saveSectorRawData(collectionLogId, "INDUSTRY_INDEX_DAILY", endDate, sector.getCode(), rawJson);
+                        total++;
+                    }
+                    aktoolsClient.sleepBetweenCalls();
+                } catch (Exception e) {
+                    log.error("Failed to fetch industry index daily for {}: {}", sector.getCode(), e.getMessage());
+                }
+            }
+            return total;
+        } else {
+            List<Concept> sectors = conceptMapper.selectList(
+                    new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Concept>()
+                            .eq(Concept::getIsDeleted, false)
+            );
+            if (sectors.isEmpty()) {
+                throw new IllegalStateException("概念表为空，请先采集概念名称（CONCEPT_NAME）");
+            }
+            int total = 0;
+            for (Concept sector : sectors) {
+                try {
+                    String rawJson = aktoolsClient.fetchConceptIndexDaily(sector.getName(), startStr, endStr);
+                    if (rawJson != null && !rawJson.equals("[]")) {
+                        saveSectorRawData(collectionLogId, "CONCEPT_INDEX_DAILY", endDate, sector.getCode(), rawJson);
+                        total++;
+                    }
+                    aktoolsClient.sleepBetweenCalls();
+                } catch (Exception e) {
+                    log.error("Failed to fetch concept index daily for {}: {}", sector.getCode(), e.getMessage());
+                }
+            }
+            return total;
+        }
+    }
+
+    private void saveSectorRawData(Long collectionLogId, String dataType, LocalDate tradeDate, String sectorCode, String rawJson) {
+        RawData rawData = new RawData();
+        rawData.setCollectionLogId(collectionLogId);
+        rawData.setDataType(dataType);
+        rawData.setTradeDate(tradeDate);
+        rawData.setSource("AKTools");
+        rawData.setSectorCode(sectorCode);
+        rawData.setRawJson(rawJson);
+        rawData.setFetchAt(LocalDateTime.now());
+        rawDataMapper.insert(rawData);
+    }
+
     private int cleanseAllSectorIndices(String sectorType, LocalDate tradeDate) {
+        String dataType = "INDUSTRY".equals(sectorType) ? "INDUSTRY_INDEX_DAILY" : "CONCEPT_INDEX_DAILY";
+
+        List<RawData> rawDatas = rawDataMapper.selectList(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<RawData>()
+                        .eq(RawData::getDataType, dataType)
+                        .eq(RawData::getTradeDate, tradeDate)
+                        .isNotNull(RawData::getSectorCode)
+        );
+
+        if (rawDatas.isEmpty()) {
+            log.warn("No raw_data found for {} on {}, falling back to direct API fetch", dataType, tradeDate);
+            return cleanseAllSectorIndicesDirect(sectorType, tradeDate);
+        }
+
+        int total = 0;
+        for (RawData rd : rawDatas) {
+            try {
+                String rawJson = rd.getRawJson();
+                if (rawJson != null && !rawJson.equals("[]")) {
+                    total += sectorIndexDailyCleanseService.cleanse(rawJson, sectorType, rd.getSectorCode());
+                }
+            } catch (Exception e) {
+                log.error("Failed to cleanse sector index daily for {}: {}", rd.getSectorCode(), e.getMessage());
+            }
+        }
+        return total;
+    }
+
+    private int cleanseAllSectorIndicesDirect(String sectorType, LocalDate tradeDate) {
         String startDate = tradeDate != null ? tradeDate.format(YMD) : "";
         String endDate = startDate;
 
@@ -640,6 +811,43 @@ public class CollectionOrchestrator {
 
         String result = String.format("日线补采完成: %d 条记录，%d 天失败",
                 totalRecords, failedDays);
+        log.info(result);
+        return result;
+    }
+
+    @Async("collectionExecutor")
+    public CompletableFuture<String> backfillSectorIndexDailyAsync(String sectorType, LocalDate startDate, LocalDate endDate) {
+        String result = backfillSectorIndexDaily(sectorType, startDate, endDate);
+        return CompletableFuture.completedFuture(result);
+    }
+
+    public String backfillSectorIndexDaily(String sectorType, LocalDate startDate, LocalDate endDate) {
+        log.info("Starting sector index daily backfill: sectorType={}, {} to {}", sectorType, startDate, endDate);
+
+        String dataType = "INDUSTRY".equals(sectorType) ? "INDUSTRY_INDEX_DAILY" : "CONCEPT_INDEX_DAILY";
+        Long fetchLogId = executeSectorIndexFetch(dataType, sectorType, startDate, endDate);
+        if (fetchLogId == null) {
+            return "板块指数K线补采失败: 无板块数据";
+        }
+
+        int cleanseCount = 0;
+        List<RawData> rawDatas = rawDataMapper.selectList(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<RawData>()
+                        .eq(RawData::getCollectionLogId, fetchLogId)
+        );
+        for (RawData rd : rawDatas) {
+            try {
+                String rawJson = rd.getRawJson();
+                if (rawJson != null && !rawJson.equals("[]")) {
+                    cleanseCount += sectorIndexDailyCleanseService.cleanse(rawJson, sectorType, rd.getSectorCode());
+                }
+            } catch (Exception e) {
+                log.error("Failed to cleanse sector index daily for {}: {}", rd.getSectorCode(), e.getMessage());
+            }
+        }
+
+        String result = String.format("板块指数K线补采完成: %d 个板块，%d 条记录",
+                rawDatas.size(), cleanseCount);
         log.info(result);
         return result;
     }

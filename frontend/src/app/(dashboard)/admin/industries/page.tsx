@@ -8,14 +8,16 @@ interface Item {
   code: string; name: string; stockCount: number;
   marginBalance: number; marginChange: number;
   shortBalance: number; shortChange: number;
+  volumePct: number | null;
   snapDate: string | null;
   pinned: boolean; pinOrder: number | null;
 }
 
-type SortField = "stockCount" | "marginBalance" | "marginChange" | "shortBalance" | "shortChange";
+type SortField = "stockCount" | "marginBalance" | "marginChange" | "shortBalance" | "shortChange" | "volumePct";
 const SORT_FIELDS: { key: SortField; label: string }[] = [
   { key: "stockCount", label: "股票数" }, { key: "marginBalance", label: "融资余额" },
   { key: "marginChange", label: "融资变化" }, { key: "shortBalance", label: "融券余额" }, { key: "shortChange", label: "融券变化" },
+  { key: "volumePct", label: "成交占比" },
 ];
 
 function fmt(val: number | null, unit = "亿"): string {
@@ -36,6 +38,8 @@ function fmtDate(snapDate: string | null): string {
   return snapDate.slice(0, 10);
 }
 
+type ScrapeState = "scraping" | "success" | "failed";
+
 export default function IndustriesPage() {
   const router = useRouter();
   const [data, setData] = useState<Item[]>([]);
@@ -45,11 +49,15 @@ export default function IndustriesPage() {
   const [sortBy, setSortBy] = useState<SortField>("marginBalance");
   const [sortDir, setSortDir] = useState("desc");
   const [page, setPage] = useState(1);
-  const [scraping, setScraping] = useState<Set<string>>(new Set());
+  const [scrapeStates, setScrapeStates] = useState<Map<string, ScrapeState>>(new Map());
   const pollRef = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
+  const revertTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   useEffect(() => {
-    return () => { pollRef.current.forEach(v => clearInterval(v)); };
+    return () => {
+      pollRef.current.forEach(v => clearInterval(v));
+      revertTimers.current.forEach(v => clearTimeout(v));
+    };
   }, []);
 
   const fetchData = useCallback(async () => {
@@ -69,22 +77,51 @@ export default function IndustriesPage() {
   function handleSort(f: SortField) { if (sortBy === f) setSortDir(sortDir === "desc" ? "asc" : "desc"); else { setSortBy(f); setSortDir("desc"); } setPage(1); }
   function arrow(f: SortField) { return sortBy !== f ? "↕" : sortDir === "desc" ? "↓" : "↑"; }
 
+  const setScrapeState = (code: string, state: ScrapeState) => {
+    setScrapeStates(prev => new Map(prev).set(code, state));
+  };
+
+  const clearScrapeState = (code: string) => {
+    setScrapeStates(prev => { const n = new Map(prev); n.delete(code); return n; });
+    revertTimers.current.delete(code);
+  };
+
+  const scheduleRevert = (code: string, delay = 3000) => {
+    const existing = revertTimers.current.get(code);
+    if (existing) clearTimeout(existing);
+    const timer = setTimeout(() => clearScrapeState(code), delay);
+    revertTimers.current.set(code, timer);
+  };
+
   const handleScrape = async (code: string) => {
-    setScraping(prev => new Set(prev).add(code));
+    setScrapeState(code, "scraping");
     try {
       await api.post("api/v1/admin/market/constituents/scrape", { searchParams: { type: "industry", code } }).json();
       const timer = setInterval(async () => {
         try {
-          const res = await api.get("api/v1/admin/market/constituents/scrape/status", { searchParams: { type: "industry", code } }).json<{ code: number; data: { status: string } }>();
-          if (res.data?.status === "success" || res.data?.status === "failed") {
+          const res = await api.get("api/v1/admin/market/constituents/scrape/status", { searchParams: { type: "industry", code } }).json<{ code: number; data: { status: string; snapDate?: string; relationCount?: number; error?: string } }>();
+          const st = res.data?.status;
+          if (st === "success" || st === "failed") {
             clearInterval(timer); pollRef.current.delete(code);
-            setScraping(prev => { const n = new Set(prev); n.delete(code); return n; });
-            if (res.data?.status === "success") await fetchData();
+            if (st === "success") {
+              setScrapeState(code, "success");
+              setData(prev => prev.map(item => {
+                if (item.code !== code) return item;
+                return {
+                  ...item,
+                  stockCount: res.data.relationCount ?? item.stockCount,
+                  snapDate: res.data.snapDate ?? item.snapDate,
+                };
+              }));
+            } else {
+              setScrapeState(code, "failed");
+            }
+            scheduleRevert(code);
           }
-        } catch { clearInterval(timer); pollRef.current.delete(code); setScraping(prev => { const n = new Set(prev); n.delete(code); return n; }); }
+        } catch { clearInterval(timer); pollRef.current.delete(code); setScrapeState(code, "failed"); scheduleRevert(code); }
       }, 3000);
       pollRef.current.set(code, timer);
-    } catch { setScraping(prev => { const n = new Set(prev); n.delete(code); return n; }); }
+    } catch { setScrapeState(code, "failed"); scheduleRevert(code); }
   };
 
   const handlePin = async (code: string, pinned: boolean) => {
@@ -130,8 +167,8 @@ export default function IndustriesPage() {
             {SORT_FIELDS.map((f) => <th key={f.key} onClick={() => handleSort(f.key)} className="px-3 py-2 text-right cursor-pointer select-none hover:bg-gray-100">{f.label} <span className="text-blue-600">{arrow(f.key)}</span></th>)}
           </tr></thead>
           <tbody>
-            {loading ? <tr><td colSpan={11} className="px-4 py-8 text-center text-gray-400">加载中...</td></tr> :
-             data.length === 0 ? <tr><td colSpan={11} className="px-4 py-8 text-center text-gray-400">无数据</td></tr> :
+            {loading ? <tr><td colSpan={12} className="px-4 py-8 text-center text-gray-400">加载中...</td></tr> :
+             data.length === 0 ? <tr><td colSpan={12} className="px-4 py-8 text-center text-gray-400">无数据</td></tr> :
              data.map((item) => {
                const stale = isStale(item.snapDate);
                const pidx = pinnedIdx(item.code);
@@ -151,7 +188,7 @@ export default function IndustriesPage() {
                   )}
                 </td>
                 <td className="px-3 py-2 font-mono text-xs text-gray-500">{item.code}</td>
-                <td className="px-3 py-2 text-blue-600 cursor-pointer hover:underline" onClick={() => router.push(`/admin/industries/${item.code}`)}>
+                <td className="px-3 py-2 text-blue-600 cursor-pointer hover:underline" onClick={() => router.push(`/admin/industries/${item.code}?name=${encodeURIComponent(item.name)}`)}>
                   {stale && !item.pinned && <span className="inline-block mr-1 text-amber-500" title="超过30天未更新">&#9888;</span>}
                   {item.name}
                 </td>
@@ -160,15 +197,20 @@ export default function IndustriesPage() {
                   <a href={`https://q.10jqka.com.cn/thshy/detail/code/${item.code}/`} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">同花顺</a>
                 </td>
                 <td className="px-3 py-2">
-                  <button onClick={() => handleScrape(item.code)} disabled={scraping.has(item.code)} className={`rounded px-2 py-0.5 text-xs ${scraping.has(item.code) ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-blue-100 text-blue-700 hover:bg-blue-200"}`}>
-                    {scraping.has(item.code) ? "采集中" : "采集"}
-                  </button>
+                  {(() => {
+                    const ss = scrapeStates.get(item.code);
+                    if (ss === "scraping") return <span className="inline-flex items-center gap-1 rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-500"><span className="animate-spin inline-block w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full" />采集中</span>;
+                    if (ss === "success") return <span className="rounded bg-green-100 px-2 py-0.5 text-xs text-green-700">✓ 成功</span>;
+                    if (ss === "failed") return <span className="rounded bg-red-100 px-2 py-0.5 text-xs text-red-700">✗ 失败</span>;
+                    return <button onClick={() => handleScrape(item.code)} className="rounded px-2 py-0.5 text-xs bg-blue-100 text-blue-700 hover:bg-blue-200">采集</button>;
+                  })()}
                 </td>
                 <td className="px-3 py-2 text-center text-blue-600 cursor-pointer underline" onClick={() => router.push(`/admin/stocks?industry=${item.name}`)}>{item.stockCount}</td>
                 <td className="px-3 py-2 text-right text-blue-600 cursor-pointer" onClick={() => router.push(`/admin/margin-stats/industry/${item.code}`)}>{fmt(item.marginBalance)}</td>
                 <td className={`px-3 py-2 text-right cursor-pointer ${item.marginChange > 0 ? "text-red-600" : "text-green-600"}`} onClick={() => router.push(`/admin/margin-stats/industry/${item.code}`)}>{item.marginChange > 0 ? "↑" : "↓"}{fmt(Math.abs(item.marginChange))}</td>
                 <td className="px-3 py-2 text-right cursor-pointer" onClick={() => router.push(`/admin/margin-stats/industry/${item.code}`)}>{fmt(item.shortBalance)}</td>
                 <td className={`px-3 py-2 text-right cursor-pointer ${item.shortChange > 0 ? "text-red-600" : "text-green-600"}`} onClick={() => router.push(`/admin/margin-stats/industry/${item.code}`)}>{item.shortChange > 0 ? "↑" : "↓"}{fmt(Math.abs(item.shortChange))}</td>
+                <td className="px-3 py-2 text-right font-medium">{item.volumePct != null ? item.volumePct.toFixed(2) + "%" : "-"}</td>
               </tr>
             );})}
           </tbody>

@@ -43,6 +43,9 @@ public class SectorIndexDaily implements Serializable {
 
     private BigDecimal changePct;
 
+    @TableField(exist = false)
+    private BigDecimal volumePct;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
 

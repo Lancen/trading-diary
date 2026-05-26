@@ -137,6 +137,16 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
               行业列表
             </Link>
             <Link
+              href="/admin/rankings"
+              className={`block rounded-lg px-6 py-2 text-sm font-medium transition-colors ${
+                isActive(pathname, "/admin/rankings", true)
+                  ? "bg-primary text-primary-foreground"
+                  : "text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              板块排名
+            </Link>
+            <Link
               href="/admin/margin-stats"
               className={`block rounded-lg px-6 py-2 text-sm font-medium transition-colors ${
                 isActive(pathname, "/admin/margin-stats")

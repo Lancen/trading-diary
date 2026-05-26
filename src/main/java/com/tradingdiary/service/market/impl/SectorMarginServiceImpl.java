@@ -7,7 +7,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -44,41 +46,49 @@ public class SectorMarginServiceImpl implements SectorMarginService {
         String sectorTable = SECTOR_TABLE_MAP.get(sectorType);
         String sectorCodeColumn = SECTOR_CODE_COLUMN_MAP.get(sectorType);
 
-        StringBuilder sql = new StringBuilder();
-        sql.append("SELECT m.trade_date, ? AS sector_type, ? AS sector_code, ")
-           .append("SUM(m.margin_balance) AS margin_balance, ")
-           .append("SUM(m.short_balance) AS short_balance, ")
-           .append("SUM(m.total_balance) AS total_balance ")
-           .append("FROM margin_daily m ")
-           .append("INNER JOIN ").append(sectorTable).append(" s ON m.stock_code = s.stock_code AND s.is_deleted = 0 ")
-           .append("WHERE s.").append(sectorCodeColumn).append(" = ? AND m.is_deleted = 0 ");
+        String innerSql = "SELECT m.trade_date, "
+                + "SUM(m.margin_balance) AS margin_balance, "
+                + "SUM(m.short_balance) AS short_balance, "
+                + "SUM(m.total_balance) AS total_balance "
+                + "FROM margin_daily m "
+                + "INNER JOIN " + sectorTable + " s ON m.stock_code = s.stock_code AND s.is_deleted = 0 "
+                + "WHERE s." + sectorCodeColumn + " = ? AND m.is_deleted = 0 ";
 
+        List<Object> innerParams = new ArrayList<>();
+        innerParams.add(sectorCode);
         if (startDate != null) {
-            sql.append("AND m.trade_date >= ? ");
+            innerSql += "AND m.trade_date >= ? ";
+            innerParams.add(startDate);
         }
         if (endDate != null) {
-            sql.append("AND m.trade_date <= ? ");
+            innerSql += "AND m.trade_date <= ? ";
+            innerParams.add(endDate);
         }
-        sql.append("GROUP BY m.trade_date ORDER BY m.trade_date ASC");
+        innerSql += "GROUP BY m.trade_date ";
 
-        Object[] params;
-        if (startDate != null && endDate != null) {
-            params = new Object[]{sectorType, sectorCode, sectorCode, startDate, endDate};
-        } else if (startDate != null) {
-            params = new Object[]{sectorType, sectorCode, sectorCode, startDate};
-        } else if (endDate != null) {
-            params = new Object[]{sectorType, sectorCode, sectorCode, endDate};
-        } else {
-            params = new Object[]{sectorType, sectorCode, sectorCode};
-        }
+        String sql = "SELECT trade_date, ? AS sector_type, ? AS sector_code, "
+                + "margin_balance, short_balance, total_balance, "
+                + "margin_balance - LAG(margin_balance) OVER (ORDER BY trade_date) AS margin_balance_change, "
+                + "short_balance - LAG(short_balance) OVER (ORDER BY trade_date) AS short_balance_change, "
+                + "total_balance - LAG(total_balance) OVER (ORDER BY trade_date) AS total_balance_change "
+                + "FROM (" + innerSql + ") sub "
+                + "ORDER BY trade_date ASC";
 
-        return jdbcTemplate.query(sql.toString(), (rs, rowNum) -> new SectorMarginDaily(
+        List<Object> params = new ArrayList<>();
+        params.add(sectorType);
+        params.add(sectorCode);
+        params.addAll(innerParams);
+
+        return jdbcTemplate.query(sql, (rs, rowNum) -> new SectorMarginDaily(
                 rs.getDate("trade_date").toLocalDate(),
                 rs.getString("sector_type"),
                 rs.getString("sector_code"),
                 rs.getBigDecimal("margin_balance"),
                 rs.getBigDecimal("short_balance"),
-                rs.getBigDecimal("total_balance")
-        ), params);
+                rs.getBigDecimal("total_balance"),
+                rs.getBigDecimal("margin_balance_change"),
+                rs.getBigDecimal("short_balance_change"),
+                rs.getBigDecimal("total_balance_change")
+        ), params.toArray());
     }
 }

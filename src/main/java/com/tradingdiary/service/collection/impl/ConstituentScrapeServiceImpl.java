@@ -260,21 +260,31 @@ public class ConstituentScrapeServiceImpl implements ConstituentScrapeService {
                         .eq(StockIndustry::getIsDeleted, false)
         );
 
+        Set<String> newStockSet = new HashSet<>(stockCodes);
         Set<String> existingKeys = new HashSet<>();
-        List<StockIndustry> toUpdate = new ArrayList<>();
-        for (StockIndustry si : existing) {
-            existingKeys.add(si.getStockCode() + ":" + si.getIndustryCode());
-        }
 
         List<StockIndustry> toInsert = new ArrayList<>();
+        List<StockIndustry> toUpdate = new ArrayList<>();
+        List<StockIndustry> toDelete = new ArrayList<>();
+
+        for (StockIndustry si : existing) {
+            existingKeys.add(si.getStockCode() + ":" + si.getIndustryCode());
+            if (!newStockSet.contains(si.getStockCode())) {
+                si.setIsDeleted(true);
+                toDelete.add(si);
+            }
+        }
+
         for (String stockCode : stockCodes) {
             String compositeKey = stockCode + ":" + industryCode;
             if (existingKeys.contains(compositeKey)) {
-                StockIndustry si = new StockIndustry();
-                si.setStockCode(stockCode);
-                si.setIndustryCode(industryCode);
-                si.setSnapDate(snapDate);
-                toUpdate.add(si);
+                for (StockIndustry ex : existing) {
+                    if (ex.getStockCode().equals(stockCode) && ex.getIndustryCode().equals(industryCode)) {
+                        ex.setSnapDate(snapDate);
+                        toUpdate.add(ex);
+                        break;
+                    }
+                }
             } else {
                 StockIndustry si = new StockIndustry();
                 si.setStockCode(stockCode);
@@ -285,30 +295,20 @@ public class ConstituentScrapeServiceImpl implements ConstituentScrapeService {
             }
         }
 
+        if (!toDelete.isEmpty()) {
+            batchSqlRunner.batchUpdate(toDelete);
+            log.info("Batch soft-deleted {} stock_industry records for industry {}", toDelete.size(), industryCode);
+        }
         if (!toInsert.isEmpty()) {
             batchSqlRunner.batchInsert(toInsert);
             log.info("Batch inserted {} stock_industry records for industry {}", toInsert.size(), industryCode);
         }
-
         if (!toUpdate.isEmpty()) {
-            List<StockIndustry> updateWithId = new ArrayList<>();
-            for (StockIndustry target : toUpdate) {
-                for (StockIndustry ex : existing) {
-                    if (ex.getStockCode().equals(target.getStockCode())
-                            && ex.getIndustryCode().equals(target.getIndustryCode())) {
-                        ex.setSnapDate(snapDate);
-                        updateWithId.add(ex);
-                        break;
-                    }
-                }
-            }
-            if (!updateWithId.isEmpty()) {
-                batchSqlRunner.batchUpdate(updateWithId);
-                log.info("Batch updated {} stock_industry records for industry {}", updateWithId.size(), industryCode);
-            }
+            batchSqlRunner.batchUpdate(toUpdate);
+            log.info("Batch updated {} stock_industry records for industry {}", toUpdate.size(), industryCode);
         }
 
-        return toInsert.size();
+        return newStockSet.size();
     }
 
     private int batchUpsertStockConcept(List<String> stockCodes, String conceptCode, LocalDate snapDate) {
@@ -318,13 +318,21 @@ public class ConstituentScrapeServiceImpl implements ConstituentScrapeService {
                         .eq(StockConcept::getIsDeleted, false)
         );
 
+        Set<String> newStockSet = new HashSet<>(stockCodes);
         Set<String> existingKeys = new HashSet<>();
-        for (StockConcept sc : existing) {
-            existingKeys.add(sc.getStockCode() + ":" + sc.getConceptCode());
-        }
 
         List<StockConcept> toInsert = new ArrayList<>();
         List<StockConcept> toUpdate = new ArrayList<>();
+        List<StockConcept> toDelete = new ArrayList<>();
+
+        for (StockConcept sc : existing) {
+            existingKeys.add(sc.getStockCode() + ":" + sc.getConceptCode());
+            if (!newStockSet.contains(sc.getStockCode())) {
+                sc.setIsDeleted(true);
+                toDelete.add(sc);
+            }
+        }
+
         for (String stockCode : stockCodes) {
             String compositeKey = stockCode + ":" + conceptCode;
             if (existingKeys.contains(compositeKey)) {
@@ -345,16 +353,19 @@ public class ConstituentScrapeServiceImpl implements ConstituentScrapeService {
             }
         }
 
+        if (!toDelete.isEmpty()) {
+            batchSqlRunner.batchUpdate(toDelete);
+            log.info("Batch soft-deleted {} stock_concept records for concept {}", toDelete.size(), conceptCode);
+        }
         if (!toInsert.isEmpty()) {
             batchSqlRunner.batchInsert(toInsert);
             log.info("Batch inserted {} stock_concept records for concept {}", toInsert.size(), conceptCode);
         }
-
         if (!toUpdate.isEmpty()) {
             batchSqlRunner.batchUpdate(toUpdate);
             log.info("Batch updated {} stock_concept records for concept {}", toUpdate.size(), conceptCode);
         }
 
-        return toInsert.size();
+        return newStockSet.size();
     }
 }

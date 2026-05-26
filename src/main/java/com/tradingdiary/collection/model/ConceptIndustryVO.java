@@ -16,6 +16,7 @@ public class ConceptIndustryVO {
     private BigDecimal marginChange;
     private BigDecimal shortBalance;
     private BigDecimal shortChange;
+    private BigDecimal volumePct;
     private LocalDate snapDate;
     private Boolean pinned;
     private Integer pinOrder;

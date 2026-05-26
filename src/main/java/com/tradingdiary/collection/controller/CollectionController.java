@@ -118,6 +118,27 @@ public class CollectionController {
         return ApiResponse.ok("任务已提交（交易日: " + effectiveDate + "），正在后台执行");
     }
 
+    private static final List<String> DAILY_COLLECTION_ORDER = List.of(
+            "TRADE_CALENDAR",
+            "STOCK_INFO",
+            "MARGIN_DAILY_SSE",
+            "MARGIN_DAILY_SZSE",
+            "MARGIN_MACRO_SSE",
+            "MARGIN_MACRO_SZSE",
+            "MARKET_INDEX_DAILY",
+            "INDUSTRY_INDEX_DAILY",
+            "CONCEPT_INDEX_DAILY"
+    );
+
+    @Operation(summary = "一键触发每日采集（按依赖顺序依次执行）")
+    @PostMapping("/trigger-daily")
+    public ApiResponse<String> triggerDaily(@RequestParam(required = false) LocalDate tradeDate) {
+        LocalDate effectiveDate = tradeDate != null ? tradeDate : collectionQueryService.getLatestTradeDate();
+        orchestrator.orchestrateDailyAsync(DAILY_COLLECTION_ORDER, effectiveDate)
+                .thenAccept(result -> log.info("一键每日采集完成: {} → {}", effectiveDate, result));
+        return ApiResponse.ok("一键采集已提交（交易日: " + effectiveDate + "），共 " + DAILY_COLLECTION_ORDER.size() + " 个任务按顺序执行");
+    }
+
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(CollectionController.class);
 
     /**
@@ -151,6 +172,10 @@ public class CollectionController {
         CompletableFuture<String> future;
         if ("STOCK_DAILY".equals(dt)) {
             future = orchestrator.backfillStockDailyAsync(start, end);
+        } else if ("INDUSTRY_INDEX_DAILY".equals(dt)) {
+            future = orchestrator.backfillSectorIndexDailyAsync("INDUSTRY", start, end);
+        } else if ("CONCEPT_INDEX_DAILY".equals(dt)) {
+            future = orchestrator.backfillSectorIndexDailyAsync("CONCEPT", start, end);
         } else {
             com.tradingdiary.collection.model.BackfillRequest req = new com.tradingdiary.collection.model.BackfillRequest();
             req.setDataType(dt);

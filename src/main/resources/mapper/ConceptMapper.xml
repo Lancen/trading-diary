@@ -7,15 +7,27 @@
                COUNT(DISTINCT sc.stock_code) AS stockCount,
                SUM(md.margin_balance) AS marginBalance, SUM(md.margin_change) AS marginChange,
                SUM(md.short_balance) AS shortBalance, SUM(md.short_change) AS shortChange,
-               MAX(sc.snap_date) AS snapDate
+               MAX(sc.snap_date) AS snapDate,
+               CASE WHEN mkt.amount IS NOT NULL AND mkt.amount > 0
+                    THEN ROUND(IFNULL(sid.amount, 0) / mkt.amount * 100, 2)
+                    ELSE NULL END AS volumePct
         FROM concept c
         LEFT JOIN stock_concept sc ON c.code = sc.concept_code AND sc.is_deleted = 0
-        LEFT JOIN margin_daily md ON sc.stock_code = md.stock_code AND sc.snap_date = md.trade_date AND md.is_deleted = 0
+        LEFT JOIN margin_daily md ON sc.stock_code = md.stock_code AND md.is_deleted = 0
             <if test="tradeDate != null">AND md.trade_date = #{tradeDate}</if>
             <if test="tradeDate == null">AND md.trade_date = (SELECT MAX(trade_date) FROM margin_daily WHERE is_deleted = 0)</if>
+        LEFT JOIN sector_index_daily sid ON c.code = sid.sector_code
+            AND sid.sector_type = 'CONCEPT' AND sid.is_deleted = 0
+            <if test="tradeDate != null">AND sid.trade_date = #{tradeDate}</if>
+            <if test="tradeDate == null">AND sid.trade_date = (SELECT MAX(trade_date) FROM margin_daily WHERE is_deleted = 0)</if>
+        CROSS JOIN (
+            SELECT SUM(amount) AS amount FROM market_index_daily WHERE is_deleted = 0
+            <if test="tradeDate != null">AND trade_date = #{tradeDate}</if>
+            <if test="tradeDate == null">AND trade_date = (SELECT MAX(trade_date) FROM margin_daily WHERE is_deleted = 0)</if>
+        ) mkt
         WHERE c.is_deleted = 0
         <if test='keyword != null and keyword != ""'>AND c.name LIKE CONCAT('%', #{keyword}, '%')</if>
-        GROUP BY c.code, c.name, c.pinned, c.pin_order
+        GROUP BY c.code, c.name, c.pinned, c.pin_order, mkt.amount
         ORDER BY c.pinned DESC, c.pin_order ASC, ${sortBy} ${sortDir}
         LIMIT #{offset}, #{size}
     </select>
@@ -23,7 +35,7 @@
     <select id="countConceptList" resultType="long">
         SELECT COUNT(DISTINCT c.id) FROM concept c
         LEFT JOIN stock_concept sc ON c.code = sc.concept_code AND sc.is_deleted = 0
-        LEFT JOIN margin_daily md ON sc.stock_code = md.stock_code AND sc.snap_date = md.trade_date AND md.is_deleted = 0
+        LEFT JOIN margin_daily md ON sc.stock_code = md.stock_code AND md.is_deleted = 0
             <if test="tradeDate != null">AND md.trade_date = #{tradeDate}</if>
             <if test="tradeDate == null">AND md.trade_date = (SELECT MAX(trade_date) FROM margin_daily WHERE is_deleted = 0)</if>
         WHERE c.is_deleted = 0

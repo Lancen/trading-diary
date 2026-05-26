@@ -34,6 +34,61 @@ interface CookieStatus {
   updatedAt: string | null;
 }
 
+type TabType = "daily" | "fixed";
+
+const DAILY_TYPES = [
+  "TRADE_CALENDAR",
+  "STOCK_INFO",
+  "MARGIN_DAILY_SSE",
+  "MARGIN_DAILY_SZSE",
+  "MARGIN_MACRO_SSE",
+  "MARGIN_MACRO_SZSE",
+  "MARKET_INDEX_DAILY",
+  "INDUSTRY_INDEX_DAILY",
+  "CONCEPT_INDEX_DAILY",
+];
+
+const FIXED_TYPES = ["INDUSTRY_NAME", "CONCEPT_NAME"];
+
+const FLOW_STEPS = [
+  {
+    step: 1,
+    dataTypes: ["TRADE_CALENDAR"],
+    label: "交易日历",
+    desc: "获取交易日信息，为后续采集提供日期基准",
+  },
+  {
+    step: 2,
+    dataTypes: ["STOCK_INFO"],
+    label: "股票行情",
+    desc: "采集全市场股票行情，含日线数据（STOCK_DAILY联动）",
+  },
+  {
+    step: 3,
+    dataTypes: ["MARGIN_DAILY_SSE", "MARGIN_DAILY_SZSE"],
+    label: "两融明细",
+    desc: "沪深两市融资融券明细数据",
+  },
+  {
+    step: 4,
+    dataTypes: ["MARGIN_MACRO_SSE", "MARGIN_MACRO_SZSE"],
+    label: "两融总量",
+    desc: "沪深两市融资融券总量数据",
+  },
+  {
+    step: 5,
+    dataTypes: ["MARKET_INDEX_DAILY"],
+    label: "宽基指数",
+    desc: "上证、深证、创业板等宽基指数日线",
+  },
+  {
+    step: 6,
+    dataTypes: ["INDUSTRY_INDEX_DAILY", "CONCEPT_INDEX_DAILY"],
+    label: "板块指数",
+    desc: "行业/概念板块指数日线（依赖板块分类数据）",
+  },
+];
+
 function StatusBadge({ status }: { status: string | null }) {
   if (!status) return <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-400">未触发</span>;
   if (status === "SUCCESS") return <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700">正常</span>;
@@ -49,6 +104,82 @@ function formatTime(iso: string | null): string {
   });
 }
 
+function FlowStepNode({
+  step,
+  label,
+  desc,
+  dataTypes,
+  statusList,
+  isLast,
+  onClick,
+}: {
+  step: typeof FLOW_STEPS[number];
+  label: string;
+  desc: string;
+  dataTypes: string[];
+  statusList: CollectionStatus[];
+  isLast: boolean;
+  onClick: (dataType: string) => void;
+}) {
+  const hasFailed = dataTypes.some((dt) => {
+    const s = statusList.find((x) => x.dataType === dt);
+    return s?.lastFetch?.status === "FAILED" || s?.lastCleanse?.status === "FAILED";
+  });
+  const hasRunning = dataTypes.some((dt) => {
+    const s = statusList.find((x) => x.dataType === dt);
+    return s?.lastFetch?.status === "RUNNING" || s?.lastCleanse?.status === "RUNNING";
+  });
+  const allSuccess = dataTypes.every((dt) => {
+    const s = statusList.find((x) => x.dataType === dt);
+    return s && (!s.lastFetch || s.lastFetch.status === "SUCCESS") && (!s.lastCleanse || s.lastCleanse.status === "SUCCESS");
+  });
+
+  let borderColor = "border-gray-200";
+  let bgColor = "bg-white";
+  let stepBg = "bg-gray-100 text-gray-500";
+  if (hasFailed) { borderColor = "border-red-300"; bgColor = "bg-red-50"; stepBg = "bg-red-500 text-white"; }
+  else if (hasRunning) { borderColor = "border-blue-300"; bgColor = "bg-blue-50"; stepBg = "bg-blue-500 text-white"; }
+  else if (allSuccess) { borderColor = "border-green-300"; bgColor = "bg-green-50"; stepBg = "bg-green-500 text-white"; }
+
+  return (
+    <div className="flex items-stretch">
+      <div className="flex flex-col items-center">
+        <div className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${stepBg}`}>
+          {step.step}
+        </div>
+        {!isLast && <div className="w-0.5 flex-1 bg-gray-200 my-1" />}
+      </div>
+      <div className={`ml-3 mb-4 flex-1 rounded-lg border p-3 ${borderColor} ${bgColor}`}>
+        <div className="flex items-center justify-between mb-1">
+          <span className="font-semibold text-sm">{label}</span>
+          <div className="flex gap-1">
+            {dataTypes.map((dt) => {
+              const s = statusList.find((x) => x.dataType === dt);
+              return <StatusBadge key={dt} status={s?.lastFetch?.status ?? null} />;
+            })}
+          </div>
+        </div>
+        <p className="text-xs text-gray-500 mb-2">{desc}</p>
+        <div className="flex gap-2 flex-wrap">
+          {dataTypes.map((dt) => {
+            const s = statusList.find((x) => x.dataType === dt);
+            return (
+              <button
+                key={dt}
+                onClick={() => onClick(dt)}
+                className="rounded border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs text-blue-700 hover:bg-blue-100 transition-colors"
+              >
+                {s?.dataTypeLabel || dt}
+                <span className="ml-1 text-blue-400">→</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function CollectionHubPage() {
   const [statusList, setStatusList] = useState<CollectionStatus[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,6 +187,8 @@ export default function CollectionHubPage() {
   const [cookieStatus, setCookieStatus] = useState<CookieStatus>({ hasCookie: false, cookiePreview: "", updatedAt: null });
   const [cookieInput, setCookieInput] = useState("");
   const [savingCookie, setSavingCookie] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabType>("daily");
+  const [triggeringDaily, setTriggeringDaily] = useState(false);
   const router = useRouter();
 
   useEffect(() => { fetchStatus(); fetchConstituentFiles(); fetchCookieStatus(); }, []);
@@ -102,6 +235,17 @@ export default function CollectionHubPage() {
     finally { setSavingCookie(false); }
   }
 
+  async function handleTriggerDaily() {
+    setTriggeringDaily(true);
+    try {
+      const res = await api.post("api/v1/admin/collection/trigger-daily").json<{ code: number; data: string }>();
+      if (res.code === 200) {
+        setTimeout(() => fetchStatus(), 3000);
+      }
+    } catch (e) { console.error(e); }
+    finally { setTriggeringDaily(false); }
+  }
+
   const normalCount = statusList.filter(s =>
     (!s.lastFetch || s.lastFetch.status === "SUCCESS") &&
     (!s.lastCleanse || s.lastCleanse.status === "SUCCESS")
@@ -119,6 +263,9 @@ export default function CollectionHubPage() {
     MARGIN_DAILY_SZSE: "/admin/collection/MARGIN_DAILY_SZSE",
     MARGIN_MACRO_SSE: "/admin/collection/MARGIN_MACRO_SSE",
     MARGIN_MACRO_SZSE: "/admin/collection/MARGIN_MACRO_SZSE",
+    MARKET_INDEX_DAILY: "/admin/collection/MARKET_INDEX_DAILY",
+    INDUSTRY_INDEX_DAILY: "/admin/collection/INDUSTRY_INDEX_DAILY",
+    CONCEPT_INDEX_DAILY: "/admin/collection/CONCEPT_INDEX_DAILY",
   };
 
   const handleCardClick = (dataType: string) => {
@@ -128,6 +275,9 @@ export default function CollectionHubPage() {
 
   const constituentCount = constituentFiles.length;
   const latestConstituent = constituentFiles[0]?.fetchedDate || "-";
+
+  const dailyStatusList = statusList.filter(s => DAILY_TYPES.includes(s.dataType));
+  const fixedStatusList = statusList.filter(s => FIXED_TYPES.includes(s.dataType));
 
   return (
     <div className="space-y-6">
@@ -190,57 +340,203 @@ export default function CollectionHubPage() {
         </p>
       </div>
 
+      {/* Tab切换 */}
+      <div className="flex rounded-lg border overflow-hidden">
+        <button
+          onClick={() => setActiveTab("daily")}
+          className={`px-6 py-2.5 text-sm font-medium transition-colors ${
+            activeTab === "daily"
+              ? "bg-blue-600 text-white"
+              : "bg-white text-gray-600 hover:bg-gray-100"
+          }`}
+        >
+          每日采集
+        </button>
+        <button
+          onClick={() => setActiveTab("fixed")}
+          className={`px-6 py-2.5 text-sm font-medium transition-colors ${
+            activeTab === "fixed"
+              ? "bg-blue-600 text-white"
+              : "bg-white text-gray-600 hover:bg-gray-100"
+          }`}
+        >
+          固定采集
+        </button>
+      </div>
+
       {loading ? (
         <div className="py-8 text-center text-gray-500">加载中...</div>
+      ) : activeTab === "daily" ? (
+        <DailyCollectionTab
+          statusList={dailyStatusList}
+          triggeringDaily={triggeringDaily}
+          onTriggerDaily={handleTriggerDaily}
+          onCardClick={handleCardClick}
+        />
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <FixedCollectionTab
+          statusList={fixedStatusList}
+          constituentCount={constituentCount}
+          latestConstituent={latestConstituent}
+          onCardClick={handleCardClick}
+          onConstituentsClick={() => router.push("/admin/collection/constituents")}
+        />
+      )}
+    </div>
+  );
+}
+
+function DailyCollectionTab({
+  statusList,
+  triggeringDaily,
+  onTriggerDaily,
+  onCardClick,
+}: {
+  statusList: CollectionStatus[];
+  triggeringDaily: boolean;
+  onTriggerDaily: () => void;
+  onCardClick: (dataType: string) => void;
+}) {
+  return (
+    <div className="space-y-6">
+      {/* 一键采集 */}
+      <div className="flex items-center gap-4">
+        <button
+          onClick={onTriggerDaily}
+          disabled={triggeringDaily}
+          className="rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-md hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all"
+        >
+          {triggeringDaily ? (
+            <span className="inline-flex items-center gap-2">
+              <span className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+              采集中...
+            </span>
+          ) : (
+            "⚡ 一键采集"
+          )}
+        </button>
+        <span className="text-xs text-gray-400">
+          按依赖顺序依次执行全部每日采集任务（共 {DAILY_TYPES.length} 个）
+        </span>
+      </div>
+
+      {/* 流程图 */}
+      <div className="rounded-lg border bg-white p-5">
+        <h2 className="font-semibold mb-4 text-sm text-gray-700">采集流程</h2>
+        <div>
+          {FLOW_STEPS.map((step, idx) => (
+            <FlowStepNode
+              key={step.step}
+              step={step}
+              label={step.label}
+              desc={step.desc}
+              dataTypes={step.dataTypes}
+              statusList={statusList}
+              isLast={idx === FLOW_STEPS.length - 1}
+              onClick={onCardClick}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* 详细状态卡片 */}
+      <div>
+        <h2 className="font-semibold mb-3 text-sm text-gray-700">采集状态明细</h2>
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {statusList.map((item) => {
-            const isFailed = item.lastFetch?.status === "FAILED";
-            const target = routeMap[item.dataType];
+            const isFailed = item.lastFetch?.status === "FAILED" || item.lastCleanse?.status === "FAILED";
+            const isRunning = item.lastFetch?.status === "RUNNING" || item.lastCleanse?.status === "RUNNING";
             return (
               <div
                 key={item.dataType}
-                onClick={() => handleCardClick(item.dataType)}
-                className={"rounded-lg border p-4 transition-shadow hover:shadow-md " +
-                  (isFailed ? "border-red-300 bg-red-50" : "bg-white") +
-                  (target ? " cursor-pointer border-blue-300" : "")
+                onClick={() => onCardClick(item.dataType)}
+                className={"rounded-lg border p-3 transition-shadow hover:shadow-md cursor-pointer " +
+                  (isFailed ? "border-red-300 bg-red-50" : isRunning ? "border-blue-300 bg-blue-50" : "bg-white border-gray-200")
                 }
               >
                 <div className="flex items-center justify-between">
-                  <h3 className="font-semibold">{item.dataTypeLabel}</h3>
+                  <h3 className="font-medium text-sm">{item.dataTypeLabel}</h3>
                   <StatusBadge status={item.lastFetch?.status ?? null} />
                 </div>
-                <div className="mt-2 space-y-1 text-sm">
+                <div className="mt-1.5 space-y-0.5">
                   <div className="text-xs text-gray-500">
-                    最新采集: {formatTime(item.lastFetch?.completedAt ?? null)}
+                    采集: {formatTime(item.lastFetch?.completedAt ?? null)}
                   </div>
                   <div className="text-xs text-gray-500">
-                    数据时间: {formatTime(item.lastDataDate)}
+                    数据: {formatTime(item.lastDataDate)}
                   </div>
                 </div>
-                {target && (
-                  <p className="mt-2 text-xs text-blue-600">→ 查看详情</p>
-                )}
               </div>
             );
           })}
-
-          {/* 成分股卡片 */}
-          <div
-            onClick={() => router.push("/admin/collection/constituents")}
-            className="cursor-pointer rounded-lg border border-blue-300 bg-white p-4 transition-shadow hover:shadow-md"
-          >
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold">成分股数据</h3>
-              <StatusBadge status="SUCCESS" />
-            </div>
-            <div className="mt-2 space-y-1 text-sm">
-              <div className="text-xs text-gray-500">{constituentCount} 个文件 · 最近 {latestConstituent}</div>
-            </div>
-            <p className="mt-2 text-xs text-blue-600">→ 管理</p>
-          </div>
         </div>
-      )}
+      </div>
+    </div>
+  );
+}
+
+function FixedCollectionTab({
+  statusList,
+  constituentCount,
+  latestConstituent,
+  onCardClick,
+  onConstituentsClick,
+}: {
+  statusList: CollectionStatus[];
+  constituentCount: number;
+  latestConstituent: string;
+  onCardClick: (dataType: string) => void;
+  onConstituentsClick: () => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg border bg-amber-50 p-4">
+        <p className="text-sm text-amber-800">
+          固定采集数据无需每日更新，通常在板块分类发生变化时手动触发即可。
+        </p>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {statusList.map((item) => {
+          const isFailed = item.lastFetch?.status === "FAILED";
+          return (
+            <div
+              key={item.dataType}
+              onClick={() => onCardClick(item.dataType)}
+              className={"rounded-lg border p-4 transition-shadow hover:shadow-md cursor-pointer " +
+                (isFailed ? "border-red-300 bg-red-50" : "bg-white border-gray-200")
+              }
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold">{item.dataTypeLabel}</h3>
+                <StatusBadge status={item.lastFetch?.status ?? null} />
+              </div>
+              <div className="mt-2 space-y-1 text-sm">
+                <div className="text-xs text-gray-500">
+                  最新采集: {formatTime(item.lastFetch?.completedAt ?? null)}
+                </div>
+                <div className="text-xs text-gray-500">
+                  数据时间: {formatTime(item.lastDataDate)}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+
+        <div
+          onClick={onConstituentsClick}
+          className="cursor-pointer rounded-lg border border-gray-200 bg-white p-4 transition-shadow hover:shadow-md"
+        >
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold">成分股数据</h3>
+            <StatusBadge status="SUCCESS" />
+          </div>
+          <div className="mt-2 space-y-1 text-sm">
+            <div className="text-xs text-gray-500">{constituentCount} 个文件 · 最近 {latestConstituent}</div>
+          </div>
+          <p className="mt-2 text-xs text-blue-600">→ 管理</p>
+        </div>
+      </div>
     </div>
   );
 }

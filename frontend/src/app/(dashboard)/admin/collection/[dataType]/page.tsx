@@ -37,22 +37,30 @@ const LABEL_MAP: Record<string, string> = {
   INDUSTRY_NAME: "行业板块分类", CONCEPT_NAME: "概念板块分类",
   MARGIN_DAILY_SSE: "两融明细(沪市)", MARGIN_DAILY_SZSE: "两融明细(深市)",
   MARGIN_MACRO_SSE: "两融总量(沪市)", MARGIN_MACRO_SZSE: "两融总量(深市)",
+  MARKET_INDEX_DAILY: "宽基指数日线",
+  INDUSTRY_INDEX_DAILY: "行业指数日线",
+  CONCEPT_INDEX_DAILY: "概念指数日线",
 };
 
 const CALENDAR_TYPES = new Set(["STOCK_INFO", "MARGIN_DAILY_SSE", "MARGIN_DAILY_SZSE", "MARGIN_MACRO_SSE", "MARGIN_MACRO_SZSE"]);
+const SECTOR_INDEX_TYPES = new Set(["INDUSTRY_INDEX_DAILY", "CONCEPT_INDEX_DAILY"]);
 
 
-function BackfillButton({ onDone }: { onDone: () => void }) {
+function BackfillButton({ dataType, onDone }: { dataType: string; onDone: () => void }) {
   const [open, setOpen] = useState(false);
   const [bfStart, setBfStart] = useState("");
   const [bfEnd, setBfEnd] = useState("");
   const toast = useToast((s) => s.toast);
 
+  const isSectorIndex = SECTOR_INDEX_TYPES.has(dataType);
+  const backfillType = isSectorIndex ? dataType : "STOCK_DAILY";
+  const label = isSectorIndex ? LABEL_MAP[dataType] : "日线数据（STOCK_DAILY）";
+
   async function handleBackfill() {
     if (!bfStart || !bfEnd) { toast("请选择日期范围", "error"); return; }
     try {
       const res = await api.post("api/v1/admin/collection/backfill", {
-        json: { dataType: "STOCK_DAILY", startDate: bfStart, endDate: bfEnd },
+        json: { dataType: backfillType, startDate: bfStart, endDate: bfEnd },
       }).json<{ code: number; msg?: string }>();
       if (res.code === 200) { toast("补采任务已提交", "success"); setOpen(false); onDone(); }
       else toast(`补采失败: ${res.msg || ""}`, "error");
@@ -68,7 +76,7 @@ function BackfillButton({ onDone }: { onDone: () => void }) {
           <div className="relative z-50 w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
             <h2 className="mb-4 text-lg font-bold">历史数据补采</h2>
             <div className="space-y-4">
-              <p className="text-sm text-gray-500">日线数据（STOCK_DAILY）</p>
+              <p className="text-sm text-gray-500">{label}</p>
               <div className="flex gap-4">
                 <div className="flex-1"><label className="block text-sm font-medium text-gray-700">开始日期</label><input type="date" value={bfStart} onChange={(e) => setBfStart(e.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2 text-sm" /></div>
                 <div className="flex-1"><label className="block text-sm font-medium text-gray-700">结束日期</label><input type="date" value={bfEnd} onChange={(e) => setBfEnd(e.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2 text-sm" /></div>
@@ -182,7 +190,8 @@ export default function CollectionDetailPage() {
           className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50">
           {triggering ? "提交中..." : "触发采集"}
         </button>
-        {dataType === "STOCK_INFO" && <BackfillButton onDone={fetchData} />}
+        {dataType === "STOCK_INFO" && <BackfillButton dataType={dataType} onDone={fetchData} />}
+        {SECTOR_INDEX_TYPES.has(dataType) && <BackfillButton dataType={dataType} onDone={fetchData} />}
       </div>
 
       {/* 月级类型：最新采集时间 + 数据最新时间（替代交易日历的覆盖度信息） */}

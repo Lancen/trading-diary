@@ -30,6 +30,8 @@ public class RawData implements Serializable {
 
     private String source;
 
+    private String sectorCode;
+
     private String rawJson;
 
     private LocalDateTime fetchAt;

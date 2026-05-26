@@ -11,6 +11,7 @@ import com.tradingdiary.security.JwtAuthFilter;
 import com.tradingdiary.service.GapDetectionService;
 import com.tradingdiary.service.collection.CollectionQueryService;
 import com.tradingdiary.service.collection.ConstituentImportService;
+import com.tradingdiary.service.collection.SystemConfigService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -60,15 +61,18 @@ class CollectionControllerTest {
     @MockBean
     private ConstituentImportService constituentImportService;
 
+    @MockBean
+    private SystemConfigService systemConfigService;
+
     @Test
-    void shouldReturnStatusWithEightCards() throws Exception {
+    void shouldReturnStatusWithElevenCards() throws Exception {
         when(collectionQueryService.getCollectionStatus())
                 .thenReturn(buildStatusList());
 
         mockMvc.perform(get("/api/v1/admin/collection/status"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.data.length()").value(8))
+                .andExpect(jsonPath("$.data.length()").value(11))
                 .andExpect(jsonPath("$.data[0].dataType").value("STOCK_INFO"));
     }
 
@@ -300,11 +304,13 @@ class CollectionControllerTest {
     private static List<CollectionStatusVO> buildStatusList() {
         String[] types = {
                 "STOCK_INFO", "TRADE_CALENDAR", "INDUSTRY_NAME", "CONCEPT_NAME",
-                "MARGIN_DAILY_SSE", "MARGIN_DAILY_SZSE", "MARGIN_MACRO_SSE", "MARGIN_MACRO_SZSE"
+                "MARGIN_DAILY_SSE", "MARGIN_DAILY_SZSE", "MARGIN_MACRO_SSE", "MARGIN_MACRO_SZSE",
+                "MARKET_INDEX_DAILY", "INDUSTRY_INDEX_DAILY", "CONCEPT_INDEX_DAILY"
         };
         String[] labels = {
                 "股票行情（含日线）", "交易日历", "行业板块分类", "概念板块分类",
-                "两融明细(沪市)", "两融明细(深市)", "两融总量(沪市)", "两融总量(深市)"
+                "两融明细(沪市)", "两融明细(深市)", "两融总量(沪市)", "两融总量(深市)",
+                "宽基指数日线", "行业指数日线", "概念指数日线"
         };
         List<CollectionStatusVO> list = new ArrayList<>();
         for (int i = 0; i < types.length; i++) {
