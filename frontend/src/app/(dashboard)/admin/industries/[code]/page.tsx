@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import KlineMarginOverlay, { KlinePoint, MarginPoint } from "@/components/chart/KlineMarginOverlay";
@@ -28,6 +28,8 @@ interface StockItem {
   stockName: string;
 }
 
+type ScrapeStatus = "idle" | "scraping" | "success" | "failed";
+
 export default function IndustryDetailPage() {
   const { code } = useParams<{ code: string }>();
   const router = useRouter();
@@ -35,10 +37,11 @@ export default function IndustryDetailPage() {
   const [margins, setMargins] = useState<MarginPoint[]>([]);
   const [stocks, setStocks] = useState<StockItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [scraping, setScraping] = useState(false);
+  const [scrapeStatus, setScrapeStatus] = useState<ScrapeStatus>("idle");
   const [scrapeMsg, setScrapeMsg] = useState("");
   const [range, setRange] = useState("3m");
   const [period, setPeriod] = useState<"daily" | "weekly" | "monthly">("daily");
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchStocks = useCallback(async () => {
     try {
@@ -86,23 +89,52 @@ export default function IndustryDetailPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, []);
+
+  const startPolling = useCallback(() => {
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = setInterval(async () => {
+      try {
+        const res = await api.get("api/v1/admin/market/constituents/scrape/status", {
+          searchParams: { type: "industry", code },
+        }).json<{ code: number; data: { status: string; relationCount?: number; snapDate?: string; error?: string } }>();
+        const status = res.data?.status;
+        if (status === "success") {
+          setScrapeStatus("success");
+          setScrapeMsg(`抓取成功：${res.data.relationCount ?? 0} 条新增，日期 ${res.data.snapDate ?? ""}`);
+          if (pollRef.current) clearInterval(pollRef.current);
+          pollRef.current = null;
+          await fetchStocks();
+        } else if (status === "failed") {
+          setScrapeStatus("failed");
+          setScrapeMsg(`抓取失败: ${res.data?.error ?? "未知错误"}`);
+          if (pollRef.current) clearInterval(pollRef.current);
+          pollRef.current = null;
+        }
+      } catch {
+        if (pollRef.current) clearInterval(pollRef.current);
+        pollRef.current = null;
+        setScrapeStatus("failed");
+        setScrapeMsg("状态查询失败");
+      }
+    }, 3000);
+  }, [code, fetchStocks]);
+
   const handleScrape = async () => {
-    setScraping(true);
+    setScrapeStatus("scraping");
     setScrapeMsg("正在从同花顺抓取成分股...");
     try {
-      const res = await api.post("api/v1/admin/market/constituents/scrape", {
+      await api.post("api/v1/admin/market/constituents/scrape", {
         searchParams: { type: "industry", code },
-      }).json<{ code: number; data: { status: string; relationCount: number; snapDate: string }; message: string }>();
-      if (res.data?.status === "success") {
-        setScrapeMsg(`抓取成功：${res.data.relationCount} 条新增，日期 ${res.data.snapDate}`);
-        await fetchStocks();
-      } else {
-        setScrapeMsg(res.message || "抓取失败");
-      }
+      }).json<{ code: number; data: { status: string } }>();
+      startPolling();
     } catch (e: unknown) {
-      setScrapeMsg(`抓取失败: ${e instanceof Error ? e.message : "未知错误"}`);
-    } finally {
-      setScraping(false);
+      setScrapeStatus("failed");
+      setScrapeMsg(`启动抓取失败: ${e instanceof Error ? e.message : "未知错误"}`);
     }
   };
 
@@ -114,7 +146,6 @@ export default function IndustryDetailPage() {
         <h1 className="text-2xl font-bold text-gray-900">行业详情 {code}</h1>
       </div>
 
-      {/* K线+板块两融叠加图 */}
       <div className="rounded-lg border p-4">
         <div className="flex flex-wrap gap-2 items-center mb-3">
           <span className="font-semibold text-sm">行业指数K线</span>
@@ -126,20 +157,19 @@ export default function IndustryDetailPage() {
         {loading ? <div className="h-[380px] flex items-center justify-center text-gray-500">加载中...</div> : <KlineMarginOverlay klines={klines} margins={margins} period={period} />}
       </div>
 
-      {/* 成分股列表 */}
       <div className="rounded-lg border p-4">
         <div className="flex items-center justify-between mb-2">
           <h3 className="font-semibold text-sm">成分股 ({stocks.length})</h3>
           <button
             onClick={handleScrape}
-            disabled={scraping}
-            className={`rounded px-3 py-1 text-xs ${scraping ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-blue-600 text-white hover:bg-blue-700"}`}
+            disabled={scrapeStatus === "scraping"}
+            className={`rounded px-3 py-1 text-xs ${scrapeStatus === "scraping" ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-blue-600 text-white hover:bg-blue-700"}`}
           >
-            {scraping ? "抓取中..." : "抓取成分股"}
+            {scrapeStatus === "scraping" ? "抓取中..." : "抓取成分股"}
           </button>
         </div>
         {scrapeMsg && (
-          <p className={`text-xs mb-2 ${scrapeMsg.includes("成功") ? "text-green-600" : "text-red-500"}`}>{scrapeMsg}</p>
+          <p className={`text-xs mb-2 ${scrapeStatus === "success" ? "text-green-600" : scrapeStatus === "failed" ? "text-red-500" : "text-blue-500"}`}>{scrapeMsg}</p>
         )}
         {stocks.length > 0 ? (
           <div className="grid grid-cols-4 gap-2">

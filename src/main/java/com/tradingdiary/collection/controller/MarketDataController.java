@@ -71,7 +71,7 @@ public class MarketDataController {
         return ApiResponse.ok(sectorStockService.listConceptStocks(code));
     }
 
-    @Operation(summary = "抓取指定板块的成分股（从同花顺网页）")
+    @Operation(summary = "抓取指定板块的成分股（异步）")
     @PostMapping("/constituents/scrape")
     public ApiResponse<Map<String, Object>> scrapeConstituents(
             @RequestParam String type,
@@ -83,12 +83,21 @@ public class MarketDataController {
             return ApiResponse.fail(400, "板块代码不能为空");
         }
         try {
-            Map<String, Object> result = constituentScrapeService.scrapeAndImport(type, code);
-            return ApiResponse.ok(result);
-        } catch (IllegalArgumentException e) {
-            return ApiResponse.fail(400, e.getMessage());
+            constituentScrapeService.startAsyncScrape(type, code);
+            return ApiResponse.ok(Map.of("status", "scraping", "boardType", type, "code", code));
         } catch (Exception e) {
-            return ApiResponse.fail(500, "抓取失败: " + e.getMessage());
+            return ApiResponse.fail(500, "启动抓取失败: " + e.getMessage());
         }
+    }
+
+    @Operation(summary = "查询成分股抓取状态")
+    @GetMapping("/constituents/scrape/status")
+    public ApiResponse<Map<String, Object>> scrapeStatus(
+            @RequestParam String type,
+            @RequestParam String code) {
+        if (!"industry".equals(type) && !"concept".equals(type)) {
+            return ApiResponse.fail(400, "type 仅支持 industry 或 concept");
+        }
+        return ApiResponse.ok(constituentScrapeService.getScrapeStatus(type, code));
     }
 }

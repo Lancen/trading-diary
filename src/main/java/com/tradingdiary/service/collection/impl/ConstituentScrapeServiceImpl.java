@@ -22,6 +22,8 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -31,6 +33,8 @@ public class ConstituentScrapeServiceImpl implements ConstituentScrapeService {
     private static final Logger log = LoggerFactory.getLogger(ConstituentScrapeServiceImpl.class);
 
     private static final int SCRAPE_TIMEOUT_MINUTES = 5;
+
+    private final Map<String, Map<String, Object>> scrapeStatusMap = new ConcurrentHashMap<>();
 
     private final StockIndustryMapper stockIndustryMapper;
     private final StockConceptMapper stockConceptMapper;
@@ -51,7 +55,39 @@ public class ConstituentScrapeServiceImpl implements ConstituentScrapeService {
     }
 
     @Override
-    @Transactional
+    public void startAsyncScrape(String boardType, String code) {
+        String key = boardType + ":" + code;
+        if (scrapeStatusMap.containsKey(key)) {
+            Map<String, Object> current = scrapeStatusMap.get(key);
+            if ("scraping".equals(current.get("status"))) {
+                return;
+            }
+        }
+
+        scrapeStatusMap.put(key, Map.of("status", "scraping", "boardType", boardType, "code", code));
+
+        CompletableFuture.runAsync(() -> {
+            try {
+                Map<String, Object> result = scrapeAndImport(boardType, code);
+                scrapeStatusMap.put(key, result);
+            } catch (Exception e) {
+                Map<String, Object> fail = new LinkedHashMap<>();
+                fail.put("status", "failed");
+                fail.put("error", e.getMessage());
+                fail.put("boardType", boardType);
+                fail.put("code", code);
+                scrapeStatusMap.put(key, fail);
+            }
+        });
+    }
+
+    @Override
+    public Map<String, Object> getScrapeStatus(String boardType, String code) {
+        String key = boardType + ":" + code;
+        return scrapeStatusMap.getOrDefault(key, Map.of("status", "idle", "boardType", boardType, "code", code));
+    }
+
+    @Override
     public Map<String, Object> scrapeAndImport(String boardType, String code) {
         if (!"industry".equals(boardType) && !"concept".equals(boardType)) {
             throw new IllegalArgumentException("无效的板块类型: " + boardType + "，仅支持 industry/concept");
@@ -62,7 +98,12 @@ public class ConstituentScrapeServiceImpl implements ConstituentScrapeService {
 
         String json = runScraper(boardType, code);
         if (json == null || json.isBlank()) {
-            return Map.of("status", "failed", "error", "抓取脚本未返回数据");
+            Map<String, Object> result = new LinkedHashMap<>();
+            result.put("status", "failed");
+            result.put("error", "抓取脚本未返回数据");
+            result.put("boardType", boardType);
+            result.put("code", code);
+            return result;
         }
 
         JsonNode root;
@@ -70,7 +111,12 @@ public class ConstituentScrapeServiceImpl implements ConstituentScrapeService {
             root = objectMapper.readTree(json);
         } catch (Exception e) {
             log.error("Failed to parse scraper output for {}/{}", boardType, code, e);
-            return Map.of("status", "failed", "error", "JSON 解析失败: " + e.getMessage());
+            Map<String, Object> result = new LinkedHashMap<>();
+            result.put("status", "failed");
+            result.put("error", "JSON 解析失败: " + e.getMessage());
+            result.put("boardType", boardType);
+            result.put("code", code);
+            return result;
         }
 
         String fetchedDate = root.has("fetched_date") ? root.get("fetched_date").asText() : null;
