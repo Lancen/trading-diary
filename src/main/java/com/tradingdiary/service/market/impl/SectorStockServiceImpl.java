@@ -24,7 +24,7 @@ public class SectorStockServiceImpl implements SectorStockService {
     public List<SectorStockItem> listIndustryStocks(String industryCode) {
         String sql = "SELECT si.stock_code, MAX(info.name) AS stock_name "
                    + "FROM stock_industry si "
-                   + "LEFT JOIN stock_info info ON si.stock_code = SUBSTRING(info.code, 3) AND info.is_deleted = 0 "
+                   + "LEFT JOIN stock_info info ON si.stock_code = info.stock_code AND info.is_deleted = 0 "
                    + "WHERE si.industry_code = ? AND si.is_deleted = 0 "
                    + "GROUP BY si.stock_code "
                    + "ORDER BY si.stock_code";
@@ -38,7 +38,7 @@ public class SectorStockServiceImpl implements SectorStockService {
     public List<SectorStockItem> listConceptStocks(String conceptCode) {
         String sql = "SELECT sc.stock_code, MAX(info.name) AS stock_name "
                    + "FROM stock_concept sc "
-                   + "LEFT JOIN stock_info info ON sc.stock_code = SUBSTRING(info.code, 3) AND info.is_deleted = 0 "
+                   + "LEFT JOIN stock_info info ON sc.stock_code = info.stock_code AND info.is_deleted = 0 "
                    + "WHERE sc.concept_code = ? AND sc.is_deleted = 0 "
                    + "GROUP BY sc.stock_code "
                    + "ORDER BY sc.stock_code";

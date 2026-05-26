@@ -101,7 +101,21 @@ public class StockInfoCleanseServiceImpl implements StockInfoCleanseService {
 
     private StockInfo parseStockInfo(JsonNode node, LocalDate snapshotDate) {
         StockInfo info = new StockInfo();
-        info.setCode(safeText(node, "代码"));
+        String code = safeText(node, "代码");
+        info.setCode(code);
+        if (code != null && code.length() > 2) {
+            String prefix = code.substring(0, 2).toLowerCase();
+            if ("sh".equals(prefix) || "sz".equals(prefix) || "bj".equals(prefix)) {
+                info.setMarket(prefix.toUpperCase());
+                info.setStockCode(code.substring(2));
+            } else {
+                info.setMarket("OTHER");
+                info.setStockCode(code);
+            }
+        } else if (code != null) {
+            info.setMarket("OTHER");
+            info.setStockCode(code);
+        }
         info.setName(safeText(node, "名称"));
         info.setLatestPrice(safeDecimal(node, "最新价"));
         info.setChangePct(safeDecimal(node, "涨跌幅"));

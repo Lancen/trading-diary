@@ -25,6 +25,10 @@ public class StockInfo implements Serializable {
 
     private String code;
 
+    private String market;
+
+    private String stockCode;
+
     private String name;
 
     private BigDecimal latestPrice;

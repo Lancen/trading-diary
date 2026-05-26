@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<!-- 股票基本信息 Mapper，提供股票行情数据的查询与统计 -->
 <mapper namespace="com.tradingdiary.mapper.StockInfoMapper">
 
-    <!-- 分页查询股票列表，关联行业、概念和融资融券数据，支持关键词、行业、概念筛选和排序 -->
     <select id="selectStockList" resultType="com.tradingdiary.collection.model.StockListVO">
-        SELECT si.code AS stockCode, si.name AS stockName,
+        SELECT si.stock_code AS stockCode, si.name AS stockName,
                si.latest_price AS close, si.change_pct AS changePct,
                si.volume, si.snapshot_date AS tradeDate,
                ind.name AS industry,
@@ -13,47 +11,44 @@
                md.margin_balance AS marginBalance, md.margin_change AS marginChange,
                md.short_balance AS shortBalance, md.short_change AS shortChange
         FROM stock_info si
-        LEFT JOIN stock_industry sci ON si.code = sci.stock_code AND si.snapshot_date = sci.snap_date AND sci.is_deleted = 0
+        LEFT JOIN stock_industry sci ON si.stock_code = sci.stock_code AND sci.is_deleted = 0
         LEFT JOIN industry ind ON sci.industry_code = ind.code AND ind.is_deleted = 0
-        LEFT JOIN stock_concept sc ON si.code = sc.stock_code AND si.snapshot_date = sc.snap_date AND sc.is_deleted = 0
+        LEFT JOIN stock_concept sc ON si.stock_code = sc.stock_code AND sc.is_deleted = 0
         LEFT JOIN concept c ON sc.concept_code = c.code AND c.is_deleted = 0
-        LEFT JOIN margin_daily md ON si.code = md.stock_code AND si.snapshot_date = md.trade_date AND md.is_deleted = 0
+        LEFT JOIN margin_daily md ON si.stock_code = md.stock_code AND si.snapshot_date = md.trade_date AND md.is_deleted = 0
         WHERE si.is_deleted = 0
         <if test="tradeDate != null">AND si.snapshot_date = #{tradeDate}</if>
         <if test="tradeDate == null">AND si.snapshot_date = (SELECT MAX(snapshot_date) FROM stock_info WHERE is_deleted = 0)</if>
-        <if test='keyword != null and keyword != ""'>AND (si.code LIKE CONCAT('%', #{keyword}, '%') OR si.name LIKE CONCAT('%', #{keyword}, '%'))</if>
+        <if test='keyword != null and keyword != ""'>AND (si.stock_code LIKE CONCAT('%', #{keyword}, '%') OR si.name LIKE CONCAT('%', #{keyword}, '%'))</if>
         <if test='industry != null and industry != ""'>AND ind.name = #{industry}</if>
         <if test='concept != null and concept != ""'>AND c.name = #{concept}</if>
-        GROUP BY si.code, si.name, si.latest_price, si.change_pct, si.volume, si.snapshot_date, ind.name,
+        GROUP BY si.stock_code, si.name, si.latest_price, si.change_pct, si.volume, si.snapshot_date, ind.name,
                  md.margin_balance, md.margin_change, md.short_balance, md.short_change
         ORDER BY ${sortBy} ${sortDir}
         LIMIT #{offset}, #{size}
     </select>
 
-    <!-- 统计符合筛选条件的股票总数 -->
     <select id="countStockList" resultType="long">
         SELECT COUNT(DISTINCT si.id)
         FROM stock_info si
-        LEFT JOIN stock_industry sci ON si.code = sci.stock_code AND si.snapshot_date = sci.snap_date AND sci.is_deleted = 0
+        LEFT JOIN stock_industry sci ON si.stock_code = sci.stock_code AND sci.is_deleted = 0
         LEFT JOIN industry ind ON sci.industry_code = ind.code AND ind.is_deleted = 0
-        LEFT JOIN stock_concept sc ON si.code = sc.stock_code AND si.snapshot_date = sc.snap_date AND sc.is_deleted = 0
+        LEFT JOIN stock_concept sc ON si.stock_code = sc.stock_code AND sc.is_deleted = 0
         LEFT JOIN concept c ON sc.concept_code = c.code AND c.is_deleted = 0
         WHERE si.is_deleted = 0
         <if test="tradeDate != null">AND si.snapshot_date = #{tradeDate}</if>
         <if test="tradeDate == null">AND si.snapshot_date = (SELECT MAX(snapshot_date) FROM stock_info WHERE is_deleted = 0)</if>
-        <if test='keyword != null and keyword != ""'>AND (si.code LIKE CONCAT('%', #{keyword}, '%') OR si.name LIKE CONCAT('%', #{keyword}, '%'))</if>
+        <if test='keyword != null and keyword != ""'>AND (si.stock_code LIKE CONCAT('%', #{keyword}, '%') OR si.name LIKE CONCAT('%', #{keyword}, '%'))</if>
         <if test='industry != null and industry != ""'>AND ind.name = #{industry}</if>
         <if test='concept != null and concept != ""'>AND c.name = #{concept}</if>
     </select>
 
-    <!-- 查询指定日期范围内的去重快照日期列表 -->
     <select id="selectDistinctSnapshotDates" resultType="java.time.LocalDate">
         SELECT DISTINCT snapshot_date FROM stock_info
         WHERE snapshot_date BETWEEN #{start} AND #{end} AND is_deleted = 0
         ORDER BY snapshot_date
     </select>
 
-    <!-- 查询股票信息表的最大快照日期 -->
     <select id="selectMaxTradeDate" resultType="java.time.LocalDate">
         SELECT MAX(snapshot_date) FROM stock_info WHERE is_deleted = 0
     </select>
