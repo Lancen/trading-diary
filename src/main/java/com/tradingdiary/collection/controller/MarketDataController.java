@@ -79,9 +79,14 @@ public class MarketDataController {
         if (!"industry".equals(type) && !"concept".equals(type)) {
             return ApiResponse.fail(400, "type 仅支持 industry 或 concept");
         }
+        if (code == null || code.isBlank()) {
+            return ApiResponse.fail(400, "板块代码不能为空");
+        }
         try {
             Map<String, Object> result = constituentScrapeService.scrapeAndImport(type, code);
             return ApiResponse.ok(result);
+        } catch (IllegalArgumentException e) {
+            return ApiResponse.fail(400, e.getMessage());
         } catch (Exception e) {
             return ApiResponse.fail(500, "抓取失败: " + e.getMessage());
         }
