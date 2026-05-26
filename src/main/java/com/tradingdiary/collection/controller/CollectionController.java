@@ -106,14 +106,15 @@ public class CollectionController {
      */
     @Operation(summary = "触发指定数据类型的采集任务")
     @PostMapping("/trigger/{dataType}")
-    public ApiResponse<String> trigger(@PathVariable String dataType) {
+    public ApiResponse<String> trigger(@PathVariable String dataType,
+                                       @RequestParam(required = false) LocalDate tradeDate) {
         if (!collectionQueryService.isValidDataType(dataType)) {
             return ApiResponse.fail(400, "未知数据类型: " + dataType);
         }
-        LocalDate tradeDate = collectionQueryService.getLatestTradeDate();
-        orchestrator.orchestrateAsync(dataType, tradeDate)
-                .thenAccept(result -> log.info("异步采集完成: {} {} → {}", dataType, tradeDate, result));
-        return ApiResponse.ok("任务已提交（交易日: " + tradeDate + "），正在后台执行");
+        LocalDate effectiveDate = tradeDate != null ? tradeDate : collectionQueryService.getLatestTradeDate();
+        orchestrator.orchestrateAsync(dataType, effectiveDate)
+                .thenAccept(result -> log.info("异步采集完成: {} {} → {}", dataType, effectiveDate, result));
+        return ApiResponse.ok("任务已提交（交易日: " + effectiveDate + "），正在后台执行");
     }
 
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(CollectionController.class);

@@ -3,6 +3,9 @@ logging:
     com.tradingdiary.mapper: DEBUG
     org.flywaydb: DEBUG
 
+aktools:
+  base-url: http://127.0.0.1:8081
+
 springdoc:
   api-docs:
     enabled: true

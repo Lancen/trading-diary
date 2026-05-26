@@ -2,12 +2,14 @@ package com.tradingdiary.collection.controller;
 
 import com.tradingdiary.model.ApiResponse;
 import com.tradingdiary.service.MarketDataService;
+import com.tradingdiary.service.collection.ConstituentScrapeService;
 import com.tradingdiary.service.market.SectorStockItem;
 import com.tradingdiary.service.market.SectorStockService;
 import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,10 +25,14 @@ public class MarketDataController {
 
     private final MarketDataService marketDataService;
     private final SectorStockService sectorStockService;
+    private final ConstituentScrapeService constituentScrapeService;
 
-    public MarketDataController(MarketDataService marketDataService, SectorStockService sectorStockService) {
+    public MarketDataController(MarketDataService marketDataService,
+                                 SectorStockService sectorStockService,
+                                 ConstituentScrapeService constituentScrapeService) {
         this.marketDataService = marketDataService;
         this.sectorStockService = sectorStockService;
+        this.constituentScrapeService = constituentScrapeService;
     }
 
     @Operation(summary = "获取概念列表（含两融聚合）")
@@ -63,5 +69,21 @@ public class MarketDataController {
     @GetMapping("/concepts/{code}/stocks")
     public ApiResponse<List<SectorStockItem>> conceptStocks(@PathVariable String code) {
         return ApiResponse.ok(sectorStockService.listConceptStocks(code));
+    }
+
+    @Operation(summary = "抓取指定板块的成分股（从同花顺网页）")
+    @PostMapping("/constituents/scrape")
+    public ApiResponse<Map<String, Object>> scrapeConstituents(
+            @RequestParam String type,
+            @RequestParam String code) {
+        if (!"industry".equals(type) && !"concept".equals(type)) {
+            return ApiResponse.fail(400, "type 仅支持 industry 或 concept");
+        }
+        try {
+            Map<String, Object> result = constituentScrapeService.scrapeAndImport(type, code);
+            return ApiResponse.ok(result);
+        } catch (Exception e) {
+            return ApiResponse.fail(500, "抓取失败: " + e.getMessage());
+        }
     }
 }
