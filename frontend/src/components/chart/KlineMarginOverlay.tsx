@@ -294,14 +294,23 @@ export default function KlineMarginOverlay({ klines, margins, period = "daily", 
 
   return (
     <div>
-      <div ref={klineRef} style={{ height: klineH }} />
-      <div ref={volumeRef} style={{ height: volH }} />
-      <div ref={marginRef} style={{ height: marginH }} />
+      <div className="relative">
+        <span className="absolute top-1 left-2 text-xs text-gray-400">价格</span>
+        <div ref={klineRef} style={{ height: klineH }} />
+      </div>
+      <div className="relative">
+        <span className="absolute top-1 left-2 text-xs text-gray-400">成交量</span>
+        <div ref={volumeRef} style={{ height: volH }} />
+      </div>
+      <div className="relative">
+        <span className="absolute top-1 left-2 text-xs text-gray-400">两融余额</span>
+        <div ref={marginRef} style={{ height: marginH }} />
+      </div>
       <div className="flex gap-4 mt-2 text-xs text-gray-500">
-        <span className="text-red-600">━━ K线(点)</span>
-        <span className="text-gray-500">━━ 成交量(手)</span>
-        <span className="text-blue-600">━━ 融资余额(元)</span>
-        <span className="text-purple-600">╌╌ 融券余额(元)</span>
+        <span className="text-red-600">━━ K线</span>
+        <span className="text-gray-500">━━ 成交量</span>
+        <span className="text-blue-600">━━ 融资余额</span>
+        <span className="text-purple-600">╌╌ 融券余额</span>
       </div>
     </div>
   );

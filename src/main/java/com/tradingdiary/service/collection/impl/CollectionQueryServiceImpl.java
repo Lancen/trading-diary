@@ -30,7 +30,8 @@ public class CollectionQueryServiceImpl implements CollectionQueryService {
     private static final Map<String, String> DATA_TYPE_LABELS = new LinkedHashMap<>();
 
     static {
-        DATA_TYPE_LABELS.put("STOCK_INFO", "股票行情（含日线）");
+        DATA_TYPE_LABELS.put("STOCK_SPOT", "股票行情（含日线）");
+        DATA_TYPE_LABELS.put("STOCK_DAILY_TUSHARE", "股票日线历史(Tushare)");
         DATA_TYPE_LABELS.put("TRADE_CALENDAR", "交易日历");
         DATA_TYPE_LABELS.put("INDUSTRY_NAME", "行业板块分类");
         DATA_TYPE_LABELS.put("CONCEPT_NAME", "概念板块分类");
@@ -103,14 +104,30 @@ public class CollectionQueryServiceImpl implements CollectionQueryService {
 
     @Override
     public LocalDate getLatestTradeDate() {
+        LocalDate today = LocalDate.now();
+        boolean todayIsTradingDay = isTradingDay(today);
+
+        if (todayIsTradingDay && LocalTime.now().isAfter(LocalTime.of(16, 0))) {
+            return today;
+        }
+
         TradeCalendar cal = tradeCalendarMapper.selectOne(
                 new LambdaQueryWrapper<TradeCalendar>()
                         .eq(TradeCalendar::getIsTradingDay, 1)
-                        .le(TradeCalendar::getTradeDate, LocalDate.now())
+                        .lt(TradeCalendar::getTradeDate, today)
                         .orderByDesc(TradeCalendar::getTradeDate)
                         .last("LIMIT 1")
         );
-        return cal != null ? cal.getTradeDate() : LocalDate.now();
+        return cal != null ? cal.getTradeDate() : today;
+    }
+
+    private boolean isTradingDay(LocalDate date) {
+        TradeCalendar cal = tradeCalendarMapper.selectOne(
+                new LambdaQueryWrapper<TradeCalendar>()
+                        .eq(TradeCalendar::getTradeDate, date)
+                        .last("LIMIT 1")
+        );
+        return cal != null && cal.getIsTradingDay() == 1;
     }
 
     @Override
@@ -120,7 +137,11 @@ public class CollectionQueryServiceImpl implements CollectionQueryService {
 
     private LocalDateTime queryLastDataDate(String dataType) {
         switch (dataType) {
-            case "STOCK_INFO": {
+            case "STOCK_SPOT": {
+                LocalDate d = stockInfoMapper.selectMaxTradeDate();
+                return d != null ? LocalDateTime.of(d, LocalTime.MIN) : null;
+            }
+            case "STOCK_DAILY_TUSHARE": {
                 LocalDate d = stockInfoMapper.selectMaxTradeDate();
                 return d != null ? LocalDateTime.of(d, LocalTime.MIN) : null;
             }

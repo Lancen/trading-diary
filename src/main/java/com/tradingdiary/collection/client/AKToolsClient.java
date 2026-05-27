@@ -52,20 +52,7 @@ public class AKToolsClient {
         return get("/api/public/stock_zh_a_spot");
     }
 
-    public String fetchStockDaily(String symbol, String startDate, String endDate) {
-        String prefixed = toTxSymbol(symbol);
-        log.info("Fetching stock daily data (腾讯): symbol={}, startDate={}, endDate={}", prefixed, startDate, endDate);
-        return get("/api/public/stock_zh_a_hist_tx?symbol={symbol}&start_date={startDate}&end_date={endDate}",
-                prefixed, startDate, endDate);
-    }
-
-    private static String toTxSymbol(String symbol) {
-        char first = symbol.charAt(0);
-        if (first == '6') return "sh" + symbol;  // 上交所
-        if (first == '0' || first == '3') return "sz" + symbol;  // 深交所
-        return "nq" + symbol;  // 北交所/新三板 (4/8/9)
-    }
-
+    
     public String fetchIndustryNames() {
         log.info("Fetching industry board names (同花顺)");
         return get("/api/public/stock_board_industry_name_ths");
@@ -101,10 +88,9 @@ public class AKToolsClient {
         return get("/api/public/stock_margin_detail_szse?date={date}", date);
     }
 
-    public String fetchMarketIndexDaily(String symbol, String startDate, String endDate) {
-        log.info("Fetching market index daily: symbol={}, startDate={}, endDate={}", symbol, startDate, endDate);
-        return get("/api/public/stock_zh_index_daily?symbol={symbol}&start_date={startDate}&end_date={endDate}",
-                symbol, startDate, endDate);
+    public String fetchMarketIndexDaily(String symbol) {
+        log.info("Fetching market index daily: symbol={}", symbol);
+        return get("/api/public/stock_zh_index_daily?symbol={symbol}", symbol);
     }
 
     public String fetchIndustryIndexDaily(String industryName, String startDate, String endDate) {

@@ -19,15 +19,6 @@ interface CollectionStatus {
   lastDataDate: string | null;
 }
 
-interface ConstituentFile {
-  filename: string;
-  fetchedDate: string | null;
-  industryCount: number;
-  conceptCount: number;
-  totalRelations: number;
-  imported: boolean;
-}
-
 interface CookieStatus {
   hasCookie: boolean;
   cookiePreview: string;
@@ -37,8 +28,7 @@ interface CookieStatus {
 type TabType = "daily" | "fixed";
 
 const DAILY_TYPES = [
-  "TRADE_CALENDAR",
-  "STOCK_INFO",
+  "STOCK_SPOT",
   "MARGIN_DAILY_SSE",
   "MARGIN_DAILY_SZSE",
   "MARGIN_MACRO_SSE",
@@ -48,41 +38,35 @@ const DAILY_TYPES = [
   "CONCEPT_INDEX_DAILY",
 ];
 
-const FIXED_TYPES = ["INDUSTRY_NAME", "CONCEPT_NAME"];
+const FIXED_TYPES = ["TRADE_CALENDAR", "INDUSTRY_NAME", "CONCEPT_NAME"];
 
 const FLOW_STEPS = [
   {
     step: 1,
-    dataTypes: ["TRADE_CALENDAR"],
-    label: "交易日历",
-    desc: "获取交易日信息，为后续采集提供日期基准",
+    dataTypes: ["STOCK_SPOT"],
+    label: "股票行情",
+    desc: "采集全市场股票行情，同时写入股票信息和日线数据",
   },
   {
     step: 2,
-    dataTypes: ["STOCK_INFO"],
-    label: "股票行情",
-    desc: "采集全市场股票行情，含日线数据（STOCK_DAILY联动）",
-  },
-  {
-    step: 3,
     dataTypes: ["MARGIN_DAILY_SSE", "MARGIN_DAILY_SZSE"],
     label: "两融明细",
     desc: "沪深两市融资融券明细数据",
   },
   {
-    step: 4,
+    step: 3,
     dataTypes: ["MARGIN_MACRO_SSE", "MARGIN_MACRO_SZSE"],
     label: "两融总量",
     desc: "沪深两市融资融券总量数据",
   },
   {
-    step: 5,
+    step: 4,
     dataTypes: ["MARKET_INDEX_DAILY"],
     label: "宽基指数",
     desc: "上证、深证、创业板等宽基指数日线",
   },
   {
-    step: 6,
+    step: 5,
     dataTypes: ["INDUSTRY_INDEX_DAILY", "CONCEPT_INDEX_DAILY"],
     label: "板块指数",
     desc: "行业/概念板块指数日线（依赖板块分类数据）",
@@ -183,15 +167,15 @@ function FlowStepNode({
 export default function CollectionHubPage() {
   const [statusList, setStatusList] = useState<CollectionStatus[]>([]);
   const [loading, setLoading] = useState(true);
-  const [constituentFiles, setConstituentFiles] = useState<ConstituentFile[]>([]);
   const [cookieStatus, setCookieStatus] = useState<CookieStatus>({ hasCookie: false, cookiePreview: "", updatedAt: null });
   const [cookieInput, setCookieInput] = useState("");
   const [savingCookie, setSavingCookie] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("daily");
   const [triggeringDaily, setTriggeringDaily] = useState(false);
+  const [triggerResult, setTriggerResult] = useState<string | null>(null);
   const router = useRouter();
 
-  useEffect(() => { fetchStatus(); fetchConstituentFiles(); fetchCookieStatus(); }, []);
+  useEffect(() => { fetchStatus(); fetchCookieStatus(); }, []);
 
   async function fetchStatus() {
     setLoading(true);
@@ -200,13 +184,6 @@ export default function CollectionHubPage() {
       setStatusList(res.data || []);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
-  }
-
-  async function fetchConstituentFiles() {
-    try {
-      const res = await api.get("api/v1/admin/collection/constituents/files").json<{ code: number; data: ConstituentFile[] }>();
-      setConstituentFiles(res.data || []);
-    } catch (e) { console.error(e); }
   }
 
   async function fetchCookieStatus() {
@@ -237,9 +214,11 @@ export default function CollectionHubPage() {
 
   async function handleTriggerDaily() {
     setTriggeringDaily(true);
+    setTriggerResult(null);
     try {
       const res = await api.post("api/v1/admin/collection/trigger-daily").json<{ code: number; data: string }>();
       if (res.code === 200) {
+        setTriggerResult(res.data);
         setTimeout(() => fetchStatus(), 3000);
       }
     } catch (e) { console.error(e); }
@@ -255,7 +234,7 @@ export default function CollectionHubPage() {
   ).length;
 
   const routeMap: Record<string, string> = {
-    STOCK_INFO: "/admin/collection/STOCK_INFO",
+    STOCK_SPOT: "/admin/collection/STOCK_SPOT",
     TRADE_CALENDAR: "/admin/collection/TRADE_CALENDAR",
     INDUSTRY_NAME: "/admin/collection/INDUSTRY_NAME",
     CONCEPT_NAME: "/admin/collection/CONCEPT_NAME",
@@ -273,9 +252,6 @@ export default function CollectionHubPage() {
     if (target) router.push(target);
   };
 
-  const constituentCount = constituentFiles.length;
-  const latestConstituent = constituentFiles[0]?.fetchedDate || "-";
-
   const dailyStatusList = statusList.filter(s => DAILY_TYPES.includes(s.dataType));
   const fixedStatusList = statusList.filter(s => FIXED_TYPES.includes(s.dataType));
 
@@ -287,7 +263,7 @@ export default function CollectionHubPage() {
           <span className="text-sm text-gray-500">
             正常 <span className="font-bold text-green-700">{normalCount}</span> · 异常 <span className="font-bold text-red-700">{errorCount}</span>
           </span>
-          <button onClick={() => { fetchStatus(); fetchConstituentFiles(); fetchCookieStatus(); }} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">刷新</button>
+          <button onClick={() => { fetchStatus(); fetchCookieStatus(); }} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">刷新</button>
         </div>
       </div>
 
@@ -370,16 +346,14 @@ export default function CollectionHubPage() {
         <DailyCollectionTab
           statusList={dailyStatusList}
           triggeringDaily={triggeringDaily}
+          triggerResult={triggerResult}
           onTriggerDaily={handleTriggerDaily}
           onCardClick={handleCardClick}
         />
       ) : (
         <FixedCollectionTab
           statusList={fixedStatusList}
-          constituentCount={constituentCount}
-          latestConstituent={latestConstituent}
           onCardClick={handleCardClick}
-          onConstituentsClick={() => router.push("/admin/collection/constituents")}
         />
       )}
     </div>
@@ -389,35 +363,48 @@ export default function CollectionHubPage() {
 function DailyCollectionTab({
   statusList,
   triggeringDaily,
+  triggerResult,
   onTriggerDaily,
   onCardClick,
 }: {
   statusList: CollectionStatus[];
   triggeringDaily: boolean;
+  triggerResult: string | null;
   onTriggerDaily: () => void;
   onCardClick: (dataType: string) => void;
 }) {
   return (
     <div className="space-y-6">
       {/* 一键采集 */}
-      <div className="flex items-center gap-4">
-        <button
-          onClick={onTriggerDaily}
-          disabled={triggeringDaily}
-          className="rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-md hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all"
-        >
-          {triggeringDaily ? (
-            <span className="inline-flex items-center gap-2">
-              <span className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
-              采集中...
-            </span>
-          ) : (
-            "⚡ 一键采集"
-          )}
-        </button>
-        <span className="text-xs text-gray-400">
-          按依赖顺序依次执行全部每日采集任务（共 {DAILY_TYPES.length} 个）
-        </span>
+      <div className="space-y-3">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={onTriggerDaily}
+            disabled={triggeringDaily}
+            className="rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-md hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 transition-all"
+          >
+            {triggeringDaily ? (
+              <span className="inline-flex items-center gap-2">
+                <span className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+                采集中...
+              </span>
+            ) : (
+              "⚡ 一键采集"
+            )}
+          </button>
+          <span className="text-xs text-gray-400">
+            按依赖顺序依次执行全部每日采集任务（共 {DAILY_TYPES.length} 个）
+          </span>
+        </div>
+        <div className="rounded-lg border bg-gray-50 p-3 text-xs text-gray-500 space-y-1">
+          <p>📅 采集日期规则：交易日 16:00 前采集上一交易日数据，16:00 后采集当日数据；非交易日自动采集最近交易日</p>
+          <p>🔄 幂等安全：已完成的步骤自动跳过，支持断点续采</p>
+        </div>
+        {triggerResult && (
+          <div className={`rounded-lg border p-3 text-sm ${triggerResult.includes("已采集完成") ? "border-green-200 bg-green-50 text-green-800" : "border-blue-200 bg-blue-50 text-blue-800"}`}>
+            {triggerResult}
+          </div>
+        )}
       </div>
 
       {/* 流程图 */}
@@ -477,22 +464,16 @@ function DailyCollectionTab({
 
 function FixedCollectionTab({
   statusList,
-  constituentCount,
-  latestConstituent,
   onCardClick,
-  onConstituentsClick,
 }: {
   statusList: CollectionStatus[];
-  constituentCount: number;
-  latestConstituent: string;
   onCardClick: (dataType: string) => void;
-  onConstituentsClick: () => void;
 }) {
   return (
     <div className="space-y-4">
       <div className="rounded-lg border bg-amber-50 p-4">
         <p className="text-sm text-amber-800">
-          固定采集数据无需每日更新，通常在板块分类发生变化时手动触发即可。
+          固定采集数据无需每日更新，通常在板块分类发生变化或每月底更新交易日历时手动触发即可。
         </p>
       </div>
 
@@ -522,20 +503,6 @@ function FixedCollectionTab({
             </div>
           );
         })}
-
-        <div
-          onClick={onConstituentsClick}
-          className="cursor-pointer rounded-lg border border-gray-200 bg-white p-4 transition-shadow hover:shadow-md"
-        >
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold">成分股数据</h3>
-            <StatusBadge status="SUCCESS" />
-          </div>
-          <div className="mt-2 space-y-1 text-sm">
-            <div className="text-xs text-gray-500">{constituentCount} 个文件 · 最近 {latestConstituent}</div>
-          </div>
-          <p className="mt-2 text-xs text-blue-600">→ 管理</p>
-        </div>
       </div>
     </div>
   );

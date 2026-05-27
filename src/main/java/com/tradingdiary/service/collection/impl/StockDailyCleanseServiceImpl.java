@@ -77,106 +77,6 @@ public class StockDailyCleanseServiceImpl implements StockDailyCleanseService {
         return count;
     }
 
-    @Override
-    @Transactional
-    public int cleanseHistBatch(List<String> rawJsonList, List<String> stockCodes) {
-        List<StockDaily> allEntities = new ArrayList<>();
-        for (int i = 0; i < rawJsonList.size(); i++) {
-            allEntities.addAll(parseHistStockDailyListTx(rawJsonList.get(i), stockCodes.get(i)));
-        }
-
-        List<String> uniqueCodes = stockCodes.stream().distinct().toList();
-        List<StockDaily> existing = stockDailyMapper.selectList(
-                new LambdaQueryWrapper<StockDaily>().in(StockDaily::getStockCode, uniqueCodes));
-        Map<String, StockDaily> existingMap = existing.stream()
-                .collect(Collectors.toMap(
-                        e -> e.getStockCode() + "|" + e.getTradeDate(), e -> e, (a, b) -> a));
-
-        List<StockDaily> toInsert = new ArrayList<>();
-        List<StockDaily> toUpdate = new ArrayList<>();
-        for (StockDaily e : allEntities) {
-            String key = e.getStockCode() + "|" + e.getTradeDate();
-            StockDaily exist = existingMap.get(key);
-            if (exist != null) {
-                e.setId(exist.getId());
-                toUpdate.add(e);
-            } else {
-                toInsert.add(e);
-            }
-        }
-
-        int total = 0;
-        if (!toInsert.isEmpty()) total += batchSqlRunner.batchInsert(toInsert);
-        if (!toUpdate.isEmpty()) total += batchSqlRunner.batchUpdate(toUpdate);
-        return total;
-    }
-
-    @Override
-    @Transactional
-    public int cleanseHistJson(String rawJson, String stockCode) {
-        List<StockDaily> entities = parseHistStockDailyListTx(rawJson, stockCode);
-        if (entities.isEmpty()) {
-            log.debug("No hist records parsed for {}", stockCode);
-            return 0;
-        }
-
-        Map<LocalDate, StockDaily> existingMap = stockDailyMapper.selectList(
-                new LambdaQueryWrapper<StockDaily>().eq(StockDaily::getStockCode, stockCode))
-                .stream().collect(Collectors.toMap(StockDaily::getTradeDate, e -> e, (a, b) -> a));
-
-        List<StockDaily> toInsert = new ArrayList<>();
-        List<StockDaily> toUpdate = new ArrayList<>();
-        for (StockDaily e : entities) {
-            StockDaily exist = existingMap.get(e.getTradeDate());
-            if (exist != null) {
-                e.setId(exist.getId());
-                toUpdate.add(e);
-            } else {
-                toInsert.add(e);
-            }
-        }
-
-        int total = 0;
-        if (!toInsert.isEmpty()) total += batchSqlRunner.batchInsert(toInsert);
-        if (!toUpdate.isEmpty()) total += batchSqlRunner.batchUpdate(toUpdate);
-        return total;
-    }
-
-    private List<StockDaily> parseHistStockDailyListTx(String rawJson, String stockCode) {
-        List<StockDaily> result = new ArrayList<>();
-        try {
-            JsonNode root = objectMapper.readTree(rawJson);
-            if (!root.isArray()) {
-                log.warn("Expected JSON array for stock hist, got: {}", root.getNodeType());
-                return result;
-            }
-
-            for (JsonNode node : root) {
-                StockDaily daily = new StockDaily();
-                daily.setStockCode(stockCode);
-                String dateStr = safeText(node, "date");
-                if (dateStr == null || dateStr.isEmpty()) continue;
-                try {
-                    daily.setTradeDate(LocalDate.parse(dateStr.substring(0, 10)));
-                } catch (Exception e) {
-                    log.debug("Failed to parse trade date: {}", dateStr);
-                    continue;
-                }
-                daily.setOpen(safeDecimal(node, "open"));
-                daily.setHigh(safeDecimal(node, "high"));
-                daily.setLow(safeDecimal(node, "low"));
-                daily.setClose(safeDecimal(node, "close"));
-                daily.setVolume(safeLong(node, "volume"));
-                daily.setAmount(safeDecimal(node, "amount"));
-                result.add(daily);
-            }
-        } catch (Exception e) {
-            log.error("Failed to parse stock hist JSON for {}", stockCode, e);
-            throw new RuntimeException("解析个股历史日线数据失败: " + e.getMessage(), e);
-        }
-        return result;
-    }
-
     private List<StockDaily> parseStockDailyList(String rawJson, LocalDate tradeDate) {
         List<StockDaily> result = new ArrayList<>();
         try {
@@ -200,7 +100,8 @@ public class StockDailyCleanseServiceImpl implements StockDailyCleanseService {
 
     private StockDaily parseStockDaily(JsonNode node, LocalDate tradeDate) {
         StockDaily daily = new StockDaily();
-        daily.setStockCode(safeText(node, "代码"));
+        String rawCode = safeText(node, "代码");
+        daily.setStockCode(stripMarketPrefix(rawCode));
         daily.setTradeDate(tradeDate);
         daily.setOpen(safeDecimal(node, "今开"));
         daily.setHigh(safeDecimal(node, "最高"));
@@ -351,5 +252,22 @@ public class StockDailyCleanseServiceImpl implements StockDailyCleanseService {
             log.debug("解析Long失败: field={}", field, e.getMessage());
             return null;
         }
+    }
+
+    /**
+     * 剥离股票代码的市场前缀（sh/sz/bj）
+     *
+     * @param code 原始代码，如 "sh600000" 或 "600000"
+     * @return 剥离前缀后的代码，如 "600000"；无效输入返回原值
+     */
+    private String stripMarketPrefix(String code) {
+        if (code == null || code.isEmpty()) return code;
+        if (code.length() > 2) {
+            String prefix = code.substring(0, 2).toLowerCase();
+            if ("sh".equals(prefix) || "sz".equals(prefix) || "bj".equals(prefix)) {
+                return code.substring(2);
+            }
+        }
+        return code;
     }
 }

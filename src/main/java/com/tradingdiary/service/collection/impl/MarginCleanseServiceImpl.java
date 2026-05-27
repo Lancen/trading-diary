@@ -117,8 +117,9 @@ public class MarginCleanseServiceImpl implements MarginCleanseService {
             boolean isSZSE = "SZSE".equals(exchange);
             for (JsonNode node : root) {
                 MarginDaily daily = new MarginDaily();
-                String code = isSZSE ? safeText(node, "证券代码") : safeText(node, "标的证券代码");
-                daily.setStockCode(code);
+                String rawCode = isSZSE ? safeText(node, "证券代码") : safeText(node, "标的证券代码");
+                String stockCode = stripMarketPrefix(rawCode);
+                daily.setStockCode(stockCode);
                 daily.setTradeDate(tradeDate);
                 daily.setExchange(exchange);
                 daily.setMarginBalance(safeDecimal(node, "融资余额"));
@@ -182,5 +183,22 @@ public class MarginCleanseServiceImpl implements MarginCleanseService {
             log.debug("解析Long失败: field={}", field, e.getMessage());
             return null;
         }
+    }
+
+    /**
+     * 剥离股票代码的市场前缀（sh/sz/bj）
+     *
+     * @param code 原始代码，如 "sh600000" 或 "600000"
+     * @return 剥离前缀后的代码，如 "600000"；无效输入返回原值
+     */
+    private String stripMarketPrefix(String code) {
+        if (code == null || code.isEmpty()) return code;
+        if (code.length() > 2) {
+            String prefix = code.substring(0, 2).toLowerCase();
+            if ("sh".equals(prefix) || "sz".equals(prefix) || "bj".equals(prefix)) {
+                return code.substring(2);
+            }
+        }
+        return code;
     }
 }

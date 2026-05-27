@@ -33,7 +33,8 @@ interface CollectionLog {
 }
 
 const LABEL_MAP: Record<string, string> = {
-  STOCK_INFO: "股票行情", TRADE_CALENDAR: "交易日历",
+  STOCK_SPOT: "股票行情", TRADE_CALENDAR: "交易日历",
+  STOCK_DAILY_TUSHARE: "股票日线(Tushare)",
   INDUSTRY_NAME: "行业板块分类", CONCEPT_NAME: "概念板块分类",
   MARGIN_DAILY_SSE: "两融明细(沪市)", MARGIN_DAILY_SZSE: "两融明细(深市)",
   MARGIN_MACRO_SSE: "两融总量(沪市)", MARGIN_MACRO_SZSE: "两融总量(深市)",
@@ -42,7 +43,7 @@ const LABEL_MAP: Record<string, string> = {
   CONCEPT_INDEX_DAILY: "概念指数日线",
 };
 
-const CALENDAR_TYPES = new Set(["STOCK_INFO", "MARGIN_DAILY_SSE", "MARGIN_DAILY_SZSE", "MARGIN_MACRO_SSE", "MARGIN_MACRO_SZSE"]);
+const CALENDAR_TYPES = new Set(["STOCK_SPOT", "MARGIN_DAILY_SSE", "MARGIN_DAILY_SZSE", "MARGIN_MACRO_SSE", "MARGIN_MACRO_SZSE"]);
 const SECTOR_INDEX_TYPES = new Set(["INDUSTRY_INDEX_DAILY", "CONCEPT_INDEX_DAILY"]);
 
 

@@ -119,8 +119,7 @@ public class CollectionController {
     }
 
     private static final List<String> DAILY_COLLECTION_ORDER = List.of(
-            "TRADE_CALENDAR",
-            "STOCK_INFO",
+            "STOCK_SPOT",
             "MARGIN_DAILY_SSE",
             "MARGIN_DAILY_SZSE",
             "MARGIN_MACRO_SSE",
@@ -134,9 +133,19 @@ public class CollectionController {
     @PostMapping("/trigger-daily")
     public ApiResponse<String> triggerDaily(@RequestParam(required = false) LocalDate tradeDate) {
         LocalDate effectiveDate = tradeDate != null ? tradeDate : collectionQueryService.getLatestTradeDate();
+
+        long alreadyDone = DAILY_COLLECTION_ORDER.stream()
+                .filter(dt -> orchestrator.isDateComplete(dt, effectiveDate))
+                .count();
+
+        if (alreadyDone == DAILY_COLLECTION_ORDER.size()) {
+            return ApiResponse.ok("交易日 " + effectiveDate + " 的全部数据已采集完成，无需重复执行");
+        }
+
         orchestrator.orchestrateDailyAsync(DAILY_COLLECTION_ORDER, effectiveDate)
                 .thenAccept(result -> log.info("一键每日采集完成: {} → {}", effectiveDate, result));
-        return ApiResponse.ok("一键采集已提交（交易日: " + effectiveDate + "），共 " + DAILY_COLLECTION_ORDER.size() + " 个任务按顺序执行");
+        return ApiResponse.ok("一键采集已提交（交易日: " + effectiveDate + "），" +
+                alreadyDone + " 个已完成将跳过，" + (DAILY_COLLECTION_ORDER.size() - alreadyDone) + " 个待执行");
     }
 
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(CollectionController.class);
@@ -170,7 +179,7 @@ public class CollectionController {
         final LocalDate start = request.getStartDate();
         final LocalDate end = request.getEndDate();
         CompletableFuture<String> future;
-        if ("STOCK_DAILY".equals(dt)) {
+        if ("STOCK_DAILY_TUSHARE".equals(dt)) {
             future = orchestrator.backfillStockDailyAsync(start, end);
         } else if ("INDUSTRY_INDEX_DAILY".equals(dt)) {
             future = orchestrator.backfillSectorIndexDailyAsync("INDUSTRY", start, end);

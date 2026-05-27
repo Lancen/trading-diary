@@ -92,40 +92,6 @@ class StockDailyCleanseServiceImplTest {
     }
 
     @Test
-    void shouldCleanseHistBatchSuccessfully() {
-        String histJson1 = "[" +
-                "{\"date\": \"2026-05-18\", \"open\": \"12.00\", \"high\": \"12.50\", \"low\": \"11.80\"," +
-                " \"close\": \"12.30\", \"volume\": \"40000000\", \"amount\": \"500000000\"}" +
-                "]";
-        String histJson2 = "[" +
-                "{\"date\": \"2026-05-19\", \"open\": \"12.40\", \"high\": \"12.80\", \"low\": \"12.20\"," +
-                " \"close\": \"12.60\", \"volume\": \"45000000\", \"amount\": \"560000000\"}" +
-                "]";
-
-        when(stockDailyMapper.selectList(any())).thenReturn(Collections.emptyList());
-        when(batchSqlRunner.batchInsert(any())).thenReturn(2);
-
-        int result = service.cleanseHistBatch(
-                List.of(histJson1, histJson2),
-                List.of("000001", "000002"));
-
-        assertThat(result).isEqualTo(2);
-        verify(batchSqlRunner).batchInsert(any());
-    }
-
-    @Test
-    void shouldCleanseHistBatchWithEmptyData() {
-        String emptyJson = "[]";
-
-        when(stockDailyMapper.selectList(any())).thenReturn(Collections.emptyList());
-
-        int result = service.cleanseHistBatch(List.of(emptyJson), List.of("000001"));
-
-        assertThat(result).isEqualTo(0);
-        verify(batchSqlRunner, never()).batchInsert(any());
-    }
-
-    @Test
     void shouldCleanseTushareDailySuccessfully() {
         String tushareJson = "{\"data\":{\"fields\":[\"ts_code\",\"trade_date\",\"open\",\"high\",\"low\",\"close\",\"vol\",\"amount\"]," +
                 "\"items\":[[\"000001.SZ\",\"20260520\",\"12.50\",\"13.00\",\"12.30\",\"12.80\",\"523401\",\"6600000\"]]}}";

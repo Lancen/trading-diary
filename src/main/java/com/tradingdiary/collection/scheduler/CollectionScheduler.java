@@ -58,11 +58,8 @@ public class CollectionScheduler {
         }
         log.info("Scheduled stock data collection for {}", today);
 
-        String result1 = orchestrator.orchestrate("STOCK_INFO", today);
-        log.info("STOCK_INFO orchestration result: {}", result1);
-
-        String result2 = orchestrator.orchestrate("STOCK_DAILY", today);
-        log.info("STOCK_DAILY orchestration result: {}", result2);
+        String result = orchestrator.orchestrate("STOCK_SPOT", today);
+        log.info("STOCK_SPOT orchestration result: {}", result);
     }
 
     /**

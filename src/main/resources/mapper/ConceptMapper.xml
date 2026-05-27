@@ -20,11 +20,11 @@
             AND sid.sector_type = 'CONCEPT' AND sid.is_deleted = 0
             <if test="tradeDate != null">AND sid.trade_date = #{tradeDate}</if>
             <if test="tradeDate == null">AND sid.trade_date = (SELECT MAX(trade_date) FROM margin_daily WHERE is_deleted = 0)</if>
-        CROSS JOIN (
+        LEFT JOIN (
             SELECT SUM(amount) AS amount FROM market_index_daily WHERE is_deleted = 0
             <if test="tradeDate != null">AND trade_date = #{tradeDate}</if>
             <if test="tradeDate == null">AND trade_date = (SELECT MAX(trade_date) FROM margin_daily WHERE is_deleted = 0)</if>
-        ) mkt
+        ) mkt ON 1=1
         WHERE c.is_deleted = 0
         <if test='keyword != null and keyword != ""'>AND c.name LIKE CONCAT('%', #{keyword}, '%')</if>
         GROUP BY c.code, c.name, c.pinned, c.pin_order, mkt.amount

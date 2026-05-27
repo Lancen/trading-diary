@@ -1,30 +1,14 @@
 package com.tradingdiary.collection.orchestrator;
 
-import com.tradingdiary.collection.CollectionConstants;
-import com.tradingdiary.collection.client.AKToolsClient;
-import com.tradingdiary.collection.client.TushareClient;
+import com.tradingdiary.collection.handler.DataTypeHandler;
+import com.tradingdiary.collection.handler.SectorIndexHandler;
 import com.tradingdiary.collection.model.BackfillRequest;
 import com.tradingdiary.entity.DataCollectionLog;
-import com.tradingdiary.entity.Industry;
-import com.tradingdiary.entity.Concept;
 import com.tradingdiary.entity.RawData;
-import com.tradingdiary.entity.StockInfo;
 import com.tradingdiary.entity.TradeCalendar;
-import com.tradingdiary.mapper.ConceptMapper;
 import com.tradingdiary.mapper.DataCollectionLogMapper;
-import com.tradingdiary.mapper.IndustryMapper;
 import com.tradingdiary.mapper.RawDataMapper;
-import com.tradingdiary.mapper.StockInfoMapper;
 import com.tradingdiary.mapper.TradeCalendarMapper;
-import com.tradingdiary.service.collection.ConceptCleanseService;
-import com.tradingdiary.service.collection.IndustryCleanseService;
-import com.tradingdiary.service.collection.MarginCleanseService;
-import com.tradingdiary.service.collection.MarginMacroCleanseService;
-import com.tradingdiary.service.collection.MarketIndexDailyCleanseService;
-import com.tradingdiary.service.collection.SectorIndexDailyCleanseService;
-import com.tradingdiary.service.collection.StockDailyCleanseService;
-import com.tradingdiary.service.collection.StockInfoCleanseService;
-import com.tradingdiary.service.collection.TradeCalendarService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
@@ -41,9 +25,10 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 
 /**
- * 数据采集编排器，协调采集（FETCH）和清洗（CLEANSE）两阶段的数据处理流程
+ * 数据采集编排器，通过 DataTypeHandler registry 协调 FETCH 和 CLEANSE 两阶段流程
  */
 @Service
 public class CollectionOrchestrator {
@@ -53,60 +38,21 @@ public class CollectionOrchestrator {
     private static final int MAX_RETRIES = 3;
     private static final long INITIAL_BACKOFF_MS = 2000;
 
+    private final Map<String, DataTypeHandler> handlerMap;
     private final Map<String, ReentrantLock> lockMap = new ConcurrentHashMap<>();
-
-    private final AKToolsClient aktoolsClient;
-    private final TushareClient tushareClient;
     private final DataCollectionLogMapper logMapper;
     private final RawDataMapper rawDataMapper;
-    private final StockInfoCleanseService stockInfoCleanseService;
-    private final StockDailyCleanseService stockDailyCleanseService;
-    private final IndustryCleanseService industryCleanseService;
-    private final ConceptCleanseService conceptCleanseService;
-    private final MarginCleanseService marginCleanseService;
-    private final MarginMacroCleanseService marginMacroCleanseService;
-    private final MarketIndexDailyCleanseService marketIndexDailyCleanseService;
-    private final SectorIndexDailyCleanseService sectorIndexDailyCleanseService;
-    private final TradeCalendarService tradeCalendarService;
     private final TradeCalendarMapper tradeCalendarMapper;
-    private final IndustryMapper industryMapper;
-    private final ConceptMapper conceptMapper;
-    private final StockInfoMapper stockInfoMapper;
 
-    public CollectionOrchestrator(AKToolsClient aktoolsClient,
-                                  TushareClient tushareClient,
+    public CollectionOrchestrator(List<DataTypeHandler> handlers,
                                   DataCollectionLogMapper logMapper,
                                   RawDataMapper rawDataMapper,
-                                  StockInfoCleanseService stockInfoCleanseService,
-                                  StockDailyCleanseService stockDailyCleanseService,
-                                  IndustryCleanseService industryCleanseService,
-                                  ConceptCleanseService conceptCleanseService,
-                                  MarginCleanseService marginCleanseService,
-                                  MarginMacroCleanseService marginMacroCleanseService,
-                                  MarketIndexDailyCleanseService marketIndexDailyCleanseService,
-                                  SectorIndexDailyCleanseService sectorIndexDailyCleanseService,
-                                  TradeCalendarService tradeCalendarService,
-                                  TradeCalendarMapper tradeCalendarMapper,
-                                  IndustryMapper industryMapper,
-                                  ConceptMapper conceptMapper,
-                                  StockInfoMapper stockInfoMapper) {
-        this.aktoolsClient = aktoolsClient;
-        this.tushareClient = tushareClient;
+                                  TradeCalendarMapper tradeCalendarMapper) {
+        this.handlerMap = handlers.stream()
+                .collect(Collectors.toMap(DataTypeHandler::dataType, h -> h));
         this.logMapper = logMapper;
         this.rawDataMapper = rawDataMapper;
-        this.stockInfoCleanseService = stockInfoCleanseService;
-        this.stockDailyCleanseService = stockDailyCleanseService;
-        this.industryCleanseService = industryCleanseService;
-        this.conceptCleanseService = conceptCleanseService;
-        this.marginCleanseService = marginCleanseService;
-        this.marginMacroCleanseService = marginMacroCleanseService;
-        this.marketIndexDailyCleanseService = marketIndexDailyCleanseService;
-        this.sectorIndexDailyCleanseService = sectorIndexDailyCleanseService;
-        this.tradeCalendarService = tradeCalendarService;
         this.tradeCalendarMapper = tradeCalendarMapper;
-        this.industryMapper = industryMapper;
-        this.conceptMapper = conceptMapper;
-        this.stockInfoMapper = stockInfoMapper;
     }
 
     @Async("collectionExecutor")
@@ -152,16 +98,17 @@ public class CollectionOrchestrator {
 
     /**
      * 编排执行数据采集和清洗流程
-     * <p>
-     * 根据数据类型和交易日，执行完整的数据采集（FETCH）和清洗（CLEANSE）流程。
-     * 支持数据复用机制，避免重复采集。使用分布式锁确保同一数据类型的采集任务不会并发执行。
-     * </p>
      *
-     * @param dataType 数据类型，如"STOCK_INFO"、"STOCK_DAILY"、"MARGIN_DAILY_SSE"等
+     * @param dataType 数据类型（如 STOCK_SPOT、MARGIN_DAILY_SSE 等）
      * @param tradeDate 交易日期
-     * @return 执行结果描述，包含成功或失败信息
+     * @return 执行结果描述
      */
     public String orchestrate(String dataType, LocalDate tradeDate) {
+        DataTypeHandler handler = handlerMap.get(dataType);
+        if (handler == null) {
+            return "未知数据类型: " + dataType;
+        }
+
         String lockKey = dataType + "_" + tradeDate;
         ReentrantLock lock = lockMap.computeIfAbsent(lockKey, k -> new ReentrantLock());
 
@@ -173,66 +120,43 @@ public class CollectionOrchestrator {
         try {
             log.info("Starting orchestration: dataType={}, tradeDate={}", dataType, tradeDate);
 
-            // STOCK_DAILY 复用 STOCK_INFO 的 FETCH 数据（同一 API，同一份 JSON）
-            if ("STOCK_DAILY".equals(dataType)) {
-                Long stockInfoLogId = findExistingFetchLog("STOCK_INFO", tradeDate);
-                if (stockInfoLogId == null) {
-                    return "请先采集股票基础信息（STOCK_INFO），日线行情复用同一份数据";
-                }
-                log.info("STOCK_DAILY 复用 STOCK_INFO FETCH 数据: tradeDate={}, logId={}", tradeDate, stockInfoLogId);
-                executeCleanse(dataType, tradeDate, stockInfoLogId);
-                return "执行成功（复用股票基础信息采集数据）";
-            }
-
-            // 板块指数K线：FETCH阶段遍历所有板块逐个调API，每板块一条raw_data
-            if ("INDUSTRY_INDEX_DAILY".equals(dataType) || "CONCEPT_INDEX_DAILY".equals(dataType)) {
-                String sectorType = "INDUSTRY_INDEX_DAILY".equals(dataType) ? "INDUSTRY" : "CONCEPT";
+            // 板块指数K线：使用 SectorIndexHandler 的专用路径
+            if (handler instanceof SectorIndexHandler sectorHandler) {
                 Long reuseLogId = findExistingFetchLog(dataType, tradeDate);
                 if (reuseLogId != null) {
                     log.info("复用已有 FETCH 数据: dataType={}, tradeDate={}, logId={}", dataType, tradeDate, reuseLogId);
-                    executeCleanse(dataType, tradeDate, reuseLogId);
+                    executeCleanse(handler, dataType, tradeDate, reuseLogId);
                     return "执行成功（复用已有采集数据）";
                 }
-                Long fetchLogId = executeSectorIndexFetch(dataType, sectorType, tradeDate, tradeDate);
+                Long fetchLogId = executeSectorIndexFetch(sectorHandler, dataType, tradeDate, tradeDate);
                 if (fetchLogId == null) {
                     return "采集失败: 无板块数据";
                 }
-                executeCleanse(dataType, tradeDate, fetchLogId);
+                executeCleanse(handler, dataType, tradeDate, fetchLogId);
                 return "执行成功";
             }
 
-            // 检查是否已有成功的 FETCH，有则复用 raw_data 跳过重复采集
+            // 检查是否已有成功的 FETCH，有则复用
             Long reuseLogId = findExistingFetchLog(dataType, tradeDate);
             if (reuseLogId != null) {
-                log.info("复用已有 FETCH 数据: dataType={}, tradeDate={}, logId={}",
-                        dataType, tradeDate, reuseLogId);
-                executeCleanse(dataType, tradeDate, reuseLogId);
-                if ("STOCK_INFO".equals(dataType)) {
-                    executeCleanse("STOCK_DAILY", tradeDate, reuseLogId);
-                }
+                log.info("复用已有 FETCH 数据: dataType={}, tradeDate={}, logId={}", dataType, tradeDate, reuseLogId);
+                executeCleanse(handler, dataType, tradeDate, reuseLogId);
                 return "执行成功（复用已有采集数据）";
             }
 
-            // 第一步：FETCH（采集）
-            Result fetchResult = executeFetch(dataType, tradeDate);
+            // 第一步：FETCH
+            Result fetchResult = executeFetch(handler, dataType, tradeDate);
             if (!fetchResult.success) {
                 return "采集失败: " + fetchResult.errorMsg;
             }
 
-            // 第二步：CLEANSE（清洗）
-            executeCleanse(dataType, tradeDate, fetchResult.collectionLogId);
-
-            // STOCK_INFO 完成后联动执行 STOCK_DAILY CLEANSE（复用同一份 FETCH 数据）
-            if ("STOCK_INFO".equals(dataType)) {
-                log.info("STOCK_INFO done, 联动执行 STOCK_DAILY CLEANSE: tradeDate={}", tradeDate);
-                executeCleanse("STOCK_DAILY", tradeDate, fetchResult.collectionLogId);
-            }
+            // 第二步：CLEANSE
+            executeCleanse(handler, dataType, tradeDate, fetchResult.collectionLogId);
 
             log.info("Orchestration complete: dataType={}, tradeDate={}", dataType, tradeDate);
             return "执行成功";
         } catch (Exception e) {
-            log.error("Unexpected error during orchestration: dataType={}, tradeDate={}",
-                    dataType, tradeDate, e);
+            log.error("Unexpected error during orchestration: dataType={}, tradeDate={}", dataType, tradeDate, e);
             return "执行异常，请查看系统日志";
         } finally {
             lock.unlock();
@@ -240,8 +164,7 @@ public class CollectionOrchestrator {
         }
     }
 
-    private Result executeFetch(String dataType, LocalDate tradeDate) {
-        // 创建 FETCH 日志
+    private Result executeFetch(DataTypeHandler handler, String dataType, LocalDate tradeDate) {
         DataCollectionLog fetchLog = createLog(dataType, "FETCH", tradeDate);
         fetchLog.setStatus("RUNNING");
         fetchLog.setStartedAt(LocalDateTime.now());
@@ -251,15 +174,13 @@ public class CollectionOrchestrator {
         String errorMsg = null;
 
         try {
-            // 带重试机制的数据采集
-            rawJson = fetchWithRetry(dataType, tradeDate, fetchLog.getId());
+            rawJson = fetchWithRetry(handler, dataType, tradeDate);
         } catch (Exception e) {
             errorMsg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
             log.error("Fetch failed for {} on {}: {}", dataType, tradeDate, errorMsg);
         }
 
         if (rawJson == null) {
-            // 采集失败
             fetchLog.setStatus("FAILED");
             fetchLog.setErrorMsg(errorMsg);
             fetchLog.setCompletedAt(LocalDateTime.now());
@@ -277,7 +198,6 @@ public class CollectionOrchestrator {
         rawData.setFetchAt(LocalDateTime.now());
         rawDataMapper.insert(rawData);
 
-        // 更新采集日志状态为成功
         fetchLog.setStatus("SUCCESS");
         fetchLog.setRecordCount(estimateRecordCount(rawJson));
         fetchLog.setCompletedAt(LocalDateTime.now());
@@ -286,13 +206,13 @@ public class CollectionOrchestrator {
         return new Result(true, rawJson, fetchLog.getId(), null);
     }
 
-    private String fetchWithRetry(String dataType, LocalDate tradeDate, Long collectionLogId) {
+    private String fetchWithRetry(DataTypeHandler handler, String dataType, LocalDate tradeDate) {
         long backoffMs = INITIAL_BACKOFF_MS;
 
         for (int attempt = 0; attempt < MAX_RETRIES; attempt++) {
             try {
                 log.debug("Fetch attempt {}/{} for {} on {}", attempt + 1, MAX_RETRIES, dataType, tradeDate);
-                return dispatchFetch(dataType, tradeDate);
+                return handler.fetch(tradeDate);
             } catch (Exception e) {
                 log.warn("Fetch attempt {}/{} failed for {} on {}: {}",
                         attempt + 1, MAX_RETRIES, dataType, tradeDate, e.getMessage());
@@ -315,55 +235,20 @@ public class CollectionOrchestrator {
         throw new RuntimeException("所有采集尝试已用尽");
     }
 
-    private static final java.time.format.DateTimeFormatter YMD = java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd");
-
-    private String dispatchFetch(String dataType, LocalDate tradeDate) {
-        String dateStr = tradeDate != null ? tradeDate.format(YMD) : "";
-        switch (dataType) {
-            case "STOCK_INFO":
-                return aktoolsClient.fetchStockSpot();
-            case "STOCK_DAILY":
-                // STOCK_DAILY 复用 STOCK_INFO 的 FETCH 数据，不应走到这里
-                throw new IllegalStateException("STOCK_DAILY 应复用 STOCK_INFO FETCH，不应直接调用");
-            case "INDUSTRY_NAME":
-                return aktoolsClient.fetchIndustryNames();
-            case "INDUSTRY_CONS":
-                // 多次采集在清洗阶段处理；采集阶段为空操作
-                return "[]";
-            case "CONCEPT_NAME":
-                return aktoolsClient.fetchConceptNames();
-            case "CONCEPT_CONS":
-                // 多次采集在清洗阶段处理；采集阶段为空操作
-                return "[]";
-            case "TRADE_CALENDAR":
-                return aktoolsClient.fetchTradeCalendar();
-            case "MARGIN_DAILY_SSE":
-                return aktoolsClient.fetchMarginDetailSse(dateStr);
-            case "MARGIN_DAILY_SZSE":
-                return aktoolsClient.fetchMarginDetailSzse(dateStr);
-            case "MARGIN_MACRO_SSE":
-                return aktoolsClient.fetchMacroMarginSh();
-            case "MARGIN_MACRO_SZSE":
-                return aktoolsClient.fetchMacroMarginSz();
-            case "MARKET_INDEX_DAILY":
-                return fetchAllMarketIndices(tradeDate);
-            case "INDUSTRY_INDEX_DAILY":
-            case "CONCEPT_INDEX_DAILY":
-                throw new IllegalStateException(dataType + " 应通过 executeSectorIndexFetch 处理，不应走到 dispatchFetch");
-            default:
-                throw new IllegalArgumentException("未知数据类型: " + dataType);
-        }
-    }
-
-    private void executeCleanse(String dataType, LocalDate tradeDate, Long collectionLogId) {
-        // 创建 CLEANSE 日志
+    private void executeCleanse(DataTypeHandler handler, String dataType, LocalDate tradeDate, Long collectionLogId) {
         DataCollectionLog cleanseLog = createLog(dataType, "CLEANSE", tradeDate);
         cleanseLog.setStatus("RUNNING");
         cleanseLog.setStartedAt(LocalDateTime.now());
         logMapper.insert(cleanseLog);
 
         try {
-            int recordCount = dispatchCleanse(dataType, tradeDate, collectionLogId);
+            // 从 FETCH 阶段获取原始 JSON
+            RawData rawData = rawDataMapper.selectOne(
+                    new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<RawData>()
+                            .eq(RawData::getCollectionLogId, collectionLogId));
+            String rawJson = rawData != null ? rawData.getRawJson() : null;
+
+            int recordCount = handler.cleanse(rawJson, tradeDate);
 
             cleanseLog.setStatus("SUCCESS");
             cleanseLog.setRecordCount(recordCount);
@@ -379,161 +264,8 @@ public class CollectionOrchestrator {
         logMapper.updateById(cleanseLog);
     }
 
-    private int dispatchCleanse(String dataType, LocalDate tradeDate, Long collectionLogId) {
-        // 从 FETCH 阶段获取原始 JSON（通过 collection_log_id 查询 RawData）
-        RawData rawData = rawDataMapper.selectOne(
-                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<RawData>()
-                        .eq(RawData::getCollectionLogId, collectionLogId)
-        );
-        String rawJson = rawData != null ? rawData.getRawJson() : null;
-
-        int recordCount;
-        switch (dataType) {
-            case "STOCK_INFO":
-                recordCount = stockInfoCleanseService.cleanse(rawJson, tradeDate);
-                break;
-            case "STOCK_DAILY":
-                recordCount = stockDailyCleanseService.cleanse(rawJson, tradeDate);
-                break;
-            case "INDUSTRY_NAME":
-                recordCount = industryCleanseService.cleanseNames(rawJson);
-                break;
-            case "INDUSTRY_CONS":
-                recordCount = cleanseAllIndustryCons(tradeDate);
-                break;
-            case "CONCEPT_NAME":
-                recordCount = conceptCleanseService.cleanseNames(rawJson);
-                break;
-            case "CONCEPT_CONS":
-                recordCount = cleanseAllConceptCons(tradeDate);
-                break;
-            case "MARGIN_DAILY_SSE":
-                recordCount = marginCleanseService.cleanse(rawJson, "SSE", tradeDate);
-                break;
-            case "MARGIN_DAILY_SZSE":
-                recordCount = marginCleanseService.cleanse(rawJson, "SZSE", tradeDate);
-                break;
-            case "TRADE_CALENDAR":
-                recordCount = tradeCalendarService.syncTradeCalendar();
-                break;
-            case "MARGIN_MACRO_SSE":
-                recordCount = marginMacroCleanseService.cleanse(rawJson, "SSE");
-                break;
-            case "MARGIN_MACRO_SZSE":
-                recordCount = marginMacroCleanseService.cleanse(rawJson, "SZSE");
-                break;
-            case "MARKET_INDEX_DAILY":
-                recordCount = cleanseAllMarketIndices(tradeDate);
-                break;
-            case "INDUSTRY_INDEX_DAILY":
-                recordCount = cleanseAllSectorIndices("INDUSTRY", tradeDate);
-                break;
-            case "CONCEPT_INDEX_DAILY":
-                recordCount = cleanseAllSectorIndices("CONCEPT", tradeDate);
-                break;
-            default:
-                throw new IllegalArgumentException("未知数据类型: " + dataType);
-        }
-
-        log.info("Cleanse dispatch complete: dataType={}, records={}", dataType, recordCount);
-        return recordCount;
-    }
-
-    /**
-     * 清洗行业成分股数据写入 stock_industry 表。
-     *
-     * 成分股数据已改为通过 Playwright 从同花顺抓取，不再通过 AKTools HTTP API 获取。
-     * 请先运行 scripts/scrape_ths_constituents.py 生成 JSON，
-     * 然后通过管理后台或 SQL 导入到 stock_industry 表。
-     *
-     * 此方法现在依赖 DB 中已有的 stock_industry 数据做变化检测。
-     */
-    private int cleanseAllIndustryCons(LocalDate tradeDate) {
-        List<Industry> industries = industryMapper.selectList(
-                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Industry>()
-                        .eq(Industry::getIsDeleted, false)
-        );
-
-        if (industries.isEmpty()) {
-            log.warn("No industries found in DB — run INDUSTRY_NAME and Playwright import first");
-            return 0;
-        }
-
-        log.info("行业成分股变化检测: {} 个行业（成分股数据需通过 Playwright 预先导入）", industries.size());
-        // 成分股通过 Playwright 抓取后直接写入 stock_industry 表
-        // 此方法仅做变化检测和日志记录，实际写表在 Playwright 导入阶段完成
-        return 0;
-    }
-
-    /**
-     * 清洗概念成分股数据写入 stock_concept 表。
-     *
-     * 成分股数据已改为通过 Playwright 从同花顺抓取，不再通过 AKTools HTTP API 获取。
-     * 请先运行 scripts/scrape_ths_constituents.py 生成 JSON，
-     * 然后通过管理后台或 SQL 导入到 stock_concept 表。
-     */
-    private int cleanseAllConceptCons(LocalDate tradeDate) {
-        List<Concept> concepts = conceptMapper.selectList(
-                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Concept>()
-                        .eq(Concept::getIsDeleted, false)
-        );
-
-        if (concepts.isEmpty()) {
-            log.warn("No concepts found in DB — run CONCEPT_NAME and Playwright import first");
-            return 0;
-        }
-
-        log.info("概念成分股变化检测: {} 个概念（成分股数据需通过 Playwright 预先导入）", concepts.size());
-        // 成分股通过 Playwright 抓取后直接写入 stock_concept 表
-        return 0;
-    }
-
-    private static final List<String> MARKET_INDEX_CODES = List.of(
-            "sh000001", "sz399001", "sz399006", "sh000300", "sh000905",
-            "sh000016", "sh000688", "sh000852"
-    );
-
-    private String fetchAllMarketIndices(LocalDate tradeDate) {
-        String dateStr = tradeDate != null ? tradeDate.format(YMD) : "";
-        StringBuilder combined = new StringBuilder("[");
-        for (int i = 0; i < MARKET_INDEX_CODES.size(); i++) {
-            String code = MARKET_INDEX_CODES.get(i);
-            try {
-                String json = aktoolsClient.fetchMarketIndexDaily(code, dateStr, dateStr);
-                if (json != null && !json.equals("[]")) {
-                    if (combined.length() > 1) combined.append(",");
-                    combined.append("\"").append(code).append("\":").append(json);
-                }
-                aktoolsClient.sleepBetweenCalls();
-            } catch (Exception e) {
-                log.error("Failed to fetch market index daily for {}: {}", code, e.getMessage());
-            }
-        }
-        combined.append("]");
-        return combined.toString();
-    }
-
-    private int cleanseAllMarketIndices(LocalDate tradeDate) {
-        int totalRecords = 0;
-        for (String indexCode : MARKET_INDEX_CODES) {
-            try {
-                String startDate = tradeDate != null ? tradeDate.format(YMD) : "";
-                String endDate = startDate;
-                String rawJson = aktoolsClient.fetchMarketIndexDaily(indexCode, startDate, endDate);
-                if (rawJson != null && !rawJson.equals("[]")) {
-                    int count = marketIndexDailyCleanseService.cleanse(rawJson, indexCode);
-                    totalRecords += count;
-                    log.info("Market index daily cleanse: {} → {} records", indexCode, count);
-                }
-                aktoolsClient.sleepBetweenCalls();
-            } catch (Exception e) {
-                log.error("Failed to cleanse market index daily for {}: {}", indexCode, e.getMessage());
-            }
-        }
-        return totalRecords;
-    }
-
-    private Long executeSectorIndexFetch(String dataType, String sectorType, LocalDate startDate, LocalDate endDate) {
+    private Long executeSectorIndexFetch(SectorIndexHandler sectorHandler, String dataType,
+                                           LocalDate startDate, LocalDate endDate) {
         DataCollectionLog fetchLog = createLog(dataType, "FETCH", endDate);
         fetchLog.setStatus("RUNNING");
         fetchLog.setStartedAt(LocalDateTime.now());
@@ -541,7 +273,7 @@ public class CollectionOrchestrator {
 
         int successCount;
         try {
-            successCount = fetchSectorIndexDaily(sectorType, startDate, endDate, fetchLog.getId());
+            successCount = sectorHandler.fetchSectors(startDate, endDate, fetchLog.getId());
         } catch (Exception e) {
             fetchLog.setStatus("FAILED");
             fetchLog.setErrorMsg(e.getMessage());
@@ -557,145 +289,6 @@ public class CollectionOrchestrator {
         return fetchLog.getId();
     }
 
-    int fetchSectorIndexDaily(String sectorType, LocalDate startDate, LocalDate endDate) {
-        return fetchSectorIndexDaily(sectorType, startDate, endDate, null);
-    }
-
-    int fetchSectorIndexDaily(String sectorType, LocalDate startDate, LocalDate endDate, Long collectionLogId) {
-        String startStr = startDate != null ? startDate.format(YMD) : "";
-        String endStr = endDate != null ? endDate.format(YMD) : "";
-
-        if ("INDUSTRY".equals(sectorType)) {
-            List<Industry> sectors = industryMapper.selectList(
-                    new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Industry>()
-                            .eq(Industry::getIsDeleted, false)
-            );
-            if (sectors.isEmpty()) {
-                throw new IllegalStateException("行业表为空，请先采集行业名称（INDUSTRY_NAME）");
-            }
-            int total = 0;
-            for (Industry sector : sectors) {
-                try {
-                    String rawJson = aktoolsClient.fetchIndustryIndexDaily(sector.getName(), startStr, endStr);
-                    if (rawJson != null && !rawJson.equals("[]")) {
-                        saveSectorRawData(collectionLogId, "INDUSTRY_INDEX_DAILY", endDate, sector.getCode(), rawJson);
-                        total++;
-                    }
-                    aktoolsClient.sleepBetweenCalls();
-                } catch (Exception e) {
-                    log.error("Failed to fetch industry index daily for {}: {}", sector.getCode(), e.getMessage());
-                }
-            }
-            return total;
-        } else {
-            List<Concept> sectors = conceptMapper.selectList(
-                    new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Concept>()
-                            .eq(Concept::getIsDeleted, false)
-            );
-            if (sectors.isEmpty()) {
-                throw new IllegalStateException("概念表为空，请先采集概念名称（CONCEPT_NAME）");
-            }
-            int total = 0;
-            for (Concept sector : sectors) {
-                try {
-                    String rawJson = aktoolsClient.fetchConceptIndexDaily(sector.getName(), startStr, endStr);
-                    if (rawJson != null && !rawJson.equals("[]")) {
-                        saveSectorRawData(collectionLogId, "CONCEPT_INDEX_DAILY", endDate, sector.getCode(), rawJson);
-                        total++;
-                    }
-                    aktoolsClient.sleepBetweenCalls();
-                } catch (Exception e) {
-                    log.error("Failed to fetch concept index daily for {}: {}", sector.getCode(), e.getMessage());
-                }
-            }
-            return total;
-        }
-    }
-
-    private void saveSectorRawData(Long collectionLogId, String dataType, LocalDate tradeDate, String sectorCode, String rawJson) {
-        RawData rawData = new RawData();
-        rawData.setCollectionLogId(collectionLogId);
-        rawData.setDataType(dataType);
-        rawData.setTradeDate(tradeDate);
-        rawData.setSource("AKTools");
-        rawData.setSectorCode(sectorCode);
-        rawData.setRawJson(rawJson);
-        rawData.setFetchAt(LocalDateTime.now());
-        rawDataMapper.insert(rawData);
-    }
-
-    private int cleanseAllSectorIndices(String sectorType, LocalDate tradeDate) {
-        String dataType = "INDUSTRY".equals(sectorType) ? "INDUSTRY_INDEX_DAILY" : "CONCEPT_INDEX_DAILY";
-
-        List<RawData> rawDatas = rawDataMapper.selectList(
-                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<RawData>()
-                        .eq(RawData::getDataType, dataType)
-                        .eq(RawData::getTradeDate, tradeDate)
-                        .isNotNull(RawData::getSectorCode)
-        );
-
-        if (rawDatas.isEmpty()) {
-            log.warn("No raw_data found for {} on {}, falling back to direct API fetch", dataType, tradeDate);
-            return cleanseAllSectorIndicesDirect(sectorType, tradeDate);
-        }
-
-        int total = 0;
-        for (RawData rd : rawDatas) {
-            try {
-                String rawJson = rd.getRawJson();
-                if (rawJson != null && !rawJson.equals("[]")) {
-                    total += sectorIndexDailyCleanseService.cleanse(rawJson, sectorType, rd.getSectorCode());
-                }
-            } catch (Exception e) {
-                log.error("Failed to cleanse sector index daily for {}: {}", rd.getSectorCode(), e.getMessage());
-            }
-        }
-        return total;
-    }
-
-    private int cleanseAllSectorIndicesDirect(String sectorType, LocalDate tradeDate) {
-        String startDate = tradeDate != null ? tradeDate.format(YMD) : "";
-        String endDate = startDate;
-
-        if ("INDUSTRY".equals(sectorType)) {
-            List<Industry> sectors = industryMapper.selectList(
-                    new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Industry>()
-                            .eq(Industry::getIsDeleted, false)
-            );
-            int total = 0;
-            for (Industry sector : sectors) {
-                try {
-                    String rawJson = aktoolsClient.fetchIndustryIndexDaily(sector.getName(), startDate, endDate);
-                    if (rawJson != null && !rawJson.equals("[]")) {
-                        total += sectorIndexDailyCleanseService.cleanse(rawJson, "INDUSTRY", sector.getCode());
-                    }
-                    aktoolsClient.sleepBetweenCalls();
-                } catch (Exception e) {
-                    log.error("Failed to cleanse industry index daily for {}: {}", sector.getCode(), e.getMessage());
-                }
-            }
-            return total;
-        } else {
-            List<Concept> sectors = conceptMapper.selectList(
-                    new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Concept>()
-                            .eq(Concept::getIsDeleted, false)
-            );
-            int total = 0;
-            for (Concept sector : sectors) {
-                try {
-                    String rawJson = aktoolsClient.fetchConceptIndexDaily(sector.getName(), startDate, endDate);
-                    if (rawJson != null && !rawJson.equals("[]")) {
-                        total += sectorIndexDailyCleanseService.cleanse(rawJson, "CONCEPT", sector.getCode());
-                    }
-                    aktoolsClient.sleepBetweenCalls();
-                } catch (Exception e) {
-                    log.error("Failed to cleanse concept index daily for {}: {}", sector.getCode(), e.getMessage());
-                }
-            }
-            return total;
-        }
-    }
-
     private DataCollectionLog createLog(String dataType, String jobType, LocalDate tradeDate) {
         DataCollectionLog entry = new DataCollectionLog();
         entry.setDataType(dataType);
@@ -704,9 +297,6 @@ public class CollectionOrchestrator {
         return entry;
     }
 
-    /**
-     * 估算原始 JSON 中的记录数量。
-     */
     private int estimateRecordCount(String rawJson) {
         if (rawJson == null || rawJson.isEmpty()) {
             return 0;
@@ -719,6 +309,8 @@ public class CollectionOrchestrator {
         }
         return count;
     }
+
+    // ===== 回补方法 =====
 
     @Async("collectionExecutor")
     public CompletableFuture<String> backfillMarginByWeekAsync(BackfillRequest request) {
@@ -791,6 +383,11 @@ public class CollectionOrchestrator {
      * 补采股票日线历史数据（Tushare 全市场一次拉取）
      */
     public String backfillStockDaily(LocalDate startDate, LocalDate endDate) {
+        DataTypeHandler tushareHandler = handlerMap.get("STOCK_DAILY_TUSHARE");
+        if (tushareHandler == null) {
+            return "STOCK_DAILY_TUSHARE handler 未注册";
+        }
+
         log.info("Starting stock daily backfill (Tushare): {} to {}", startDate, endDate);
 
         int totalRecords = 0;
@@ -798,8 +395,8 @@ public class CollectionOrchestrator {
         LocalDate date = startDate;
         while (!date.isAfter(endDate)) {
             try {
-                String resp = tushareClient.fetchDaily(date);
-                int count = stockDailyCleanseService.cleanseTushareDaily(resp);
+                String rawJson = tushareHandler.fetch(date);
+                int count = tushareHandler.cleanse(rawJson, date);
                 totalRecords += count;
                 log.info("Tushare daily backfill: {} → {} records", date, count);
             } catch (Exception e) {
@@ -809,8 +406,7 @@ public class CollectionOrchestrator {
             date = date.plusDays(1);
         }
 
-        String result = String.format("日线补采完成: %d 条记录，%d 天失败",
-                totalRecords, failedDays);
+        String result = String.format("日线补采完成: %d 条记录，%d 天失败", totalRecords, failedDays);
         log.info(result);
         return result;
     }
@@ -822,10 +418,15 @@ public class CollectionOrchestrator {
     }
 
     public String backfillSectorIndexDaily(String sectorType, LocalDate startDate, LocalDate endDate) {
+        String dataType = "INDUSTRY".equals(sectorType) ? "INDUSTRY_INDEX_DAILY" : "CONCEPT_INDEX_DAILY";
+        DataTypeHandler handler = handlerMap.get(dataType);
+        if (handler == null || !(handler instanceof SectorIndexHandler sectorHandler)) {
+            return dataType + " handler 未注册";
+        }
+
         log.info("Starting sector index daily backfill: sectorType={}, {} to {}", sectorType, startDate, endDate);
 
-        String dataType = "INDUSTRY".equals(sectorType) ? "INDUSTRY_INDEX_DAILY" : "CONCEPT_INDEX_DAILY";
-        Long fetchLogId = executeSectorIndexFetch(dataType, sectorType, startDate, endDate);
+        Long fetchLogId = executeSectorIndexFetch(sectorHandler, dataType, startDate, endDate);
         if (fetchLogId == null) {
             return "板块指数K线补采失败: 无板块数据";
         }
@@ -833,29 +434,25 @@ public class CollectionOrchestrator {
         int cleanseCount = 0;
         List<RawData> rawDatas = rawDataMapper.selectList(
                 new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<RawData>()
-                        .eq(RawData::getCollectionLogId, fetchLogId)
-        );
+                        .eq(RawData::getCollectionLogId, fetchLogId));
         for (RawData rd : rawDatas) {
             try {
                 String rawJson = rd.getRawJson();
                 if (rawJson != null && !rawJson.equals("[]")) {
-                    cleanseCount += sectorIndexDailyCleanseService.cleanse(rawJson, sectorType, rd.getSectorCode());
+                    cleanseCount += handler.cleanse(rawJson, endDate);
                 }
             } catch (Exception e) {
                 log.error("Failed to cleanse sector index daily for {}: {}", rd.getSectorCode(), e.getMessage());
             }
         }
 
-        String result = String.format("板块指数K线补采完成: %d 个板块，%d 条记录",
-                rawDatas.size(), cleanseCount);
+        String result = String.format("板块指数K线补采完成: %d 个板块，%d 条记录", rawDatas.size(), cleanseCount);
         log.info(result);
         return result;
     }
 
-    /**
-     * 查找当天已有的成功 FETCH 日志，返回 raw_data 的 collection_log_id。
-     * 若不存在则返回 null，需执行完整 FETCH。
-     */
+    // ===== 公共查询方法 =====
+
     private Long findExistingFetchLog(String dataType, LocalDate tradeDate) {
         DataCollectionLog fetchLog = logMapper.selectLatestByDataTypeAndJobTypeAndTradeDate(
                 dataType, "FETCH", tradeDate);
@@ -866,9 +463,9 @@ public class CollectionOrchestrator {
     }
 
     /**
-     * 检查给定日期是否已有成功的 FETCH 和 CLEANSE 日志。
+     * 检查给定日期是否已有成功的 FETCH 和 CLEANSE 日志
      */
-    private boolean isDateComplete(String dataType, LocalDate tradeDate) {
+    public boolean isDateComplete(String dataType, LocalDate tradeDate) {
         DataCollectionLog fetchLog = logMapper.selectLatestByDataTypeAndJobTypeAndTradeDate(dataType, "FETCH", tradeDate);
         DataCollectionLog cleanseLog = logMapper.selectLatestByDataTypeAndJobTypeAndTradeDate(dataType, "CLEANSE", tradeDate);
         return fetchLog != null && "SUCCESS".equals(fetchLog.getStatus())
