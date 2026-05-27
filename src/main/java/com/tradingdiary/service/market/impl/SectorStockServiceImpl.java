@@ -9,6 +9,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+/**
+ * 板块成分股查询服务实现，提供行业/概念板块的成分股列表
+ */
 @Service
 public class SectorStockServiceImpl implements SectorStockService {
 

@@ -12,6 +12,9 @@ import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/**
+ * 股票-概念关联关系，记录个股与概念板块的归属
+ */
 @Getter
 @Setter
 @TableName("stock_concept")
@@ -22,10 +25,13 @@ public class StockConcept implements Serializable {
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    /** 股票代码 */
     private String stockCode;
 
+    /** 概念板块代码 */
     private String conceptCode;
 
+    /** 快照日期 */
     private LocalDate snapDate;
 
     @TableField(fill = FieldFill.INSERT)

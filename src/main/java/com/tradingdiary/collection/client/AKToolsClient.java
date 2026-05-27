@@ -47,58 +47,121 @@ public class AKToolsClient {
                 .build();
     }
 
+    /**
+     * 拉取全市场 A 股实时行情（新浪数据源）
+     *
+     * @return AKTools 返回的原始 JSON 字符串
+     */
     public String fetchStockSpot() {
         log.info("Fetching stock spot data from AKTools (新浪)");
         return get("/api/public/stock_zh_a_spot");
     }
 
-    
+    /**
+     * 拉取同花顺行业板块名称列表
+     *
+     * @return AKTools 返回的原始 JSON 字符串
+     */
     public String fetchIndustryNames() {
         log.info("Fetching industry board names (同花顺)");
         return get("/api/public/stock_board_industry_name_ths");
     }
 
+    /**
+     * 拉取同花顺概念板块名称列表
+     *
+     * @return AKTools 返回的原始 JSON 字符串
+     */
     public String fetchConceptNames() {
         log.info("Fetching concept board names (同花顺)");
         return get("/api/public/stock_board_concept_name_ths");
     }
 
+    /**
+     * 拉取上海证券交易所宏观两融总量数据
+     *
+     * @return AKTools 返回的原始 JSON 字符串
+     */
     public String fetchMacroMarginSh() {
         log.info("Fetching macro margin SSE");
         return get("/api/public/macro_china_market_margin_sh");
     }
 
+    /**
+     * 拉取深圳证券交易所宏观两融总量数据
+     *
+     * @return AKTools 返回的原始 JSON 字符串
+     */
     public String fetchMacroMarginSz() {
         log.info("Fetching macro margin SZSE");
         return get("/api/public/macro_china_market_margin_sz");
     }
 
+    /**
+     * 拉取交易日历（新浪数据源）
+     *
+     * @return AKTools 返回的原始 JSON 字符串
+     */
     public String fetchTradeCalendar() {
         log.info("Fetching trade calendar");
         return get("/api/public/tool_trade_date_hist_sina");
     }
 
+    /**
+     * 拉取上交所个股两融明细数据
+     *
+     * @param date 查询日期（格式 yyyyMMdd）
+     * @return AKTools 返回的原始 JSON 字符串
+     */
     public String fetchMarginDetailSse(String date) {
         log.info("Fetching margin detail SSE: date={}", date);
         return get("/api/public/stock_margin_detail_sse?date={date}", date);
     }
 
+    /**
+     * 拉取深交所个股两融明细数据
+     *
+     * @param date 查询日期（格式 yyyyMMdd）
+     * @return AKTools 返回的原始 JSON 字符串
+     */
     public String fetchMarginDetailSzse(String date) {
         log.info("Fetching margin detail SZSE: date={}", date);
         return get("/api/public/stock_margin_detail_szse?date={date}", date);
     }
 
+    /**
+     * 拉取宽基指数日线行情数据
+     *
+     * @param symbol 指数代码（如 sh000300）
+     * @return AKTools 返回的原始 JSON 字符串
+     */
     public String fetchMarketIndexDaily(String symbol) {
         log.info("Fetching market index daily: symbol={}", symbol);
         return get("/api/public/stock_zh_index_daily?symbol={symbol}", symbol);
     }
 
+    /**
+     * 拉取同花顺行业指数日线数据
+     *
+     * @param industryName 行业名称
+     * @param startDate 起始日期（格式 yyyyMMdd）
+     * @param endDate 结束日期（格式 yyyyMMdd）
+     * @return AKTools 返回的原始 JSON 字符串
+     */
     public String fetchIndustryIndexDaily(String industryName, String startDate, String endDate) {
         log.info("Fetching industry index daily: industry={}, startDate={}, endDate={}", industryName, startDate, endDate);
         return get("/api/public/stock_board_industry_index_ths?symbol={industryName}&start_date={startDate}&end_date={endDate}",
                 industryName, startDate, endDate);
     }
 
+    /**
+     * 拉取同花顺概念指数日线数据
+     *
+     * @param conceptName 概念名称
+     * @param startDate 起始日期（格式 yyyyMMdd）
+     * @param endDate 结束日期（格式 yyyyMMdd）
+     * @return AKTools 返回的原始 JSON 字符串
+     */
     public String fetchConceptIndexDaily(String conceptName, String startDate, String endDate) {
         log.info("Fetching concept index daily: concept={}, startDate={}, endDate={}", conceptName, startDate, endDate);
         return get("/api/public/stock_board_concept_index_ths?symbol={conceptName}&start_date={startDate}&end_date={endDate}",

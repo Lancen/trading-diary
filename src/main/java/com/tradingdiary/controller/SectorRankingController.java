@@ -2,6 +2,7 @@ package com.tradingdiary.controller;
 
 import com.tradingdiary.model.ApiResponse;
 import com.tradingdiary.service.market.SectorRanking;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +18,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * 板块排名控制器，提供行业/概念板块排名查询
+ */
 @RestController
 @RequestMapping("/api/v1/admin/sector-ranking")
 @PreAuthorize("hasRole('ADMIN')")
@@ -35,6 +39,7 @@ public class SectorRankingController {
         this.jdbcTemplate = jdbcTemplate;
     }
 
+    @Operation(summary = "查询板块排名")
     @GetMapping
     public ApiResponse<List<SectorRanking>> query(
             @RequestParam String sectorType,

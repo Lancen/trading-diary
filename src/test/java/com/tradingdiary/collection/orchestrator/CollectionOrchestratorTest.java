@@ -1,25 +1,13 @@
 package com.tradingdiary.collection.orchestrator;
 
-import com.tradingdiary.collection.client.AKToolsClient;
-import com.tradingdiary.collection.client.TushareClient;
+import com.tradingdiary.collection.handler.DataTypeHandler;
+import com.tradingdiary.collection.handler.StockDailyTushareHandler;
 import com.tradingdiary.collection.model.BackfillRequest;
 import com.tradingdiary.entity.DataCollectionLog;
 import com.tradingdiary.entity.TradeCalendar;
-import com.tradingdiary.mapper.ConceptMapper;
 import com.tradingdiary.mapper.DataCollectionLogMapper;
-import com.tradingdiary.mapper.IndustryMapper;
 import com.tradingdiary.mapper.RawDataMapper;
-import com.tradingdiary.mapper.StockInfoMapper;
 import com.tradingdiary.mapper.TradeCalendarMapper;
-import com.tradingdiary.service.collection.ConceptCleanseService;
-import com.tradingdiary.service.collection.IndustryCleanseService;
-import com.tradingdiary.service.collection.MarginCleanseService;
-import com.tradingdiary.service.collection.MarginMacroCleanseService;
-import com.tradingdiary.service.collection.MarketIndexDailyCleanseService;
-import com.tradingdiary.service.collection.SectorIndexDailyCleanseService;
-import com.tradingdiary.service.collection.StockDailyCleanseService;
-import com.tradingdiary.service.collection.StockInfoCleanseService;
-import com.tradingdiary.service.collection.TradeCalendarService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,51 +29,40 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+/**
+ * CollectionOrchestrator 单元测试，验证 handler registry 模式下的回补编排和幂等跳过逻辑
+ */
 @ExtendWith(MockitoExtension.class)
 class CollectionOrchestratorTest {
 
     private TradeCalendarMapper tradeCalendarMapper;
     private DataCollectionLogMapper dataCollectionLogMapper;
-    private AKToolsClient aktoolsClient;
-    private StockDailyCleanseService stockDailyCleanseService;
-    private StockInfoMapper stockInfoMapper;
     private CollectionOrchestrator orchestrator;
+    private DataTypeHandler tushareHandler;
 
     @BeforeEach
     void setUp() {
         tradeCalendarMapper = mock(TradeCalendarMapper.class);
         dataCollectionLogMapper = mock(DataCollectionLogMapper.class);
-        aktoolsClient = mock(AKToolsClient.class);
         RawDataMapper rawDataMapper = mock(RawDataMapper.class);
-        StockInfoCleanseService stockInfoCleanseService = mock(StockInfoCleanseService.class);
-        stockDailyCleanseService = mock(StockDailyCleanseService.class);
-        IndustryCleanseService industryCleanseService = mock(IndustryCleanseService.class);
-        ConceptCleanseService conceptCleanseService = mock(ConceptCleanseService.class);
-        MarginCleanseService marginCleanseService = mock(MarginCleanseService.class);
-        MarginMacroCleanseService marginMacroCleanseService = mock(MarginMacroCleanseService.class);
-        MarketIndexDailyCleanseService marketIndexDailyCleanseService = mock(MarketIndexDailyCleanseService.class);
-        SectorIndexDailyCleanseService sectorIndexDailyCleanseService = mock(SectorIndexDailyCleanseService.class);
-        TradeCalendarService tradeCalendarService = mock(TradeCalendarService.class);
-        IndustryMapper industryMapper = mock(IndustryMapper.class);
-        ConceptMapper conceptMapper = mock(ConceptMapper.class);
-        stockInfoMapper = mock(StockInfoMapper.class);
-        TushareClient tushareClient = mock(TushareClient.class);
+
+        tushareHandler = mock(StockDailyTushareHandler.class);
+        when(tushareHandler.dataType()).thenReturn("STOCK_DAILY_TUSHARE");
+
+        // 注册 margin handler 用于回补测试
+        DataTypeHandler marginHandler = mock(DataTypeHandler.class);
+        when(marginHandler.dataType()).thenReturn("MARGIN_DAILY_SSE");
+
+        List<DataTypeHandler> handlers = List.of(tushareHandler, marginHandler);
 
         CollectionOrchestrator real = new CollectionOrchestrator(
-                aktoolsClient, tushareClient, dataCollectionLogMapper, rawDataMapper,
-                stockInfoCleanseService, stockDailyCleanseService,
-                industryCleanseService, conceptCleanseService,
-                marginCleanseService, marginMacroCleanseService, marketIndexDailyCleanseService,
-                sectorIndexDailyCleanseService, tradeCalendarService,
-                tradeCalendarMapper, industryMapper, conceptMapper,
-                stockInfoMapper
-        );
+                handlers, dataCollectionLogMapper, rawDataMapper, tradeCalendarMapper);
         orchestrator = spy(real);
     }
 
+    // 测试流程: Given 所有交易日均有成功日志, When 回补整周, Then 跳过且不调用 orchestrate
     @Test
     void shouldSkipCompleteWeekWhenAllDatesHaveSuccessLogs() {
-        // Given: 5 trading days (Mon-Fri) with all SUCCESS logs
         List<TradeCalendar> tradingDays = Arrays.asList(
                 buildTradingDay(LocalDate.of(2026, 5, 4)),
                 buildTradingDay(LocalDate.of(2026, 5, 5)),
@@ -111,17 +88,15 @@ class CollectionOrchestratorTest {
         request.setStartDate(LocalDate.of(2026, 5, 4));
         request.setEndDate(LocalDate.of(2026, 5, 8));
 
-        // When
         String result = orchestrator.backfillMarginByWeek(request);
 
-        // Then
         assertThat(result).contains("已跳过");
         verify(orchestrator, never()).orchestrate(any(), any());
     }
 
+    // 测试流程: Given 所有交易日均无日志, When 回补, Then 对每个交易日调用 orchestrate
     @Test
     void shouldOrchestrateAllDatesWhenNoLogsExist() {
-        // Given: 3 trading days with no prior logs
         List<TradeCalendar> tradingDays = Arrays.asList(
                 buildTradingDay(LocalDate.of(2026, 5, 11)),
                 buildTradingDay(LocalDate.of(2026, 5, 12)),
@@ -147,17 +122,15 @@ class CollectionOrchestratorTest {
         request.setStartDate(LocalDate.of(2026, 5, 11));
         request.setEndDate(LocalDate.of(2026, 5, 13));
 
-        // When
         String result = orchestrator.backfillMarginByWeek(request);
 
-        // Then
         assertThat(result).contains("补采完成");
         verify(orchestrator, times(3)).orchestrate(eq("MARGIN_DAILY_SSE"), any());
     }
 
+    // 测试流程: Given 日期范围内无交易日, When 回补, Then 返回"此范围无交易日"且不调用 orchestrate
     @Test
     void shouldHandleEmptyTradingDays() {
-        // Given: no trading days in range
         when(tradeCalendarMapper.selectTradingDays(any(), any())).thenReturn(Collections.emptyList());
 
         BackfillRequest request = new BackfillRequest();
@@ -166,17 +139,15 @@ class CollectionOrchestratorTest {
         request.setStartDate(LocalDate.of(2026, 5, 9));
         request.setEndDate(LocalDate.of(2026, 5, 10));
 
-        // When
         String result = orchestrator.backfillMarginByWeek(request);
 
-        // Then
         assertThat(result).contains("此范围无交易日");
         verify(orchestrator, never()).orchestrate(any(), any());
     }
 
+    // 测试流程: Given 部分交易日已完成, When 回补部分周, Then 仅对缺失日期调用 orchestrate（2次）
     @Test
     void shouldOrchestrateOnlyMissingDatesInPartialWeek() {
-        // Given: 3 trading days, only day 1 has SUCCESS logs
         List<TradeCalendar> tradingDays = Arrays.asList(
                 buildTradingDay(LocalDate.of(2026, 5, 11)),
                 buildTradingDay(LocalDate.of(2026, 5, 12)),
@@ -185,7 +156,6 @@ class CollectionOrchestratorTest {
 
         when(tradeCalendarMapper.selectTradingDays(any(), any())).thenReturn(tradingDays);
 
-        // Day 1: both SUCCESS
         when(dataCollectionLogMapper.selectLatestByDataTypeAndJobTypeAndTradeDate(
                 eq("MARGIN_DAILY_SSE"), eq("FETCH"), eq(LocalDate.of(2026, 5, 11))))
                 .thenReturn(buildSuccessLog("SUCCESS"));
@@ -193,7 +163,6 @@ class CollectionOrchestratorTest {
                 eq("MARGIN_DAILY_SSE"), eq("CLEANSE"), eq(LocalDate.of(2026, 5, 11))))
                 .thenReturn(buildSuccessLog("SUCCESS"));
 
-        // Days 2-3: no logs
         when(dataCollectionLogMapper.selectLatestByDataTypeAndJobTypeAndTradeDate(
                 eq("MARGIN_DAILY_SSE"), eq("FETCH"), eq(LocalDate.of(2026, 5, 12))))
                 .thenReturn(null);
@@ -215,20 +184,15 @@ class CollectionOrchestratorTest {
         request.setStartDate(LocalDate.of(2026, 5, 11));
         request.setEndDate(LocalDate.of(2026, 5, 13));
 
-        // When
         String result = orchestrator.backfillMarginByWeek(request);
 
-        // Then
         assertThat(result).contains("补采完成");
-        // Only 2 dates need orchestration (day 1 was already complete)
         verify(orchestrator, times(2)).orchestrate(eq("MARGIN_DAILY_SSE"), any());
     }
 
+    // 测试流程: Given 跨两周数据（第一周已完成、第二周缺失）, When 回补, Then 跳过第一周、补采第二周（3次 orchestrate）
     @Test
     void shouldGroupMultipleWeeksCorrectly() {
-        // Given: 2 weeks worth of trading days
-        // Week 1 (May 4-8): all SUCCESS (should be skipped)
-        // Week 2 (May 11-13): no logs (should be orchestrated)
         List<TradeCalendar> tradingDays = Arrays.asList(
                 buildTradingDay(LocalDate.of(2026, 5, 4)),
                 buildTradingDay(LocalDate.of(2026, 5, 5)),
@@ -242,7 +206,6 @@ class CollectionOrchestratorTest {
 
         when(tradeCalendarMapper.selectTradingDays(any(), any())).thenReturn(tradingDays);
 
-        // Week 1: all SUCCESS
         for (int i = 4; i <= 8; i++) {
             LocalDate date = LocalDate.of(2026, 5, i);
             when(dataCollectionLogMapper.selectLatestByDataTypeAndJobTypeAndTradeDate(
@@ -253,7 +216,6 @@ class CollectionOrchestratorTest {
                     .thenReturn(buildSuccessLog("SUCCESS"));
         }
 
-        // Week 2: no logs
         for (int i = 11; i <= 13; i++) {
             LocalDate date = LocalDate.of(2026, 5, i);
             when(dataCollectionLogMapper.selectLatestByDataTypeAndJobTypeAndTradeDate(
@@ -272,50 +234,52 @@ class CollectionOrchestratorTest {
         request.setStartDate(LocalDate.of(2026, 5, 4));
         request.setEndDate(LocalDate.of(2026, 5, 13));
 
-        // When
         String result = orchestrator.backfillMarginByWeek(request);
 
-        // Then
         assertThat(result).contains("补采完成");
         assertThat(result).contains("已跳过");
-        // Only week 2 dates (3 dates) need orchestration
         verify(orchestrator, times(3)).orchestrate(eq("MARGIN_DAILY_SSE"), any());
     }
 
+    // 测试流程: Given tushareHandler 返回日线数据, When 回补 5 天, Then 总计 25000 条且 0 天失败
     @Test
-    void shouldBackfillStockDailyWithAllDates() {
-        String tushareResp = "{\"data\":{\"fields\":[\"ts_code\",\"trade_date\"],\"items\":[]}}";
-        when(stockDailyCleanseService.cleanseTushareDaily(any())).thenReturn(5000);
+    void shouldBackfillStockDailyWithTushareHandler() {
+        when(tushareHandler.fetch(any())).thenReturn("{\"data\":{\"fields\":[\"ts_code\"],\"items\":[]}}");
+        when(tushareHandler.cleanse(any(), any())).thenReturn(5000);
 
         String result = orchestrator.backfillStockDaily(
                 LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 5));
 
         assertThat(result).contains("25000 条记录", "0 天失败");
-        verify(stockDailyCleanseService, times(5)).cleanseTushareDaily(any());
+        verify(tushareHandler, times(5)).fetch(any());
+        verify(tushareHandler, times(5)).cleanse(any(), any());
     }
 
+    // 测试流程: Given 结束日期早于开始日期, When 回补, Then 返回 0 条记录且不调用 fetch
     @Test
     void shouldHandleEmptyDateRange() {
-        // endDate before startDate — while loop doesn't execute
         String result = orchestrator.backfillStockDaily(
                 LocalDate.of(2026, 5, 5), LocalDate.of(2026, 5, 1));
 
         assertThat(result).contains("0 条记录");
+        verify(tushareHandler, never()).fetch(any());
     }
 
+    // 测试流程: Given 第 2 天 cleanse 抛异常, When 回补 3 天, Then 继续执行后续天、总计 10000 条且 1 天失败
     @Test
     void shouldContinueBackfillAfterSingleDateFailure() {
-        String tushareResp = "{\"data\":{\"fields\":[\"ts_code\"],\"items\":[]}}";
-        when(stockDailyCleanseService.cleanseTushareDaily(any()))
+        when(tushareHandler.fetch(any())).thenReturn("{\"data\":{}}");
+        when(tushareHandler.cleanse(any(), any()))
                 .thenReturn(5000)
-                .thenThrow(new RuntimeException("Tushare error"))
+                .thenThrow(new RuntimeException("Tushare cleanse error"))
                 .thenReturn(5000);
 
         String result = orchestrator.backfillStockDaily(
                 LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 3));
 
         assertThat(result).contains("10000 条记录", "1 天失败");
-        verify(stockDailyCleanseService, times(3)).cleanseTushareDaily(any());
+        verify(tushareHandler, times(3)).fetch(any());
+        verify(tushareHandler, times(3)).cleanse(any(), any());
     }
 
     private TradeCalendar buildTradingDay(LocalDate date) {

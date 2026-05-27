@@ -24,6 +24,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * 成分股导入服务实现，从 JSON 文件导入行业/概念成分股关系
+ */
 @Service
 public class ConstituentImportServiceImpl implements ConstituentImportService {
 

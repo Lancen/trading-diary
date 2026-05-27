@@ -40,6 +40,9 @@ public class TushareClient {
      * 按 trade_date 一次拉取全市场 ~5500 只股票的 OHLCV 数据。
      * 返回原始 Tushare JSON（含 fields + items 二维数组）。
      * </p>
+     *
+     * @param tradeDate 交易日期
+     * @return Tushare 返回的原始 JSON 字符串
      */
     public String fetchDaily(LocalDate tradeDate) {
         String dateStr = tradeDate.toString().replace("-", "");

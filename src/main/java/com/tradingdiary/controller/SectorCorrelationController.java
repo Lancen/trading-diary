@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * 板块关联度控制器，提供板块间相关性指标查询
+ */
 @RestController
 @RequestMapping("/api/v1/admin/sector-correlation")
 @PreAuthorize("hasRole('ADMIN')")

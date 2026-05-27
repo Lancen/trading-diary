@@ -1,5 +1,8 @@
 package com.tradingdiary.exception;
 
+/**
+ * 认证失败异常，对应 HTTP 401
+ */
 public class UnauthorizedException extends BaseException {
 
     private static final int DEFAULT_CODE = 100101;

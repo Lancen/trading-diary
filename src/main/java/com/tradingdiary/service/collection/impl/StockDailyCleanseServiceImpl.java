@@ -19,6 +19,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * 股票日线清洗服务实现，解析股票日行情 JSON 并入库
+ */
 @Service
 public class StockDailyCleanseServiceImpl implements StockDailyCleanseService {
 

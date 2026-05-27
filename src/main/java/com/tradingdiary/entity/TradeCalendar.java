@@ -12,6 +12,9 @@ import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/**
+ * 交易日历，标识每个日期是否为 A 股交易日
+ */
 @Getter
 @Setter
 @TableName("trade_calendar")
@@ -22,8 +25,10 @@ public class TradeCalendar implements Serializable {
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    /** 日期 */
     private LocalDate tradeDate;
 
+    /** 是否为交易日（1=是，0=否） */
     private Integer isTradingDay;
 
     @TableField(fill = FieldFill.INSERT)

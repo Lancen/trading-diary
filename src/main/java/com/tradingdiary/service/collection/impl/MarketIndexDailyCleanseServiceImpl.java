@@ -21,6 +21,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * 宽基指数日线清洗服务实现，解析指数 OHLCV JSON 并入库
+ */
 @Service
 public class MarketIndexDailyCleanseServiceImpl implements MarketIndexDailyCleanseService {
 

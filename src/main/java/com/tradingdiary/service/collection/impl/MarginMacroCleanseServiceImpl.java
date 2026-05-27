@@ -19,6 +19,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 两融总量清洗服务实现，解析市场级融资融券汇总 JSON 并入库
+ */
 @Service
 public class MarginMacroCleanseServiceImpl implements MarginMacroCleanseService {
 

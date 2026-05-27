@@ -20,6 +20,9 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 市场数据控制器，提供宽基指数行情查询
+ */
 @RestController
 @RequestMapping("/api/v1/admin/market")
 @PreAuthorize("hasRole('ADMIN')")

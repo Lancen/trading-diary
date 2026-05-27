@@ -12,6 +12,9 @@ import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/**
+ * 股票-行业关联关系，记录个股与行业板块的归属
+ */
 @Getter
 @Setter
 @TableName("stock_industry")
@@ -22,10 +25,13 @@ public class StockIndustry implements Serializable {
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    /** 股票代码 */
     private String stockCode;
 
+    /** 行业板块代码 */
     private String industryCode;
 
+    /** 快照日期 */
     private LocalDate snapDate;
 
     @TableField(fill = FieldFill.INSERT)

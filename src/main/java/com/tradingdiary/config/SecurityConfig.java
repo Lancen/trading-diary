@@ -22,6 +22,9 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
+/**
+ * Spring Security 配置，定义认证过滤链和权限规则
+ */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -39,6 +42,13 @@ public class SecurityConfig {
         this.jwtAuthFilter = jwtAuthFilter;
     }
 
+    /**
+     * 安全过滤链，配置 CSRF、CORS、无状态会话和请求权限
+     *
+     * @param http HttpSecurity 构建器
+     * @return 安全过滤链
+     * @throws Exception 配置异常
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -62,17 +72,34 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /**
+     * 认证管理器
+     *
+     * @param authenticationConfiguration 认证配置
+     * @return AuthenticationManager 实例
+     * @throws Exception 获取失败异常
+     */
     @Bean
     public AuthenticationManager authenticationManager(
             AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
     }
 
+    /**
+     * 密码编码器，使用 BCrypt 强度 12
+     *
+     * @return BCrypt 密码编码器
+     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(12);
     }
 
+    /**
+     * CORS 配置源，允许指定前端域名跨域访问
+     *
+     * @return CORS 配置源
+     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();

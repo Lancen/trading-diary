@@ -21,6 +21,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * 板块指数日线控制器，提供行业/概念指数日线数据查询
+ */
 @RestController
 @RequestMapping("/api/v1/admin/sector-index-daily")
 @PreAuthorize("hasRole('ADMIN')")

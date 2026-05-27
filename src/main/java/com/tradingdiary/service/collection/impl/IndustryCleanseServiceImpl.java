@@ -21,6 +21,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * 行业板块清洗服务实现，解析行业板块名称 JSON 并入库
+ */
 @Service
 public class IndustryCleanseServiceImpl implements IndustryCleanseService {
 

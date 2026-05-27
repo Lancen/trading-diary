@@ -25,6 +25,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * 数据采集控制器，提供采集状态查询、任务触发和历史补采等接口
+ */
 @RestController
 @RequestMapping("/api/v1/admin/collection")
 @PreAuthorize("hasRole('ADMIN')")

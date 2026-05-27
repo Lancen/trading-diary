@@ -14,6 +14,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * 板块两融占比服务实现，计算板块级别的融资融券占比
+ */
 @Service
 public class SectorMarginServiceImpl implements SectorMarginService {
 

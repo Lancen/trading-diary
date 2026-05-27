@@ -7,9 +7,17 @@ import org.springframework.context.annotation.Configuration;
 
 import java.time.LocalDateTime;
 
+/**
+ * MyBatis-Plus 配置，启用分页插件和批量填充策略
+ */
 @Configuration
 public class MybatisPlusConfig {
 
+    /**
+     * 自动填充处理器，插入时填充 createdAt/updatedAt，更新时填充 updatedAt
+     *
+     * @return MyBatis-Plus 元对象填充处理器
+     */
     @Bean
     public MetaObjectHandler metaObjectHandler() {
         return new MetaObjectHandler() {

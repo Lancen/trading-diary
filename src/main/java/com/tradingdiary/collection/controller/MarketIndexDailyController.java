@@ -13,6 +13,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 import java.util.List;
 
+/**
+ * 宽基指数日线控制器，提供指数日线数据查询
+ */
 @RestController
 @RequestMapping("/api/v1/admin/market-index-daily")
 @PreAuthorize("hasRole('ADMIN')")

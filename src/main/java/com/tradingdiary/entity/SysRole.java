@@ -11,6 +11,9 @@ import lombok.Setter;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
+/**
+ * 系统角色，定义用户权限分组
+ */
 @Getter
 @Setter
 @TableName("sys_role")
@@ -21,8 +24,10 @@ public class SysRole implements Serializable {
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    /** 角色编码，如 ADMIN、USER */
     private String code;
 
+    /** 角色名称 */
     private String name;
 
     @TableField(fill = FieldFill.INSERT)

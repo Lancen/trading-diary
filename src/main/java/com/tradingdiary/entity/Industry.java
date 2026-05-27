@@ -11,6 +11,9 @@ import lombok.Setter;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
+/**
+ * 行业板块，记录同花顺行业分类的板块信息
+ */
 @Getter
 @Setter
 @TableName("industry")
@@ -21,8 +24,10 @@ public class Industry implements Serializable {
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    /** 行业板块代码 */
     private String code;
 
+    /** 行业板块名称 */
     private String name;
 
     @TableField(fill = FieldFill.INSERT)
@@ -33,7 +38,9 @@ public class Industry implements Serializable {
 
     private Boolean isDeleted = false;
 
+    /** 是否置顶 */
     private Boolean pinned = false;
 
+    /** 置顶排序序号（越小越靠前） */
     private Integer pinOrder;
 }

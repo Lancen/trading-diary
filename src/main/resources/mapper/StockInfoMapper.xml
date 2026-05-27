@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 股票行情 Mapper，提供股票列表查询、统计和快照日期查询 -->
 <mapper namespace="com.tradingdiary.mapper.StockInfoMapper">
 
+    <!-- 查询股票列表，关联行业/概念/两融数据，支持关键词、行业、概念筛选和分页排序 -->
     <select id="selectStockList" resultType="com.tradingdiary.collection.model.StockListVO">
         SELECT si.stock_code AS stockCode, si.name AS stockName,
                si.latest_price AS close, si.change_pct AS changePct,
@@ -28,6 +30,7 @@
         LIMIT #{offset}, #{size}
     </select>
 
+    <!-- 统计符合筛选条件的股票总数 -->
     <select id="countStockList" resultType="long">
         SELECT COUNT(DISTINCT si.id)
         FROM stock_info si
@@ -43,12 +46,14 @@
         <if test='concept != null and concept != ""'>AND c.name = #{concept}</if>
     </select>
 
+    <!-- 查询指定日期范围内的去重快照日期列表 -->
     <select id="selectDistinctSnapshotDates" resultType="java.time.LocalDate">
         SELECT DISTINCT snapshot_date FROM stock_info
         WHERE snapshot_date BETWEEN #{start} AND #{end} AND is_deleted = 0
         ORDER BY snapshot_date
     </select>
 
+    <!-- 查询股票行情表的最大快照日期 -->
     <select id="selectMaxTradeDate" resultType="java.time.LocalDate">
         SELECT MAX(snapshot_date) FROM stock_info WHERE is_deleted = 0
     </select>

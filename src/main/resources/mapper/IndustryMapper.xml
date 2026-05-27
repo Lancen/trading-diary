@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 行业板块 Mapper，提供行业板块列表查询和统计 -->
 <mapper namespace="com.tradingdiary.mapper.IndustryMapper">
 
+    <!-- 查询行业板块列表，关联两融、成交占比、成分股数量，支持关键词筛选和分页排序 -->
     <select id="selectIndustryList" resultType="com.tradingdiary.collection.model.ConceptIndustryVO">
         SELECT ind.code, ind.name, ind.pinned, ind.pin_order,
                COUNT(DISTINCT sci.stock_code) AS stockCount,
@@ -32,6 +34,7 @@
         LIMIT #{offset}, #{size}
     </select>
 
+    <!-- 统计符合筛选条件的行业板块总数 -->
     <select id="countIndustryList" resultType="long">
         SELECT COUNT(DISTINCT ind.id) FROM industry ind
         LEFT JOIN stock_industry sci ON ind.code = sci.industry_code AND sci.is_deleted = 0
@@ -42,6 +45,7 @@
         <if test='keyword != null and keyword != ""'>AND ind.name LIKE CONCAT('%', #{keyword}, '%')</if>
     </select>
 
+    <!-- 查询行业板块表的最大创建时间，用于判断采集数据新鲜度 -->
     <select id="selectMaxCreatedAt" resultType="java.time.LocalDateTime">
         SELECT MAX(created_at) FROM industry WHERE is_deleted = 0
     </select>

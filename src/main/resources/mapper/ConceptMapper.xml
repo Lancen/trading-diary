@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 概念板块 Mapper，提供概念板块列表查询和统计 -->
 <mapper namespace="com.tradingdiary.mapper.ConceptMapper">
 
+    <!-- 查询概念板块列表，关联两融、成交占比、成分股数量，支持关键词筛选和分页排序 -->
     <select id="selectConceptList" resultType="com.tradingdiary.collection.model.ConceptIndustryVO">
         SELECT c.code, c.name, c.pinned, c.pin_order,
                COUNT(DISTINCT sc.stock_code) AS stockCount,
@@ -32,6 +34,7 @@
         LIMIT #{offset}, #{size}
     </select>
 
+    <!-- 统计符合筛选条件的概念板块总数 -->
     <select id="countConceptList" resultType="long">
         SELECT COUNT(DISTINCT c.id) FROM concept c
         LEFT JOIN stock_concept sc ON c.code = sc.concept_code AND sc.is_deleted = 0
@@ -42,6 +45,7 @@
         <if test='keyword != null and keyword != ""'>AND c.name LIKE CONCAT('%', #{keyword}, '%')</if>
     </select>
 
+    <!-- 查询概念板块表的最大创建时间，用于判断采集数据新鲜度 -->
     <select id="selectMaxCreatedAt" resultType="java.time.LocalDateTime">
         SELECT MAX(created_at) FROM concept WHERE is_deleted = 0
     </select>

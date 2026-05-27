@@ -21,6 +21,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * 概念板块清洗服务实现，解析概念板块名称 JSON 并入库
+ */
 @Service
 public class ConceptCleanseServiceImpl implements ConceptCleanseService {
 

@@ -22,6 +22,9 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+/**
+ * 批量 SQL 执行器，基于 JdbcTemplate 拼接多值 INSERT/CASE-WHEN UPDATE
+ */
 @Component
 public class BatchSqlRunner {
 
@@ -34,10 +37,25 @@ public class BatchSqlRunner {
         this.jdbcTemplate = jdbcTemplate;
     }
 
+    /**
+     * 批量插入实体列表，使用默认批量大小
+     *
+     * @param entities 待插入的实体列表
+     * @param <T>      实体类型
+     * @return 插入的总行数
+     */
     public <T> int batchInsert(List<T> entities) {
         return batchInsert(entities, CollectionConstants.DB_BATCH_SIZE);
     }
 
+    /**
+     * 批量插入实体列表，按指定批量大小分批执行
+     *
+     * @param entities  待插入的实体列表
+     * @param batchSize 每批处理的记录数
+     * @param <T>       实体类型
+     * @return 插入的总行数
+     */
     public <T> int batchInsert(List<T> entities, int batchSize) {
         if (entities.isEmpty()) return 0;
         EntityMeta meta = getMeta(entities.get(0).getClass());
@@ -50,10 +68,25 @@ public class BatchSqlRunner {
         return total;
     }
 
+    /**
+     * 批量更新实体列表，使用默认批量大小
+     *
+     * @param entities 待更新的实体列表
+     * @param <T>      实体类型
+     * @return 更新的总行数
+     */
     public <T> int batchUpdate(List<T> entities) {
         return batchUpdate(entities, CollectionConstants.DB_BATCH_SIZE);
     }
 
+    /**
+     * 批量更新实体列表，按指定批量大小分批执行
+     *
+     * @param entities  待更新的实体列表
+     * @param batchSize 每批处理的记录数
+     * @param <T>       实体类型
+     * @return 更新的总行数
+     */
     public <T> int batchUpdate(List<T> entities, int batchSize) {
         if (entities.isEmpty()) return 0;
         EntityMeta meta = getMeta(entities.get(0).getClass());

@@ -13,6 +13,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 import java.util.List;
 
+/**
+ * 板块两融占比控制器，提供板块级融资融券占比查询
+ */
 @RestController
 @RequestMapping("/api/v1/admin/sector-margin")
 @PreAuthorize("hasRole('ADMIN')")

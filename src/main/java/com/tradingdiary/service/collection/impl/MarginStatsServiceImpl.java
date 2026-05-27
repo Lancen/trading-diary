@@ -7,6 +7,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 
+/**
+ * 两融统计服务实现，计算个股/板块的两融占比和排名
+ */
 @Service
 public class MarginStatsServiceImpl implements MarginStatsService {
 

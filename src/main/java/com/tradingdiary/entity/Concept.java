@@ -11,6 +11,9 @@ import lombok.Setter;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
+/**
+ * 概念板块，记录同花顺概念分类的板块信息
+ */
 @Getter
 @Setter
 @TableName("concept")
@@ -21,8 +24,10 @@ public class Concept implements Serializable {
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    /** 概念板块代码 */
     private String code;
 
+    /** 概念板块名称 */
     private String name;
 
     @TableField(fill = FieldFill.INSERT)
@@ -33,7 +38,9 @@ public class Concept implements Serializable {
 
     private Boolean isDeleted = false;
 
+    /** 是否置顶 */
     private Boolean pinned = false;
 
+    /** 置顶排序序号（越小越靠前） */
     private Integer pinOrder;
 }

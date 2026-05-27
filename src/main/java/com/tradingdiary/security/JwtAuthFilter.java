@@ -21,6 +21,9 @@ import java.util.Set;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 
+/**
+ * JWT 认证过滤器，拦截请求验证令牌并设置安全上下文
+ */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE + 100)
 public class JwtAuthFilter extends OncePerRequestFilter {

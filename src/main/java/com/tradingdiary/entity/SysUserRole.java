@@ -11,6 +11,9 @@ import lombok.Setter;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
+/**
+ * 用户-角色关联关系
+ */
 @Getter
 @Setter
 @TableName("sys_user_role")
@@ -21,8 +24,10 @@ public class SysUserRole implements Serializable {
     @TableId(type = IdType.AUTO)
     private Long id;
 
+    /** 用户ID */
     private Long userId;
 
+    /** 角色ID */
     private Long roleId;
 
     @TableField(fill = FieldFill.INSERT)

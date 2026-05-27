@@ -27,7 +27,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * 股票日线清洗服务单元测试
+ * StockDailyCleanseServiceImpl 单元测试，验证股票日线数据清洗的 JSON 解析、去重和批量写入
  */
 @ExtendWith(MockitoExtension.class)
 class StockDailyCleanseServiceImplTest {
@@ -54,6 +54,7 @@ class StockDailyCleanseServiceImplTest {
         service = new StockDailyCleanseServiceImpl(stockDailyMapper, batchSqlRunner, objectMapper);
     }
 
+    // 测试流程: Given 有效 AKTools JSON 且无已有记录, When 调用 cleanse, Then 解析 2 条并批量写入
     @Test
     void shouldCleanseWithValidJson() {
         String rawJson = "[" +
@@ -72,6 +73,7 @@ class StockDailyCleanseServiceImplTest {
         verify(batchSqlRunner).batchInsert(any());
     }
 
+    // 测试流程: Given 空 JSON 数组, When 调用 cleanse, Then 返回 0 且不触发批量写入
     @Test
     void shouldReturnZeroWhenEmptyData() {
         String rawJson = "[]";
@@ -82,6 +84,7 @@ class StockDailyCleanseServiceImplTest {
         verify(batchSqlRunner, never()).batchInsert(any());
     }
 
+    // 测试流程: Given 无效 JSON 字符串, When 调用 cleanse, Then 抛出 RuntimeException 且消息包含"解析股票日线数据失败"
     @Test
     void shouldThrowOnInvalidJson() {
         String invalidJson = "not a json";
@@ -91,6 +94,7 @@ class StockDailyCleanseServiceImplTest {
                 .hasMessageContaining("解析股票日线数据失败");
     }
 
+    // 测试流程: Given 有效 Tushare JSON 且无已有记录, When 调用 cleanseTushareDaily, Then 解析 1 条并批量写入
     @Test
     void shouldCleanseTushareDailySuccessfully() {
         String tushareJson = "{\"data\":{\"fields\":[\"ts_code\",\"trade_date\",\"open\",\"high\",\"low\",\"close\",\"vol\",\"amount\"]," +
@@ -104,6 +108,7 @@ class StockDailyCleanseServiceImplTest {
         assertThat(result).isEqualTo(1);
     }
 
+    // 测试流程: Given 有效 Tushare JSON, When 调用 parseTushareDaily, Then 解析出 1 条 StockDaily 且代码和日期正确
     @Test
     void shouldParseTushareDailyCorrectly() {
         String tushareJson = "{\"data\":{\"fields\":[\"ts_code\",\"trade_date\",\"open\",\"high\",\"low\",\"close\",\"vol\",\"amount\"]," +

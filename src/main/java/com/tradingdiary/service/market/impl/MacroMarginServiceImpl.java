@@ -11,6 +11,9 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 两融总量查询服务实现，聚合市场级融资融券数据
+ */
 @Service
 public class MacroMarginServiceImpl implements MacroMarginService {
 

@@ -11,6 +11,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * 板块关联度服务实现，计算板块间的相关性指标
+ */
 @Service
 public class SectorCorrelationServiceImpl implements SectorCorrelationService {
 

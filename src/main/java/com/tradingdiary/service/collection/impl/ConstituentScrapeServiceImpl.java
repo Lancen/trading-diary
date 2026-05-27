@@ -34,6 +34,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+/**
+ * 成分股抓取服务实现，通过 Playwright 抓取同花顺成分股数据
+ */
 @Service
 public class ConstituentScrapeServiceImpl implements ConstituentScrapeService {
 

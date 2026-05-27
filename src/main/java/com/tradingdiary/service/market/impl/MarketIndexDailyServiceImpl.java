@@ -10,6 +10,9 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 宽基指数日线查询服务实现，提供指数行情查询
+ */
 @Service
 public class MarketIndexDailyServiceImpl implements MarketIndexDailyService {
 

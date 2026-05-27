@@ -11,6 +11,9 @@ import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+/**
+ * 管理员初始化配置，启动时自动创建默认管理员账号
+ */
 @Component
 @Order(1)
 public class AdminInitializer implements ApplicationRunner {

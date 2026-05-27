@@ -6,7 +6,7 @@
 
 ### 1. 类级 Javadoc（中文）
 
-每个 Controller、Service 接口、Mapper 接口、Scheduler、Client 等类必须有类级 Javadoc，用一句话说明该类的职责。
+每个 Controller、Service 接口、Service 实现类、Mapper 接口、VO/DTO/Request 模型类、Config、Security、Util、Client、Scheduler 等类必须有类级 Javadoc，用一句话说明该类的职责。
 
 ```java
 /**
@@ -14,6 +14,12 @@
  */
 public interface CollectionQueryService {
 ```
+
+- **Service 实现类**：类级 Javadoc 说明职责，与接口 Javadoc 侧重不同（接口侧重契约，实现侧重策略）
+- **VO/DTO/Request 类**：类级 Javadoc 说明业务用途，字段加 `/** 中文说明 */`（同实体类规则）
+- **Config 类**：类级 Javadoc 说明配置目的，Bean 方法加中文 Javadoc
+- **Security 类**：类级 Javadoc 说明安全职责（如过滤器、认证逻辑）
+- **Util 类**：类级 Javadoc 说明工具用途，每个 public 方法加中文 Javadoc
 
 ### 2. 方法级 Javadoc（中文）
 
@@ -63,6 +69,49 @@ DataCollectionLog fetchLog = new DataCollectionLog();
 // 用新令牌重试原始请求
 return ky(originalRequest);
 ```
+
+### 7. 实体类字段注释
+
+每个实体类的业务字段上方加 `/** 中文说明 */`，说明业务含义和单位/格式。
+
+```java
+/** 股票代码（6位纯数字，如 600519） */
+private String stockCode;
+
+/** 融资余额（元） */
+private BigDecimal marginBalance;
+```
+
+- 通用字段（`id`、`createdAt`、`updatedAt`、`isDeleted`、`serialVersionUID`）无需注释
+- 外键关联字段标注关联实体（如"关联 stock_info.stock_code"）
+- 单位/格式在括号中标注（如"元"、"6位纯数字"、"SSE/SZSE"）
+
+### 8. 测试类注释
+
+每个测试类必须包含：
+
+1. **类级 Javadoc**：格式为 `被测类名 单元测试，验证核心职责概述`
+2. **方法流程注释**：每个 `@Test` 方法上方加 `// 测试流程: Given ..., When ..., Then ...`
+
+```java
+/**
+ * StockSpotHandler 单元测试，验证股票行情采集的 fetch 委托和 cleanse 双表写入
+ */
+@ExtendWith(MockitoExtension.class)
+class StockSpotHandlerTest {
+
+    // 测试流程: 验证 dataType() 返回正确的类型标识
+    @Test
+    void shouldReturnCorrectDataType() { ... }
+
+    // 测试流程: Given mock client 返回行情 JSON, When 调用 fetch(), Then 委托到 aktoolsClient.fetchStockSpot()
+    @Test
+    void shouldDelegateFetchToClient() { ... }
+}
+```
+
+- 简单断言可简化为 `// 测试流程: 验证 xxx`
+- Given/When/Then 用逗号分隔，一行写完
 
 ## Why
 

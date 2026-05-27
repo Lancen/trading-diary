@@ -18,6 +18,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * 交易日历服务实现，从 API 同步交易日历数据到数据库
+ */
 @Service
 public class TradeCalendarServiceImpl implements TradeCalendarService {
 

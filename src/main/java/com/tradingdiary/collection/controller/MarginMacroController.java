@@ -13,6 +13,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 import java.util.List;
 
+/**
+ * 两融总量控制器，提供市场级融资融券汇总数据查询
+ */
 @RestController
 @RequestMapping("/api/v1/admin/margin-macro")
 @PreAuthorize("hasRole('ADMIN')")

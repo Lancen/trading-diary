@@ -20,6 +20,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * 两融明细清洗服务实现，解析个股融资融券 JSON 并入库
+ */
 @Service
 public class MarginCleanseServiceImpl implements MarginCleanseService {
 
