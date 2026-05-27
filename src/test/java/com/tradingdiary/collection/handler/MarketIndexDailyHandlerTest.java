@@ -1,6 +1,7 @@
 package com.tradingdiary.collection.handler;
 
 import com.tradingdiary.collection.client.AKToolsClient;
+import com.tradingdiary.collection.model.FetchResult;
 import com.tradingdiary.service.collection.MarketIndexDailyCleanseService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,8 +45,9 @@ class MarketIndexDailyHandlerTest {
         when(aktoolsClient.fetchMarketIndexDaily("sh000001")).thenReturn("[{...}]");
         when(aktoolsClient.fetchMarketIndexDaily("sz399001")).thenReturn("[]");
 
-        String result = handler.fetch(LocalDate.of(2026, 5, 20));
-        assertThat(result).isNotEmpty();
+        FetchResult result = handler.fetch(LocalDate.of(2026, 5, 20));
+        assertThat(result.getType()).isEqualTo(FetchResult.Type.SINGLE);
+        assertThat(result.getRawJson()).isNotEmpty();
         verify(aktoolsClient, atLeastOnce()).fetchMarketIndexDaily("sh000001");
     }
 

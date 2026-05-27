@@ -1,6 +1,7 @@
 package com.tradingdiary.collection.handler;
 
 import com.tradingdiary.collection.client.AKToolsClient;
+import com.tradingdiary.collection.model.FetchResult;
 import com.tradingdiary.service.collection.MarginCleanseService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,8 +43,9 @@ class MarginDailySzseHandlerTest {
     void shouldDelegateFetchWithDateStr() {
         LocalDate date = LocalDate.of(2026, 5, 20);
         when(aktoolsClient.fetchMarginDetailSzse("20260520")).thenReturn("[{...}]");
-        String result = handler.fetch(date);
-        assertThat(result).isEqualTo("[{...}]");
+        FetchResult result = handler.fetch(date);
+        assertThat(result.getType()).isEqualTo(FetchResult.Type.SINGLE);
+        assertThat(result.getRawJson()).isEqualTo("[{...}]");
         verify(aktoolsClient).fetchMarginDetailSzse("20260520");
     }
 

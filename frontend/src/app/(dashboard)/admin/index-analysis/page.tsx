@@ -1,37 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import api from "@/lib/api";
-import KlineMarginOverlay, { KlinePoint, MarginPoint } from "@/components/chart/KlineMarginOverlay";
-
-interface IndexQuote {
-  indexCode: string;
-  tradeDate: string;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
-  changePct: number;
-}
-
-interface MarketIndexDaily {
-  indexCode: string;
-  tradeDate: string;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
-  amount: number;
-  changePct: number;
-}
-
-interface MacroMargin {
-  tradeDate: string;
-  marginBalance: number;
-  shortBalance: number;
-}
+import { useState } from "react";
+import { useApiQuery } from "@/lib/hooks";
+import type { MarketIndexDaily, MacroMargin } from "@/lib/types";
+import { fmt, fmtChange, diffColor, getStartDate } from "@/lib/format";
+import KlineMarginOverlay from "@/components/chart/KlineMarginOverlay";
 
 const INDEX_NAMES: Record<string, string> = {
   "sh000001": "上证指数",
@@ -46,68 +19,33 @@ const INDEX_NAMES: Record<string, string> = {
 
 const P0_INDICES = ["sh000001", "sz399001", "sz399006", "sh000300", "sh000905"];
 
+type RangeKey = "1m" | "3m" | "6m" | "1y";
+
 export default function IndexAnalysisPage() {
   const [selectedIndex, setSelectedIndex] = useState("sh000001");
-  const [latestQuotes, setLatestQuotes] = useState<IndexQuote[]>([]);
-  const [klines, setKlines] = useState<KlinePoint[]>([]);
-  const [margins, setMargins] = useState<MarginPoint[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [range, setRange] = useState("3m");
-  const [period, setPeriod] = useState<"daily" | "weekly" | "monthly">("daily");
+  const [range, setRange] = useState<RangeKey>("3m");
+  const startDate = getStartDate(range);
 
-  const fetchLatest = useCallback(async () => {
-    try {
-      const res = await api.get("api/v1/admin/market-index-daily/latest")
-        .json<{ code: number; data: MarketIndexDaily[] }>();
-      const data = res.data || [];
-      setLatestQuotes(data.map(d => ({
-        indexCode: d.indexCode,
-        tradeDate: d.tradeDate,
-        open: d.open,
-        high: d.high,
-        low: d.low,
-        close: d.close,
-        volume: d.volume,
-        changePct: d.changePct,
-      })));
-    } catch (e) { console.error(e); }
-  }, []);
+  const { data: quotesData } = useApiQuery<MarketIndexDaily[]>(
+    ["admin", "market-index-daily", "latest"],
+    "api/v1/admin/market-index-daily/latest"
+  );
 
-  const fetchChart = useCallback(async () => {
-    setLoading(true);
-    try {
-      const now = new Date();
-      let startDate = "";
-      if (range === "1m") { const d = new Date(now); d.setMonth(d.getMonth() - 1); startDate = d.toISOString().slice(0, 10); }
-      else if (range === "3m") { const d = new Date(now); d.setMonth(d.getMonth() - 3); startDate = d.toISOString().slice(0, 10); }
-      else if (range === "6m") { const d = new Date(now); d.setMonth(d.getMonth() - 6); startDate = d.toISOString().slice(0, 10); }
-      else if (range === "1y") { const d = new Date(now); d.setFullYear(d.getFullYear() - 1); startDate = d.toISOString().slice(0, 10); }
+  const { data: klineData, isLoading: klineLoading } = useApiQuery<MarketIndexDaily[]>(
+    ["admin", "index-analysis", range, selectedIndex],
+    "api/v1/admin/market-index-daily",
+    { indexCode: selectedIndex, startDate }
+  );
 
-      const klineRes = await api.get("api/v1/admin/market-index-daily", {
-        searchParams: { indexCode: selectedIndex, startDate },
-      }).json<{ code: number; data: MarketIndexDaily[] }>();
+  const { data: marginData } = useApiQuery<MacroMargin[]>(
+    ["admin", "margin-macro", "sse", range],
+    "api/v1/admin/margin-macro/sse",
+    { startDate }
+  );
 
-      setKlines((klineRes.data || []).map(k => ({
-        tradeDate: k.tradeDate, open: k.open, high: k.high, low: k.low, close: k.close, volume: k.volume,
-      })));
-
-      try {
-        const marginRes = await api.get("api/v1/admin/margin-macro/sse", {
-          searchParams: { startDate },
-        }).json<{ code: number; data: MacroMargin[] }>();
-        setMargins((marginRes.data || []).map(m => ({
-          tradeDate: m.tradeDate, marginBalance: m.marginBalance, shortBalance: m.shortBalance,
-        })));
-      } catch {
-        setMargins([]);
-      }
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
-  }, [selectedIndex, range]);
-
-  useEffect(() => { fetchLatest(); }, [fetchLatest]);
-  useEffect(() => { fetchChart(); }, [fetchChart]);
-
+  const latestQuotes = quotesData?.data || [];
+  const klines = klineData?.data || [];
+  const margins = marginData?.data || [];
   const currentQuote = latestQuotes.find(q => q.indexCode === selectedIndex);
 
   return (
@@ -120,14 +58,11 @@ export default function IndexAnalysisPage() {
           const q = latestQuotes.find(q => q.indexCode === code);
           const isUp = (q?.changePct ?? 0) > 0;
           return (
-            <button
-              key={code}
-              onClick={() => setSelectedIndex(code)}
-              className={`rounded-lg border p-3 text-left transition-colors ${selectedIndex === code ? "border-blue-500 bg-blue-50" : "hover:bg-gray-50"}`}
-            >
+            <button key={code} onClick={() => setSelectedIndex(code)}
+              className={`rounded-lg border p-3 text-left transition-colors ${selectedIndex === code ? "border-blue-500 bg-blue-50" : "hover:bg-gray-50"}`}>
               <p className="text-xs text-gray-500">{INDEX_NAMES[code] || code}</p>
-              <p className={`text-lg font-bold ${isUp ? "text-red-600" : "text-green-600"}`}>{q?.close?.toFixed(2) ?? "-"}</p>
-              <p className={`text-xs ${isUp ? "text-red-500" : "text-green-500"}`}>{q?.changePct != null ? (q.changePct > 0 ? "+" : "") + q.changePct.toFixed(2) + "%" : "-"}</p>
+              <p className={`text-lg font-bold ${diffColor(q?.changePct)}`}>{q?.close?.toFixed(2) ?? "-"}</p>
+              <p className={`text-xs ${diffColor(q?.changePct)}`}>{fmtChange(q?.changePct)}</p>
             </button>
           );
         })}
@@ -148,9 +83,9 @@ export default function IndexAnalysisPage() {
               return (
                 <tr key={code} className={`border-b hover:bg-gray-50 cursor-pointer ${selectedIndex === code ? "bg-blue-50" : ""}`} onClick={() => setSelectedIndex(code)}>
                   <td className="px-3 py-2 font-medium">{name}</td>
-                  <td className={`px-3 py-2 text-right ${isUp ? "text-red-600" : "text-green-600"}`}>{q?.close?.toFixed(2) ?? "-"}</td>
-                  <td className={`px-3 py-2 text-right ${isUp ? "text-red-600" : "text-green-600"}`}>{q?.changePct != null ? (q.changePct > 0 ? "+" : "") + q.changePct.toFixed(2) + "%" : "-"}</td>
-                  <td className="px-3 py-2 text-right">{q?.volume ? (q.volume / 1e8).toFixed(2) + "亿" : "-"}</td>
+                  <td className={`px-3 py-2 text-right ${diffColor(q?.changePct)}`}>{q?.close?.toFixed(2) ?? "-"}</td>
+                  <td className={`px-3 py-2 text-right ${diffColor(q?.changePct)}`}>{fmtChange(q?.changePct)}</td>
+                  <td className="px-3 py-2 text-right">{q?.volume ? fmt(q.volume) : "-"}</td>
                 </tr>
               );
             })}
@@ -163,11 +98,9 @@ export default function IndexAnalysisPage() {
         <div className="flex flex-wrap gap-2 items-center mb-3">
           <span className="font-semibold text-sm">{INDEX_NAMES[selectedIndex] || selectedIndex}</span>
           <span className="text-gray-300">|</span>
-          {["1m", "3m", "6m", "1y"].map((r) => <button key={r} onClick={() => setRange(r)} className={`rounded px-2 py-1 text-xs ${range === r ? "bg-blue-600 text-white" : "border hover:bg-gray-50"}`}>{r === "1m" ? "1月" : r === "3m" ? "3月" : r === "6m" ? "6月" : "1年"}</button>)}
-          <span className="text-gray-300">|</span>
-          {(["daily", "weekly", "monthly"] as const).map((p) => <button key={p} onClick={() => setPeriod(p)} className={`rounded px-2 py-1 text-xs ${period === p ? "bg-blue-600 text-white" : "border hover:bg-gray-50"}`}>{p === "daily" ? "日K" : p === "weekly" ? "周K" : "月K"}</button>)}
+          {(["1m", "3m", "6m", "1y"] as RangeKey[]).map((r) => <button key={r} onClick={() => setRange(r)} className={`rounded px-2 py-1 text-xs ${range === r ? "bg-blue-600 text-white" : "border hover:bg-gray-50"}`}>{r === "1m" ? "1月" : r === "3m" ? "3月" : r === "6m" ? "6月" : "1年"}</button>)}
         </div>
-        {loading ? <div className="h-[380px] flex items-center justify-center text-gray-500">加载中...</div> : <KlineMarginOverlay klines={klines} margins={margins} period={period} />}
+        {klineLoading ? <div className="h-[380px] flex items-center justify-center text-gray-500">加载中...</div> : <KlineMarginOverlay klines={klines} margins={margins} />}
       </div>
     </div>
   );

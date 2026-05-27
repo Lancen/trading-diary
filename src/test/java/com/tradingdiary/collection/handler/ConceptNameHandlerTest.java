@@ -1,6 +1,7 @@
 package com.tradingdiary.collection.handler;
 
 import com.tradingdiary.collection.client.AKToolsClient;
+import com.tradingdiary.collection.model.FetchResult;
 import com.tradingdiary.service.collection.ConceptCleanseService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,8 +42,9 @@ class ConceptNameHandlerTest {
     @Test
     void shouldDelegateFetchToClient() {
         when(aktoolsClient.fetchConceptNames()).thenReturn("[{...}]");
-        String result = handler.fetch(LocalDate.now());
-        assertThat(result).isEqualTo("[{...}]");
+        FetchResult result = handler.fetch(LocalDate.now());
+        assertThat(result.getType()).isEqualTo(FetchResult.Type.SINGLE);
+        assertThat(result.getRawJson()).isEqualTo("[{...}]");
         verify(aktoolsClient).fetchConceptNames();
     }
 

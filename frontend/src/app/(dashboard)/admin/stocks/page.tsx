@@ -1,27 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import api from "@/lib/api";
+import { useApiQuery } from "@/lib/hooks";
+import type { StockListItem, StockSortField } from "@/lib/types";
+import { fmt, fmtDiff, diffColor, fmtChange } from "@/lib/format";
 
-interface StockItem {
-  stockCode: string;
-  stockName: string;
-  industry: string | null;
-  concepts: string | null;
-  close: number;
-  changePct: number;
-  volume: number;
-  marginBalance: number;
-  marginChange: number;
-  shortBalance: number;
-  shortChange: number;
-  tradeDate: string;
-}
-
-type SortField = "changePct" | "volume" | "marginBalance" | "marginChange" | "shortBalance" | "shortChange";
-
-const SORT_FIELDS: { key: SortField; label: string }[] = [
+const SORT_FIELDS: { key: StockSortField; label: string }[] = [
   { key: "changePct", label: "涨跌幅" },
   { key: "volume", label: "成交量" },
   { key: "marginBalance", label: "融资余额" },
@@ -30,47 +15,35 @@ const SORT_FIELDS: { key: SortField; label: string }[] = [
   { key: "shortChange", label: "融券变化" },
 ];
 
-function fmt(val: number | null | undefined, unit: string = ""): string {
+/** 成交量格式化：除以万 + "万" */
+function fmtVolume(val: number | null | undefined): string {
   if (val == null) return "-";
-  if (unit === "亿") return (val / 1e8).toFixed(2) + "亿";
-  if (unit === "万") return (val / 1e4).toFixed(0) + "万";
-  return val.toLocaleString();
+  return (val / 1e4).toFixed(0) + "万";
 }
 
 export default function StocksPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [data, setData] = useState<StockItem[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [keyword, setKeyword] = useState(searchParams.get("keyword") || "");
   const [industry, setIndustry] = useState(searchParams.get("industry") || "");
   const [concept, setConcept] = useState(searchParams.get("concept") || "");
   const [tradeDate, setTradeDate] = useState("");
-  const [sortBy, setSortBy] = useState<SortField>("changePct");
+  const [sortBy, setSortBy] = useState<StockSortField>("changePct");
   const [sortDir, setSortDir] = useState("desc");
   const [page, setPage] = useState(1);
   const pageSize = 50;
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params: Record<string, string | number> = { sortBy, sortDir, page, size: pageSize };
-      if (keyword) params.keyword = keyword;
-      if (industry) params.industry = industry;
-      if (concept) params.concept = concept;
-      if (tradeDate) params.tradeDate = tradeDate;
-      const res = await api.get("api/v1/admin/stocks/list", { searchParams: params }).json<{ code: number; data: { records: StockItem[]; total: number } }>();
-      setData(res.data?.records || []);
-      setTotal(res.data?.total || 0);
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
-  }, [keyword, industry, concept, tradeDate, sortBy, sortDir, page]);
+  const { data, isLoading, refetch } = useApiQuery<{ records: StockListItem[]; total: number }>(
+    ["admin", "stocks", { keyword, industry, concept, tradeDate, sortBy, sortDir, page, size: pageSize }],
+    "api/v1/admin/stocks/list",
+    { keyword: keyword || undefined, industry: industry || undefined, concept: concept || undefined, tradeDate: tradeDate || undefined, sortBy, sortDir, page, size: pageSize }
+  );
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  const records = data?.data?.records || [];
+  const total = data?.data?.total || 0;
 
-  function handleSort(field: SortField) {
+  function handleSort(field: StockSortField) {
     if (sortBy === field) {
       setSortDir(sortDir === "desc" ? "asc" : "desc");
     } else {
@@ -80,7 +53,7 @@ export default function StocksPage() {
     setPage(1);
   }
 
-  function sortArrow(field: SortField): string {
+  function sortArrow(field: StockSortField): string {
     if (sortBy !== field) return "↕";
     return sortDir === "desc" ? "↓" : "↑";
   }
@@ -107,7 +80,7 @@ export default function StocksPage() {
           <label className="block text-xs text-gray-500 mb-1">日期(留空=最新)</label>
           <input type="date" value={tradeDate} onChange={(e) => setTradeDate(e.target.value)} className="rounded-lg border px-3 py-2 text-sm w-36" />
         </div>
-        <button onClick={fetchData} className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:opacity-90">查询</button>
+        <button onClick={() => refetch()} className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:opacity-90">查询</button>
       </div>
 
       <div className="overflow-x-auto rounded-lg border">
@@ -128,28 +101,28 @@ export default function StocksPage() {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
+            {isLoading ? (
               <tr><td colSpan={12} className="px-4 py-8 text-center text-gray-400">加载中...</td></tr>
-            ) : data.length === 0 ? (
+            ) : records.length === 0 ? (
               <tr><td colSpan={12} className="px-4 py-8 text-center text-gray-400">无数据</td></tr>
-            ) : data.map((item) => (
+            ) : records.map((item) => (
               <tr key={item.stockCode + item.tradeDate} className="border-b hover:bg-gray-50 cursor-pointer" onClick={() => router.push(`/admin/stocks/${item.stockCode}`)}>
                 <td className="px-3 py-2 font-mono text-blue-600">{item.stockCode}</td>
                 <td className="px-3 py-2 text-blue-600 font-medium">{item.stockName}</td>
                 <td className="px-3 py-2"><span className="rounded bg-blue-50 px-1.5 py-0.5 text-xs text-blue-700">{item.industry || "-"}</span></td>
                 <td className="px-3 py-2 text-xs text-gray-500 max-w-[150px] truncate">{item.concepts || "-"}</td>
                 <td className="px-3 py-2 text-right">{item.close}</td>
-                <td className={`px-3 py-2 text-right ${item.changePct > 0 ? "text-red-600" : item.changePct < 0 ? "text-green-600" : "text-gray-500"}`}>
-                  {item.changePct > 0 ? "+" : ""}{item.changePct?.toFixed(2)}%
+                <td className={`px-3 py-2 text-right ${diffColor(item.changePct)}`}>
+                  {fmtChange(item.changePct)}
                 </td>
-                <td className="px-3 py-2 text-right">{fmt(item.volume, "万")}</td>
-                <td className="px-3 py-2 text-right text-blue-600">{fmt(item.marginBalance, "亿")}</td>
-                <td className={`px-3 py-2 text-right ${item.marginChange > 0 ? "text-red-600" : item.marginChange < 0 ? "text-green-600" : "text-gray-500"}`}>
-                  {item.marginChange > 0 ? "↑" : item.marginChange < 0 ? "↓" : ""}{fmt(Math.abs(item.marginChange), "亿")}
+                <td className="px-3 py-2 text-right">{fmtVolume(item.volume)}</td>
+                <td className="px-3 py-2 text-right text-blue-600">{fmt(item.marginBalance)}</td>
+                <td className={`px-3 py-2 text-right ${diffColor(item.marginChange)}`}>
+                  {fmtDiff(item.marginChange)}
                 </td>
-                <td className="px-3 py-2 text-right">{fmt(item.shortBalance, "亿")}</td>
-                <td className={`px-3 py-2 text-right ${item.shortChange > 0 ? "text-red-600" : item.shortChange < 0 ? "text-green-600" : "text-gray-500"}`}>
-                  {item.shortChange > 0 ? "↑" : item.shortChange < 0 ? "↓" : ""}{fmt(Math.abs(item.shortChange), "亿")}
+                <td className="px-3 py-2 text-right">{fmt(item.shortBalance)}</td>
+                <td className={`px-3 py-2 text-right ${diffColor(item.shortChange)}`}>
+                  {fmtDiff(item.shortChange)}
                 </td>
                 <td className="px-3 py-2 text-xs">{item.tradeDate || "-"}</td>
               </tr>

@@ -1,139 +1,121 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import api from "@/lib/api";
-import KlineMarginOverlay, { KlinePoint, MarginPoint } from "@/components/chart/KlineMarginOverlay";
+import { useState } from "react";
+import { useParams } from "next/navigation";
+import { useApiQuery } from "@/lib/hooks";
+import type { StockDetailData } from "@/lib/types";
+import { fmt, diffColor, getStartDate } from "@/lib/format";
+import KlineMarginOverlay from "@/components/chart/KlineMarginOverlay";
 
-interface Kline { tradeDate: string; open: number; high: number; low: number; close: number; volume: number; }
-interface Margin { tradeDate: string; marginBalance: number; marginChange: number; shortBalance: number; shortChange: number; }
-interface DetailData {
-  stockCode: string; stockName: string; industry: string; concepts: string[];
-  latestQuote: { open: number; high: number; low: number; close: number; volume: number; changePct: number; };
-  latestMargin: { marginBalance: number; marginBuy: number; shortBalance: number; totalBalance: number; } | null;
-  dailyKlines: Kline[];
-  dailyMargins: Margin[];
-}
+type RangeKey = "1m" | "3m" | "6m" | "1y";
 
 export default function StockDetailPage() {
-  const { code } = useParams<{ code: string }>();
-  const router = useRouter();
-  const [detail, setDetail] = useState<DetailData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [range, setRange] = useState("3m");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [period, setPeriod] = useState<"daily" | "weekly" | "monthly">("daily");
-  const [showTable, setShowTable] = useState(false);
+  const params = useParams();
+  const code = params.code as string;
+  const [range, setRange] = useState<RangeKey>("3m");
+  const startDate = getStartDate(range);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params: Record<string, string> = {};
-      if (startDate) params.startDate = startDate;
-      if (endDate) params.endDate = endDate;
-      const res = await api.get(`api/v1/admin/stocks/${code}`, { searchParams: params }).json<{ code: number; data: DetailData }>();
-      setDetail(res.data || null);
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
-  }, [code, startDate, endDate]);
+  const { data, isLoading } = useApiQuery<StockDetailData>(
+    ["admin", "stocks", code],
+    `api/v1/admin/stocks/${code}`,
+    { startDate }
+  );
 
-  useEffect(() => { fetchData(); }, [fetchData]);
-
-  function applyRange(r: string) {
-    setRange(r);
-    const now = new Date();
-    const end = now.toISOString().slice(0, 10);
-    let start = end;
-    if (r === "1m") { const d = new Date(now); d.setMonth(d.getMonth() - 1); start = d.toISOString().slice(0, 10); }
-    else if (r === "3m") { const d = new Date(now); d.setMonth(d.getMonth() - 3); start = d.toISOString().slice(0, 10); }
-    else if (r === "6m") { const d = new Date(now); d.setMonth(d.getMonth() - 6); start = d.toISOString().slice(0, 10); }
-    else if (r === "1y") { const d = new Date(now); d.setFullYear(d.getFullYear() - 1); start = d.toISOString().slice(0, 10); }
-    setStartDate(start);
-    setEndDate(end);
-  }
-
-  useEffect(() => { applyRange("3m"); }, []);
-
-  const klinePoints: KlinePoint[] = (detail?.dailyKlines || []).map(k => ({
-    tradeDate: k.tradeDate, open: k.open, high: k.high, low: k.low, close: k.close, volume: k.volume,
-  }));
-
-  const marginPoints: MarginPoint[] = (detail?.dailyMargins || []).map(m => ({
-    tradeDate: m.tradeDate, marginBalance: m.marginBalance, shortBalance: m.shortBalance,
-  }));
-
-  if (loading) return <div className="py-8 text-center text-gray-500">加载中...</div>;
-  if (!detail) return <div className="py-8 text-center text-gray-500">未找到该股票</div>;
+  const stock = data?.data;
+  const quote = stock?.latestQuote;
+  const margin = stock?.latestMargin;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 text-sm text-gray-500">
-        <button onClick={() => router.back()} className="hover:underline">← 返回股票数据</button>
-        <span className="text-gray-300">|</span>
-        <h1 className="text-2xl font-bold text-gray-900">{detail.stockCode} {detail.stockName}</h1>
-      </div>
+    <div className="space-y-6">
+      <a href="/admin/stocks" className="text-sm text-gray-400 hover:text-blue-600">← 股票列表</a>
 
-      {/* 行业+概念 */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-lg border p-3"><span className="text-xs text-gray-500">所属行业</span><p className="font-medium">{detail.industry || "-"}</p></div>
-        <div className="rounded-lg border p-3"><span className="text-xs text-gray-500">所属概念</span><div className="flex flex-wrap gap-1 mt-1">{(detail.concepts || []).map((c) => <span key={c} className="rounded bg-purple-50 px-2 py-0.5 text-xs text-purple-700">{c}</span>)}</div></div>
-      </div>
-
-      {/* 行情摘要 */}
-      {detail.latestQuote && (
-        <div className="grid grid-cols-6 gap-3">
-          {["收盘", "开盘", "最高", "最低", "成交量", "涨跌幅"].map((label, i) => {
-            const vals = [detail.latestQuote?.close, detail.latestQuote?.open, detail.latestQuote?.high, detail.latestQuote?.low, `${(detail.latestQuote?.volume || 0 / 1e4).toFixed(0)}万`, `${detail.latestQuote?.changePct?.toFixed(2)}%`];
-            const colors = i === 5 && detail.latestQuote?.changePct > 0 ? "text-red-600" : "";
-            return <div key={label} className="rounded-lg bg-gray-50 p-3 text-center"><p className="text-xs text-gray-500">{label}</p><p className={`text-lg font-bold ${colors}`}>{vals[i]}</p></div>;
-          })}
-        </div>
-      )}
-
-      {/* K线图 */}
-      <div className="rounded-lg border p-4">
-        <div className="flex flex-wrap gap-2 items-center mb-3">
-          <span className="font-semibold text-sm">K线图</span>
-          {["1m", "3m", "6m", "1y"].map((r) => <button key={r} onClick={() => applyRange(r)} className={`rounded px-2 py-1 text-xs ${range === r ? "bg-blue-600 text-white" : "border hover:bg-gray-50"}`}>{r === "1m" ? "1月" : r === "3m" ? "3月" : r === "6m" ? "6月" : "1年"}</button>)}
-          <span className="text-gray-300">|</span>
-          <input type="date" value={startDate} onChange={(e) => { setStartDate(e.target.value); setRange(""); }} className="rounded border px-2 py-1 text-xs w-32" />
-          <span className="text-xs">~</span>
-          <input type="date" value={endDate} onChange={(e) => { setEndDate(e.target.value); setRange(""); }} className="rounded border px-2 py-1 text-xs w-32" />
-          <span className="text-gray-300">|</span>
-          {(["daily", "weekly", "monthly"] as const).map((p) => <button key={p} onClick={() => setPeriod(p)} className={`rounded px-2 py-1 text-xs ${period === p ? "bg-blue-600 text-white" : "border hover:bg-gray-50"}`}>{p === "daily" ? "日K" : p === "weekly" ? "周K" : "月K"}</button>)}
-        </div>
-        <KlineMarginOverlay klines={klinePoints} margins={marginPoints} period={period} />
-      </div>
-
-      {/* 两融数据 */}
-      {detail.latestMargin && (
-        <div className="rounded-lg border p-4">
-          <h3 className="font-semibold text-sm mb-2">两融数据（最新）</h3>
-          <div className="grid grid-cols-4 gap-3">
-            <div className="rounded-lg bg-gray-50 p-3 text-center"><p className="text-xs text-gray-500">融资余额</p><p className="text-base font-bold">{(detail.latestMargin.marginBalance / 1e8).toFixed(2)}亿</p></div>
-            <div className="rounded-lg bg-gray-50 p-3 text-center"><p className="text-xs text-gray-500">融资买入</p><p className="text-base font-bold">{(detail.latestMargin.marginBuy / 1e8).toFixed(2)}亿</p></div>
-            <div className="rounded-lg bg-gray-50 p-3 text-center"><p className="text-xs text-gray-500">融券余额</p><p className="text-base font-bold">{(detail.latestMargin.shortBalance / 1e8).toFixed(2)}亿</p></div>
-            <div className="rounded-lg bg-gray-50 p-3 text-center"><p className="text-xs text-gray-500">两融总余额</p><p className="text-base font-bold">{(detail.latestMargin.totalBalance / 1e8).toFixed(2)}亿</p></div>
+      {isLoading ? (
+        <div className="text-center text-gray-400 py-12">加载中...</div>
+      ) : !stock ? (
+        <div className="text-center text-gray-400 py-12">无数据</div>
+      ) : (
+        <>
+          <div className="flex items-end gap-4">
+            <h1 className="text-2xl font-bold">{stock.stockName}</h1>
+            <span className="text-gray-400 font-mono">{stock.stockCode}</span>
           </div>
-        </div>
-      )}
 
-      {/* 日线明细 */}
-      <button onClick={() => setShowTable(!showTable)} className="text-sm text-blue-600 hover:underline">{showTable ? "收起日线明细 ▲" : "展开日线明细 ▼"}</button>
-      {showTable && detail.dailyKlines.length > 0 && (
-        <div className="overflow-x-auto rounded-lg border">
-          <table className="w-full text-sm">
-            <thead><tr className="border-b bg-gray-50 text-xs text-gray-500">{["日期","开盘","收盘","最高","最低","成交量","涨跌幅"].map(h => <th key={h} className="px-3 py-2 text-right">{h}</th>)}</tr></thead>
-            <tbody>
-              {detail.dailyKlines.map((k, i) => {
-                const prev = detail.dailyKlines[i + 1];
-                const pct = prev ? ((k.close - prev.close) / prev.close * 100).toFixed(2) : "-";
-                return <tr key={k.tradeDate} className="border-b hover:bg-gray-50"><td className="px-3 py-1">{k.tradeDate}</td><td className="px-3 py-1 text-right">{k.open}</td><td className="px-3 py-1 text-right">{k.close}</td><td className="px-3 py-1 text-right">{k.high}</td><td className="px-3 py-1 text-right">{k.low}</td><td className="px-3 py-1 text-right">{k.volume}</td><td className={`px-3 py-1 text-right ${typeof pct === "string" ? "" : +pct > 0 ? "text-red-600" : "text-green-600"}`}>{typeof pct === "string" ? pct : (+pct > 0 ? "+" : "") + pct + "%"}</td></tr>;
-              })}
-            </tbody>
-          </table>
-        </div>
+          {/* 行情摘要 */}
+          {quote && (
+            <div className="grid grid-cols-5 gap-4">
+              <div className="rounded-lg border bg-white p-4">
+                <div className="text-xs text-gray-500 mb-1">收盘</div>
+                <div className={`text-2xl font-bold ${diffColor(quote.changePct)}`}>{quote.close.toFixed(2)}</div>
+              </div>
+              <div className="rounded-lg border bg-white p-4">
+                <div className="text-xs text-gray-500 mb-1">涨跌幅</div>
+                <div className={`text-2xl font-bold ${diffColor(quote.changePct)}`}>{quote.changePct > 0 ? "+" : ""}{quote.changePct.toFixed(2)}%</div>
+              </div>
+              <div className="rounded-lg border bg-white p-4">
+                <div className="text-xs text-gray-500 mb-1">今开 / 最高 / 最低</div>
+                <div className="text-lg">{quote.open.toFixed(2)} / {quote.high.toFixed(2)} / {quote.low.toFixed(2)}</div>
+              </div>
+              <div className="rounded-lg border bg-white p-4">
+                <div className="text-xs text-gray-500 mb-1">成交量</div>
+                <div className="text-lg">{fmt(quote.volume)}</div>
+              </div>
+              <div className="rounded-lg border bg-white p-4">
+                <div className="text-xs text-gray-500 mb-1">行业</div>
+                <div className="text-lg">{stock.industry || "-"}</div>
+              </div>
+            </div>
+          )}
+
+          {/* 两融摘要 */}
+          {margin && (
+            <div className="grid grid-cols-4 gap-4">
+              <div className="rounded-lg border bg-white p-4">
+                <div className="text-xs text-gray-500 mb-1">融资余额</div>
+                <div className="text-xl font-bold text-blue-600">{fmt(margin.marginBalance)}</div>
+              </div>
+              <div className="rounded-lg border bg-white p-4">
+                <div className="text-xs text-gray-500 mb-1">融券余额</div>
+                <div className="text-xl font-bold text-orange-600">{fmt(margin.shortBalance)}</div>
+              </div>
+              <div className="rounded-lg border bg-white p-4">
+                <div className="text-xs text-gray-500 mb-1">两融总额</div>
+                <div className="text-xl font-bold">{fmt(margin.totalBalance)}</div>
+              </div>
+              <div className="rounded-lg border bg-white p-4">
+                <div className="text-xs text-gray-500 mb-1">融资买入</div>
+                <div className="text-xl font-bold">{fmt(margin.marginBuy)}</div>
+              </div>
+            </div>
+          )}
+
+          {/* 概念标签 */}
+          {stock.concepts.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {stock.concepts.map((c) => (
+                <span key={c} className="rounded-full bg-blue-50 px-2.5 py-1 text-xs text-blue-700">{c}</span>
+              ))}
+            </div>
+          )}
+
+          {/* K线+两融叠加图 */}
+          <div className="rounded-lg border bg-white p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <h2 className="text-sm font-semibold">K线 + 两融</h2>
+              <div className="flex gap-1">
+                {(["1m", "3m", "6m", "1y"] as RangeKey[]).map((r) => (
+                  <button key={r} onClick={() => setRange(r)} className={`rounded px-2 py-1 text-xs ${range === r ? "bg-blue-600 text-white" : "border hover:bg-gray-50"}`}>
+                    {r === "1m" ? "1月" : r === "3m" ? "3月" : r === "6m" ? "6月" : "1年"}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {stock.dailyKlines.length > 0 ? (
+              <KlineMarginOverlay klines={stock.dailyKlines} margins={stock.dailyMargins} />
+            ) : (
+              <div className="h-[400px] flex items-center justify-center text-gray-400">无数据</div>
+            )}
+          </div>
+        </>
       )}
     </div>
   );
