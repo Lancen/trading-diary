@@ -7,6 +7,7 @@ import com.tradingdiary.entity.StockInfo;
 import com.tradingdiary.mapper.StockInfoMapper;
 import com.tradingdiary.service.collection.StockInfoCleanseService;
 import com.tradingdiary.util.BatchSqlRunner;
+import com.tradingdiary.util.JsonNodeHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -16,8 +17,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+
+import static com.tradingdiary.util.JsonNodeHelper.*;
+import static com.tradingdiary.util.UpsertHelper.partitionAndSave;
 
 /**
  * 股票信息清洗服务实现，解析股票行情快照 JSON 并入库
@@ -51,32 +53,10 @@ public class StockInfoCleanseServiceImpl implements StockInfoCleanseService {
                         .eq(StockInfo::getSnapshotDate, snapshotDate)
         );
 
-        Map<String, StockInfo> existingByCode = existing.stream()
-                .collect(Collectors.toMap(StockInfo::getCode, e -> e, (a, b) -> a));
+        int count = partitionAndSave(entities, existing,
+                StockInfo::getCode, (src, tgt) -> tgt.setId(src.getId()), batchSqlRunner);
 
-        List<StockInfo> toInsert = new ArrayList<>();
-        List<StockInfo> toUpdate = new ArrayList<>();
-
-        for (StockInfo entity : entities) {
-            StockInfo existingEntity = existingByCode.get(entity.getCode());
-            if (existingEntity != null) {
-                entity.setId(existingEntity.getId());
-                toUpdate.add(entity);
-            } else {
-                toInsert.add(entity);
-            }
-        }
-
-        int count = 0;
-        if (!toInsert.isEmpty()) {
-            count += batchSqlRunner.batchInsert(toInsert);
-        }
-        if (!toUpdate.isEmpty()) {
-            count += batchSqlRunner.batchUpdate(toUpdate);
-        }
-
-        log.info("StockInfo cleanse complete: {} records (insert={}, update={})",
-                count, toInsert.size(), toUpdate.size());
+        log.info("StockInfo cleanse complete: {} records for {}", count, snapshotDate);
         return count;
     }
 
@@ -135,35 +115,4 @@ public class StockInfoCleanseServiceImpl implements StockInfoCleanseService {
         return info;
     }
 
-    private String safeText(JsonNode node, String field) {
-        JsonNode fieldNode = node.get(field);
-        if (fieldNode == null || fieldNode.isNull()) return null;
-        return fieldNode.asText();
-    }
-
-    private BigDecimal safeDecimal(JsonNode node, String field) {
-        JsonNode fieldNode = node.get(field);
-        if (fieldNode == null || fieldNode.isNull()) return null;
-        try {
-            String text = fieldNode.asText();
-            if (text == null || text.isEmpty() || "-".equals(text)) return null;
-            return new BigDecimal(text);
-        } catch (Exception e) {
-            log.debug("解析BigDecimal失败: field={}", field, e.getMessage());
-            return null;
-        }
-    }
-
-    private Long safeLong(JsonNode node, String field) {
-        JsonNode fieldNode = node.get(field);
-        if (fieldNode == null || fieldNode.isNull()) return null;
-        try {
-            String text = fieldNode.asText();
-            if (text == null || text.isEmpty() || "-".equals(text)) return null;
-            return Long.parseLong(text);
-        } catch (Exception e) {
-            log.debug("解析Long失败: field={}", field, e.getMessage());
-            return null;
-        }
-    }
 }

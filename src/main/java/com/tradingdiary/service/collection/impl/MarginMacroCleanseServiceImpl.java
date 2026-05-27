@@ -7,6 +7,7 @@ import com.tradingdiary.entity.MarginMacro;
 import com.tradingdiary.mapper.MarginMacroMapper;
 import com.tradingdiary.service.collection.MarginMacroCleanseService;
 import com.tradingdiary.util.BatchSqlRunner;
+import com.tradingdiary.util.JsonNodeHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -15,9 +16,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+
+import static com.tradingdiary.util.JsonNodeHelper.*;
+import static com.tradingdiary.util.UpsertHelper.partitionAndSave;
 
 /**
  * 两融总量清洗服务实现，解析市场级融资融券汇总 JSON 并入库
@@ -49,26 +51,8 @@ public class MarginMacroCleanseServiceImpl implements MarginMacroCleanseService 
 
         List<MarginMacro> existing = mapper.selectList(
                 new LambdaQueryWrapper<MarginMacro>().eq(MarginMacro::getExchange, exchange));
-        Map<LocalDate, MarginMacro> existingMap = new HashMap<>();
-        for (MarginMacro e : existing) {
-            existingMap.put(e.getTradeDate(), e);
-        }
-
-        List<MarginMacro> toInsert = new ArrayList<>();
-        List<MarginMacro> toUpdate = new ArrayList<>();
-        for (MarginMacro e : entities) {
-            MarginMacro exist = existingMap.get(e.getTradeDate());
-            if (exist != null) {
-                e.setId(exist.getId());
-                toUpdate.add(e);
-            } else {
-                toInsert.add(e);
-            }
-        }
-
-        int count = 0;
-        if (!toInsert.isEmpty()) count += batchSqlRunner.batchInsert(toInsert);
-        if (!toUpdate.isEmpty()) count += batchSqlRunner.batchUpdate(toUpdate);
+        int count = partitionAndSave(entities, existing,
+                MarginMacro::getTradeDate, (src, tgt) -> tgt.setId(src.getId()), batchSqlRunner);
 
         log.info("MarginMacro cleanse complete: {} records for {}", count, exchange);
         return count;
@@ -105,28 +89,4 @@ public class MarginMacroCleanseServiceImpl implements MarginMacroCleanseService 
         return result;
     }
 
-    private String safeText(JsonNode node, String field) {
-        JsonNode fn = node.get(field);
-        return (fn == null || fn.isNull()) ? null : fn.asText();
-    }
-
-    private BigDecimal safeDecimal(JsonNode node, String field) {
-        JsonNode fn = node.get(field);
-        if (fn == null || fn.isNull()) return null;
-        try {
-            String text = fn.asText();
-            if (text == null || text.isEmpty() || "None".equals(text)) return null;
-            return new BigDecimal(text);
-        } catch (Exception e) { log.debug("解析BigDecimal失败: field={}", field, e.getMessage()); return null; }
-    }
-
-    private Long safeLong(JsonNode node, String field) {
-        JsonNode fn = node.get(field);
-        if (fn == null || fn.isNull()) return null;
-        try {
-            String text = fn.asText();
-            if (text == null || text.isEmpty() || "None".equals(text)) return null;
-            return Long.parseLong(text);
-        } catch (Exception e) { log.debug("解析Long失败: field={}", field, e.getMessage()); return null; }
-    }
 }

@@ -2,6 +2,7 @@ package com.tradingdiary.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.tradingdiary.entity.MarginMacro;
+import com.tradingdiary.service.market.MacroMarginDaily;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -31,4 +32,14 @@ public interface MarginMacroMapper extends BaseMapper<MarginMacro> {
      * @return 最大交易日期，无记录时返回 null
      */
     LocalDate selectMaxTradeDate(@Param("exchange") String exchange);
+
+    /**
+     * 聚合全市场两融总量日数据（按日期分组求和）
+     *
+     * @param startDate 起始日期（含），null 时不限
+     * @param endDate   结束日期（含），null 时不限
+     * @return 两融总量日数据列表
+     */
+    List<MacroMarginDaily> selectMacroMarginDailyAggregate(@Param("startDate") LocalDate startDate,
+                                                             @Param("endDate") LocalDate endDate);
 }

@@ -1,8 +1,8 @@
 package com.tradingdiary.service.market.impl;
 
+import com.tradingdiary.mapper.SectorCorrelationMapper;
 import com.tradingdiary.service.market.SectorCorrelation;
 import com.tradingdiary.service.market.SectorCorrelationService;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -12,51 +12,26 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * 板块关联度服务实现，计算板块间的相关性指标
+ * 板块关联度服务实现，基于成分股交集计算 Jaccard 相似度
  */
 @Service
 public class SectorCorrelationServiceImpl implements SectorCorrelationService {
 
-    private static final Map<String, String> SOURCE_TABLE_MAP = Map.of(
-            "INDUSTRY", "stock_industry",
-            "CONCEPT", "stock_concept"
-    );
+    private static final Set<String> VALID_SECTOR_TYPES = Set.of("INDUSTRY", "CONCEPT");
 
-    private static final Map<String, String> SOURCE_CODE_COLUMN_MAP = Map.of(
-            "INDUSTRY", "industry_code",
-            "CONCEPT", "concept_code"
-    );
-
-    private static final Map<String, String> TARGET_TABLE_MAP = Map.of(
-            "INDUSTRY", "stock_industry",
-            "CONCEPT", "stock_concept"
-    );
-
-    private static final Map<String, String> TARGET_CODE_COLUMN_MAP = Map.of(
-            "INDUSTRY", "industry_code",
-            "CONCEPT", "concept_code"
-    );
-
-    private static final Map<String, String> TARGET_NAME_TABLE_MAP = Map.of(
-            "INDUSTRY", "industry",
-            "CONCEPT", "concept"
-    );
-
-    static final Map<String, String> TARGET_TYPE_MAP = Map.of(
+    private static final Map<String, String> TARGET_TYPE_MAP = Map.of(
             "INDUSTRY", "CONCEPT",
             "CONCEPT", "INDUSTRY"
     );
-
-    private static final Set<String> VALID_SECTOR_TYPES = SOURCE_TABLE_MAP.keySet();
 
     private static final int MAX_RESULTS = 20;
 
     private static final BigDecimal MIN_JACCARD = new BigDecimal("0.05");
 
-    private final JdbcTemplate jdbcTemplate;
+    private final SectorCorrelationMapper sectorCorrelationMapper;
 
-    public SectorCorrelationServiceImpl(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
+    public SectorCorrelationServiceImpl(SectorCorrelationMapper sectorCorrelationMapper) {
+        this.sectorCorrelationMapper = sectorCorrelationMapper;
     }
 
     @Override
@@ -66,55 +41,27 @@ public class SectorCorrelationServiceImpl implements SectorCorrelationService {
         }
 
         String targetType = TARGET_TYPE_MAP.get(sectorType);
-        String sourceTable = SOURCE_TABLE_MAP.get(sectorType);
-        String sourceCodeCol = SOURCE_CODE_COLUMN_MAP.get(sectorType);
-        String targetTable = TARGET_TABLE_MAP.get(targetType);
-        String targetCodeCol = TARGET_CODE_COLUMN_MAP.get(targetType);
-        String targetNameTable = TARGET_NAME_TABLE_MAP.get(targetType);
 
-        String sql = buildCorrelationSql(sourceTable, sourceCodeCol, targetTable, targetCodeCol, targetNameTable);
+        List<Map<String, Object>> rankings = sectorCorrelationMapper.selectIntersectionRanking(
+                sectorType, sectorCode, MAX_RESULTS);
 
-        String targetCountSql = "SELECT COUNT(DISTINCT stock_code) FROM " + targetTable
-                + " WHERE " + targetCodeCol + " = ? AND is_deleted = 0";
+        return rankings.stream()
+                .map(row -> {
+                    String relatedCode = (String) row.get("relatedCode");
+                    String relatedName = (String) row.get("relatedName");
+                    long intersectionCount = ((Number) row.get("intersectionCount")).longValue();
+                    long sourceCount = ((Number) row.get("sourceCount")).longValue();
+                    Long targetCount = sectorCorrelationMapper.selectStockCount(sectorType, relatedCode);
+                    if (targetCount == null) targetCount = 0L;
 
-        return jdbcTemplate.query(sql, (rs, rowNum) -> {
-            String relatedCode = rs.getString("related_code");
-            String relatedName = rs.getString("related_name");
-            long intersectionCount = rs.getLong("intersection_count");
-            long sourceCount = rs.getLong("source_count");
-            Long targetCount = jdbcTemplate.queryForObject(targetCountSql, Long.class, relatedCode);
-            if (targetCount == null) targetCount = 0L;
+                    long unionSize = sourceCount + targetCount - intersectionCount;
+                    BigDecimal jaccard = unionSize > 0
+                            ? BigDecimal.valueOf(intersectionCount).divide(BigDecimal.valueOf(unionSize), 4, RoundingMode.HALF_UP)
+                            : BigDecimal.ZERO;
 
-            long unionSize = sourceCount + targetCount - intersectionCount;
-            BigDecimal jaccard = unionSize > 0
-                    ? BigDecimal.valueOf(intersectionCount).divide(BigDecimal.valueOf(unionSize), 4, RoundingMode.HALF_UP)
-                    : BigDecimal.ZERO;
-
-            return new SectorCorrelation(targetType, relatedCode, relatedName, jaccard, intersectionCount, sourceCount, targetCount);
-        }, sectorCode, sectorCode, MAX_RESULTS).stream()
+                    return new SectorCorrelation(targetType, relatedCode, relatedName, jaccard, intersectionCount, sourceCount, targetCount);
+                })
                 .filter(c -> c.jaccard().compareTo(MIN_JACCARD) >= 0)
                 .toList();
-    }
-
-    private String buildCorrelationSql(String sourceTable, String sourceCodeCol,
-                                        String targetTable, String targetCodeCol,
-                                        String targetNameTable) {
-        return "SELECT t." + targetCodeCol + " AS related_code, "
-                + "n.name AS related_name, "
-                + "COUNT(DISTINCT s.stock_code) AS intersection_count, "
-                + "src_cnt.source_total AS source_count "
-                + "FROM " + sourceTable + " s "
-                + "INNER JOIN " + targetTable + " t ON s.stock_code = t.stock_code AND t.is_deleted = 0 "
-                + "INNER JOIN " + targetNameTable + " n ON t." + targetCodeCol + " = n.code "
-                + "INNER JOIN ("
-                + "  SELECT COUNT(DISTINCT stock_code) AS source_total "
-                + "  FROM " + sourceTable
-                + "  WHERE " + sourceCodeCol + " = ? AND is_deleted = 0"
-                + ") src_cnt "
-                + "WHERE s." + sourceCodeCol + " = ? AND s.is_deleted = 0 "
-                + "GROUP BY t." + targetCodeCol + ", n.name, src_cnt.source_total "
-                + "HAVING COUNT(DISTINCT s.stock_code) > 0 "
-                + "ORDER BY intersection_count DESC "
-                + "LIMIT ?";
     }
 }

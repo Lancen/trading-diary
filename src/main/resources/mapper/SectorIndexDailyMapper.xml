@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 板块指数日线 Mapper，提供板块排名、最大交易日期和前一交易日查询 -->
+<mapper namespace="com.tradingdiary.mapper.SectorIndexDailyMapper">
+
+    <!-- 查询指定板块类型的最大交易日期 -->
+    <select id="selectMaxTradeDateByType" resultType="java.time.LocalDate">
+        SELECT MAX(trade_date) FROM sector_index_daily
+        WHERE is_deleted = 0 AND sector_type = #{sectorType}
+    </select>
+
+    <!-- 查询指定板块类型的上一交易日 -->
+    <select id="selectPrevTradeDateByType" resultType="java.time.LocalDate">
+        SELECT MAX(trade_date) FROM sector_index_daily
+        WHERE is_deleted = 0 AND sector_type = #{sectorType} AND trade_date &lt; #{tradeDate}
+    </select>
+
+    <!-- 查询板块排名，关联板块名称表和前一交易日数据，计算成交占比 -->
+    <select id="selectSectorRanking" resultType="com.tradingdiary.model.vo.SectorRanking">
+        SELECT cur.sector_type AS sectorType, cur.sector_code AS sectorCode,
+               n.name AS sectorName, cur.trade_date AS tradeDate,
+               cur.amount, cur.change_pct AS changePct,
+               CASE WHEN prev.amount IS NOT NULL THEN cur.amount - prev.amount ELSE NULL END AS amountChange,
+               CASE WHEN prev.change_pct IS NOT NULL THEN cur.change_pct - prev.change_pct ELSE NULL END AS changePctChange,
+               CASE WHEN mkt.total_amount IS NOT NULL AND mkt.total_amount &gt; 0 AND cur.amount IS NOT NULL
+                    THEN ROUND(cur.amount / mkt.total_amount * 100, 2)
+                    ELSE NULL END AS volumePct
+        FROM sector_index_daily cur
+        INNER JOIN
+        <choose>
+            <when test="sectorType == 'industry'">industry</when>
+            <otherwise>concept</otherwise>
+        </choose> n
+            ON cur.sector_code = n.code AND n.is_deleted = 0
+        LEFT JOIN sector_index_daily prev
+            ON cur.sector_code = prev.sector_code
+            AND prev.sector_type = #{sectorType}
+            AND prev.trade_date = #{prevDate}
+            AND prev.is_deleted = 0
+        LEFT JOIN (
+            SELECT SUM(amount) AS total_amount FROM market_index_daily
+            WHERE is_deleted = 0 AND trade_date = #{tradeDate}
+        ) mkt ON 1=1
+        WHERE cur.sector_type = #{sectorType}
+            AND cur.trade_date = #{tradeDate}
+            AND cur.is_deleted = 0
+        ORDER BY
+        <choose>
+            <when test="sortBy == 'amountChange'">amountChange</when>
+            <when test="sortBy == 'changePct'">cur.change_pct</when>
+            <when test="sortBy == 'changePctChange'">changePctChange</when>
+            <otherwise>cur.amount</otherwise>
+        </choose>
+        <choose>
+            <when test="sortDir == 'asc'">ASC</when>
+            <otherwise>DESC</otherwise>
+        </choose>
+    </select>
+
+</mapper>

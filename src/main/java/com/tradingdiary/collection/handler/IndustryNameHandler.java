@@ -1,6 +1,7 @@
 package com.tradingdiary.collection.handler;
 
 import com.tradingdiary.collection.client.AKToolsClient;
+import com.tradingdiary.collection.model.FetchResult;
 import com.tradingdiary.service.collection.IndustryCleanseService;
 import org.springframework.stereotype.Component;
 
@@ -26,8 +27,8 @@ public class IndustryNameHandler implements DataTypeHandler {
     }
 
     @Override
-    public String fetch(LocalDate tradeDate) {
-        return aktoolsClient.fetchIndustryNames();
+    public FetchResult fetch(LocalDate tradeDate) {
+        return FetchResult.single(aktoolsClient.fetchIndustryNames());
     }
 
     @Override

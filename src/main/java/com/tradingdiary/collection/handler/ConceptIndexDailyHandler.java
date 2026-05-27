@@ -2,9 +2,12 @@ package com.tradingdiary.collection.handler;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.tradingdiary.collection.client.AKToolsClient;
+import com.tradingdiary.collection.model.FetchResult;
 import com.tradingdiary.entity.Concept;
+import com.tradingdiary.entity.DataCollectionLog;
 import com.tradingdiary.entity.RawData;
 import com.tradingdiary.mapper.ConceptMapper;
+import com.tradingdiary.mapper.DataCollectionLogMapper;
 import com.tradingdiary.mapper.RawDataMapper;
 import com.tradingdiary.service.collection.SectorIndexDailyCleanseService;
 import org.slf4j.Logger;
@@ -20,7 +23,7 @@ import java.util.List;
  * 概念指数日线采集处理器，遍历所有概念逐个调 API 采集和清洗
  */
 @Component
-public class ConceptIndexDailyHandler implements SectorIndexHandler {
+public class ConceptIndexDailyHandler implements DataTypeHandler {
 
     private static final Logger log = LoggerFactory.getLogger(ConceptIndexDailyHandler.class);
     private static final DateTimeFormatter YMD = DateTimeFormatter.ofPattern("yyyyMMdd");
@@ -29,15 +32,18 @@ public class ConceptIndexDailyHandler implements SectorIndexHandler {
     private final SectorIndexDailyCleanseService sectorIndexDailyCleanseService;
     private final ConceptMapper conceptMapper;
     private final RawDataMapper rawDataMapper;
+    private final DataCollectionLogMapper logMapper;
 
     public ConceptIndexDailyHandler(AKToolsClient aktoolsClient,
                                      SectorIndexDailyCleanseService sectorIndexDailyCleanseService,
                                      ConceptMapper conceptMapper,
-                                     RawDataMapper rawDataMapper) {
+                                     RawDataMapper rawDataMapper,
+                                     DataCollectionLogMapper logMapper) {
         this.aktoolsClient = aktoolsClient;
         this.sectorIndexDailyCleanseService = sectorIndexDailyCleanseService;
         this.conceptMapper = conceptMapper;
         this.rawDataMapper = rawDataMapper;
+        this.logMapper = logMapper;
     }
 
     @Override
@@ -46,36 +52,53 @@ public class ConceptIndexDailyHandler implements SectorIndexHandler {
     }
 
     @Override
-    public String fetch(LocalDate tradeDate) {
-        throw new UnsupportedOperationException(
-                "CONCEPT_INDEX_DAILY uses fetchSectors() path, not standard fetch()");
-    }
+    public FetchResult fetch(LocalDate tradeDate) {
+        // 创建 FETCH 日志
+        DataCollectionLog fetchLog = new DataCollectionLog();
+        fetchLog.setDataType("CONCEPT_INDEX_DAILY");
+        fetchLog.setJobType("FETCH");
+        fetchLog.setTradeDate(tradeDate);
+        fetchLog.setStatus("RUNNING");
+        fetchLog.setStartedAt(LocalDateTime.now());
+        logMapper.insert(fetchLog);
 
-    @Override
-    public int fetchSectors(LocalDate startDate, LocalDate endDate, Long collectionLogId) {
-        String startStr = startDate != null ? startDate.format(YMD) : "";
-        String endStr = endDate != null ? endDate.format(YMD) : "";
+        String startStr = tradeDate != null ? tradeDate.format(YMD) : "";
+        String endStr = startStr;
 
         List<Concept> sectors = conceptMapper.selectList(
                 new LambdaQueryWrapper<Concept>().eq(Concept::getIsDeleted, false));
         if (sectors.isEmpty()) {
-            throw new IllegalStateException("概念表为空，请先采集概念名称（CONCEPT_NAME）");
+            fetchLog.setStatus("FAILED");
+            fetchLog.setErrorMsg("概念表为空，请先采集概念名称（CONCEPT_NAME）");
+            fetchLog.setCompletedAt(LocalDateTime.now());
+            logMapper.updateById(fetchLog);
+            return FetchResult.single(null);
         }
 
-        int total = 0;
-        for (Concept sector : sectors) {
-            try {
-                String rawJson = aktoolsClient.fetchConceptIndexDaily(sector.getName(), startStr, endStr);
-                if (rawJson != null && !rawJson.equals("[]")) {
-                    saveSectorRawData(collectionLogId, endDate, sector.getCode(), rawJson);
-                    total++;
+        int successCount = 0;
+        try {
+            for (Concept sector : sectors) {
+                try {
+                    String rawJson = aktoolsClient.fetchConceptIndexDaily(sector.getName(), startStr, endStr);
+                    if (rawJson != null && !rawJson.equals("[]")) {
+                        saveSectorRawData(fetchLog.getId(), tradeDate, sector.getCode(), rawJson);
+                        successCount++;
+                    }
+                    aktoolsClient.sleepBetweenCalls();
+                } catch (Exception e) {
+                    log.error("Failed to fetch concept index daily for {}: {}", sector.getCode(), e.getMessage());
                 }
-                aktoolsClient.sleepBetweenCalls();
-            } catch (Exception e) {
-                log.error("Failed to fetch concept index daily for {}: {}", sector.getCode(), e.getMessage());
             }
+            fetchLog.setStatus("SUCCESS");
+            fetchLog.setRecordCount(successCount);
+        } catch (Exception e) {
+            fetchLog.setStatus("FAILED");
+            fetchLog.setErrorMsg(e.getMessage());
         }
-        return total;
+        fetchLog.setCompletedAt(LocalDateTime.now());
+        logMapper.updateById(fetchLog);
+
+        return FetchResult.multiSector(fetchLog.getId(), successCount);
     }
 
     @Override

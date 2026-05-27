@@ -1,6 +1,7 @@
 package com.tradingdiary.collection.handler;
 
 import com.tradingdiary.collection.client.AKToolsClient;
+import com.tradingdiary.collection.model.FetchResult;
 import com.tradingdiary.service.collection.MarginCleanseService;
 import org.springframework.stereotype.Component;
 
@@ -29,9 +30,9 @@ public class MarginDailySseHandler implements DataTypeHandler {
     }
 
     @Override
-    public String fetch(LocalDate tradeDate) {
+    public FetchResult fetch(LocalDate tradeDate) {
         String dateStr = tradeDate != null ? tradeDate.format(YMD) : "";
-        return aktoolsClient.fetchMarginDetailSse(dateStr);
+        return FetchResult.single(aktoolsClient.fetchMarginDetailSse(dateStr));
     }
 
     @Override

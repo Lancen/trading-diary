@@ -1,6 +1,7 @@
 package com.tradingdiary.collection.handler;
 
 import com.tradingdiary.collection.client.AKToolsClient;
+import com.tradingdiary.collection.model.FetchResult;
 import com.tradingdiary.service.collection.StockDailyCleanseService;
 import com.tradingdiary.service.collection.StockInfoCleanseService;
 import org.slf4j.Logger;
@@ -35,8 +36,8 @@ public class StockSpotHandler implements DataTypeHandler {
     }
 
     @Override
-    public String fetch(LocalDate tradeDate) {
-        return aktoolsClient.fetchStockSpot();
+    public FetchResult fetch(LocalDate tradeDate) {
+        return FetchResult.single(aktoolsClient.fetchStockSpot());
     }
 
     @Override

@@ -2,10 +2,11 @@ package com.tradingdiary.collection.handler;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.tradingdiary.collection.client.AKToolsClient;
-import com.tradingdiary.entity.Concept;
+import com.tradingdiary.collection.model.FetchResult;
+import com.tradingdiary.entity.DataCollectionLog;
 import com.tradingdiary.entity.Industry;
 import com.tradingdiary.entity.RawData;
-import com.tradingdiary.mapper.ConceptMapper;
+import com.tradingdiary.mapper.DataCollectionLogMapper;
 import com.tradingdiary.mapper.IndustryMapper;
 import com.tradingdiary.mapper.RawDataMapper;
 import com.tradingdiary.service.collection.SectorIndexDailyCleanseService;
@@ -22,7 +23,7 @@ import java.util.List;
  * 行业指数日线采集处理器，遍历所有行业逐个调 API 采集和清洗
  */
 @Component
-public class IndustryIndexDailyHandler implements SectorIndexHandler {
+public class IndustryIndexDailyHandler implements DataTypeHandler {
 
     private static final Logger log = LoggerFactory.getLogger(IndustryIndexDailyHandler.class);
     private static final DateTimeFormatter YMD = DateTimeFormatter.ofPattern("yyyyMMdd");
@@ -31,15 +32,18 @@ public class IndustryIndexDailyHandler implements SectorIndexHandler {
     private final SectorIndexDailyCleanseService sectorIndexDailyCleanseService;
     private final IndustryMapper industryMapper;
     private final RawDataMapper rawDataMapper;
+    private final DataCollectionLogMapper logMapper;
 
     public IndustryIndexDailyHandler(AKToolsClient aktoolsClient,
                                       SectorIndexDailyCleanseService sectorIndexDailyCleanseService,
                                       IndustryMapper industryMapper,
-                                      RawDataMapper rawDataMapper) {
+                                      RawDataMapper rawDataMapper,
+                                      DataCollectionLogMapper logMapper) {
         this.aktoolsClient = aktoolsClient;
         this.sectorIndexDailyCleanseService = sectorIndexDailyCleanseService;
         this.industryMapper = industryMapper;
         this.rawDataMapper = rawDataMapper;
+        this.logMapper = logMapper;
     }
 
     @Override
@@ -48,36 +52,53 @@ public class IndustryIndexDailyHandler implements SectorIndexHandler {
     }
 
     @Override
-    public String fetch(LocalDate tradeDate) {
-        throw new UnsupportedOperationException(
-                "INDUSTRY_INDEX_DAILY uses fetchSectors() path, not standard fetch()");
-    }
+    public FetchResult fetch(LocalDate tradeDate) {
+        // 创建 FETCH 日志
+        DataCollectionLog fetchLog = new DataCollectionLog();
+        fetchLog.setDataType("INDUSTRY_INDEX_DAILY");
+        fetchLog.setJobType("FETCH");
+        fetchLog.setTradeDate(tradeDate);
+        fetchLog.setStatus("RUNNING");
+        fetchLog.setStartedAt(LocalDateTime.now());
+        logMapper.insert(fetchLog);
 
-    @Override
-    public int fetchSectors(LocalDate startDate, LocalDate endDate, Long collectionLogId) {
-        String startStr = startDate != null ? startDate.format(YMD) : "";
-        String endStr = endDate != null ? endDate.format(YMD) : "";
+        String startStr = tradeDate != null ? tradeDate.format(YMD) : "";
+        String endStr = startStr;
 
         List<Industry> sectors = industryMapper.selectList(
                 new LambdaQueryWrapper<Industry>().eq(Industry::getIsDeleted, false));
         if (sectors.isEmpty()) {
-            throw new IllegalStateException("行业表为空，请先采集行业名称（INDUSTRY_NAME）");
+            fetchLog.setStatus("FAILED");
+            fetchLog.setErrorMsg("行业表为空，请先采集行业名称（INDUSTRY_NAME）");
+            fetchLog.setCompletedAt(LocalDateTime.now());
+            logMapper.updateById(fetchLog);
+            return FetchResult.single(null);
         }
 
-        int total = 0;
-        for (Industry sector : sectors) {
-            try {
-                String rawJson = aktoolsClient.fetchIndustryIndexDaily(sector.getName(), startStr, endStr);
-                if (rawJson != null && !rawJson.equals("[]")) {
-                    saveSectorRawData(collectionLogId, endDate, sector.getCode(), rawJson);
-                    total++;
+        int successCount = 0;
+        try {
+            for (Industry sector : sectors) {
+                try {
+                    String rawJson = aktoolsClient.fetchIndustryIndexDaily(sector.getName(), startStr, endStr);
+                    if (rawJson != null && !rawJson.equals("[]")) {
+                        saveSectorRawData(fetchLog.getId(), tradeDate, sector.getCode(), rawJson);
+                        successCount++;
+                    }
+                    aktoolsClient.sleepBetweenCalls();
+                } catch (Exception e) {
+                    log.error("Failed to fetch industry index daily for {}: {}", sector.getCode(), e.getMessage());
                 }
-                aktoolsClient.sleepBetweenCalls();
-            } catch (Exception e) {
-                log.error("Failed to fetch industry index daily for {}: {}", sector.getCode(), e.getMessage());
             }
+            fetchLog.setStatus("SUCCESS");
+            fetchLog.setRecordCount(successCount);
+        } catch (Exception e) {
+            fetchLog.setStatus("FAILED");
+            fetchLog.setErrorMsg(e.getMessage());
         }
-        return total;
+        fetchLog.setCompletedAt(LocalDateTime.now());
+        logMapper.updateById(fetchLog);
+
+        return FetchResult.multiSector(fetchLog.getId(), successCount);
     }
 
     @Override

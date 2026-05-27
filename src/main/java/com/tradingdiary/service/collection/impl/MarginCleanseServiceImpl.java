@@ -7,6 +7,7 @@ import com.tradingdiary.entity.MarginDaily;
 import com.tradingdiary.mapper.MarginDailyMapper;
 import com.tradingdiary.service.collection.MarginCleanseService;
 import com.tradingdiary.util.BatchSqlRunner;
+import com.tradingdiary.util.JsonNodeHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import static com.tradingdiary.util.JsonNodeHelper.*;
+import static com.tradingdiary.util.UpsertHelper.partitionAndSave;
 
 /**
  * 两融明细清洗服务实现，解析个股融资融券 JSON 并入库
@@ -82,29 +86,8 @@ public class MarginCleanseServiceImpl implements MarginCleanseService {
                         .eq(MarginDaily::getTradeDate, tradeDate)
         );
 
-        Map<String, MarginDaily> existingByCode = existing.stream()
-                .collect(Collectors.toMap(MarginDaily::getStockCode, e -> e, (a, b) -> a));
-
-        List<MarginDaily> toInsert = new ArrayList<>();
-        List<MarginDaily> toUpdate = new ArrayList<>();
-
-        for (MarginDaily entity : dailyList) {
-            MarginDaily existingEntity = existingByCode.get(entity.getStockCode());
-            if (existingEntity != null) {
-                entity.setId(existingEntity.getId());
-                toUpdate.add(entity);
-            } else {
-                toInsert.add(entity);
-            }
-        }
-
-        int count = 0;
-        if (!toInsert.isEmpty()) {
-            count += batchSqlRunner.batchInsert(toInsert);
-        }
-        if (!toUpdate.isEmpty()) {
-            count += batchSqlRunner.batchUpdate(toUpdate);
-        }
+        int count = partitionAndSave(dailyList, existing,
+                MarginDaily::getStockCode, (src, tgt) -> tgt.setId(src.getId()), batchSqlRunner);
         return count;
     }
 
@@ -145,25 +128,6 @@ public class MarginCleanseServiceImpl implements MarginCleanseService {
         return result;
     }
 
-    private String safeText(JsonNode node, String field) {
-        JsonNode fieldNode = node.get(field);
-        if (fieldNode == null || fieldNode.isNull()) return null;
-        return fieldNode.asText();
-    }
-
-    private BigDecimal safeDecimal(JsonNode node, String field) {
-        JsonNode fieldNode = node.get(field);
-        if (fieldNode == null || fieldNode.isNull()) return null;
-        try {
-            String text = fieldNode.asText();
-            if (text == null || text.isEmpty() || "-".equals(text)) return null;
-            return new BigDecimal(text);
-        } catch (Exception e) {
-            log.debug("解析BigDecimal失败: field={}", field, e.getMessage());
-            return null;
-        }
-    }
-
     private LocalDate findPreviousTradeDate(LocalDate tradeDate, String exchange) {
         return marginDailyMapper.selectList(
                 new LambdaQueryWrapper<MarginDaily>()
@@ -173,35 +137,5 @@ public class MarginCleanseServiceImpl implements MarginCleanseService {
                         .orderByDesc(MarginDaily::getTradeDate)
                         .last("LIMIT 1")
         ).stream().findFirst().map(MarginDaily::getTradeDate).orElse(null);
-    }
-
-    private Long safeLong(JsonNode node, String field) {
-        JsonNode fieldNode = node.get(field);
-        if (fieldNode == null || fieldNode.isNull()) return null;
-        try {
-            String text = fieldNode.asText();
-            if (text == null || text.isEmpty() || "-".equals(text)) return null;
-            return Long.parseLong(text);
-        } catch (Exception e) {
-            log.debug("解析Long失败: field={}", field, e.getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * 剥离股票代码的市场前缀（sh/sz/bj）
-     *
-     * @param code 原始代码，如 "sh600000" 或 "600000"
-     * @return 剥离前缀后的代码，如 "600000"；无效输入返回原值
-     */
-    private String stripMarketPrefix(String code) {
-        if (code == null || code.isEmpty()) return code;
-        if (code.length() > 2) {
-            String prefix = code.substring(0, 2).toLowerCase();
-            if ("sh".equals(prefix) || "sz".equals(prefix) || "bj".equals(prefix)) {
-                return code.substring(2);
-            }
-        }
-        return code;
     }
 }

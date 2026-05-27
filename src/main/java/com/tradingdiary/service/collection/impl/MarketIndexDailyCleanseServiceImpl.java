@@ -7,6 +7,7 @@ import com.tradingdiary.entity.MarketIndexDaily;
 import com.tradingdiary.mapper.MarketIndexDailyMapper;
 import com.tradingdiary.service.collection.MarketIndexDailyCleanseService;
 import com.tradingdiary.util.BatchSqlRunner;
+import com.tradingdiary.util.JsonNodeHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import static com.tradingdiary.util.JsonNodeHelper.*;
+import static com.tradingdiary.util.UpsertHelper.partitionAndSave;
 
 /**
  * 宽基指数日线清洗服务实现，解析指数 OHLCV JSON 并入库
@@ -131,64 +135,11 @@ public class MarketIndexDailyCleanseServiceImpl implements MarketIndexDailyClean
                         .eq(MarketIndexDaily::getIndexCode, indexCode)
         );
 
-        Map<LocalDate, MarketIndexDaily> existingByDate = existing.stream()
-                .collect(Collectors.toMap(MarketIndexDaily::getTradeDate, e -> e, (a, b) -> a));
+        int count = partitionAndSave(entities, existing,
+                MarketIndexDaily::getTradeDate, (src, tgt) -> tgt.setId(src.getId()), batchSqlRunner);
 
-        List<MarketIndexDaily> toInsert = new ArrayList<>();
-        List<MarketIndexDaily> toUpdate = new ArrayList<>();
-
-        for (MarketIndexDaily entity : entities) {
-            MarketIndexDaily existingEntity = existingByDate.get(entity.getTradeDate());
-            if (existingEntity != null) {
-                entity.setId(existingEntity.getId());
-                toUpdate.add(entity);
-            } else {
-                toInsert.add(entity);
-            }
-        }
-
-        int count = 0;
-        if (!toInsert.isEmpty()) {
-            count += batchSqlRunner.batchInsert(toInsert);
-        }
-        if (!toUpdate.isEmpty()) {
-            count += batchSqlRunner.batchUpdate(toUpdate);
-        }
-
-        log.info("MarketIndexDaily cleanse complete: {} records for {} (insert={}, update={})",
-                count, indexCode, toInsert.size(), toUpdate.size());
+        log.info("MarketIndexDaily cleanse complete: {} records for {}", count, indexCode);
         return count;
     }
 
-    private String safeText(JsonNode node, String field) {
-        JsonNode fieldNode = node.get(field);
-        if (fieldNode == null || fieldNode.isNull()) return null;
-        return fieldNode.asText();
-    }
-
-    private BigDecimal safeDecimal(JsonNode node, String field) {
-        JsonNode fieldNode = node.get(field);
-        if (fieldNode == null || fieldNode.isNull()) return null;
-        try {
-            String text = fieldNode.asText();
-            if (text == null || text.isEmpty() || "-".equals(text)) return null;
-            return new BigDecimal(text);
-        } catch (Exception e) {
-            log.debug("解析BigDecimal失败: field={}", field, e.getMessage());
-            return null;
-        }
-    }
-
-    private Long safeLong(JsonNode node, String field) {
-        JsonNode fieldNode = node.get(field);
-        if (fieldNode == null || fieldNode.isNull()) return null;
-        try {
-            String text = fieldNode.asText();
-            if (text == null || text.isEmpty() || "-".equals(text)) return null;
-            return Long.parseLong(text);
-        } catch (Exception e) {
-            log.debug("解析Long失败: field={}", field, e.getMessage());
-            return null;
-        }
-    }
 }

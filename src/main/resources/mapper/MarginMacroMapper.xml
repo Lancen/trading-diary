@@ -13,4 +13,20 @@
         SELECT MAX(trade_date) FROM margin_macro WHERE exchange = #{exchange}
     </select>
 
+    <!-- 聚合全市场两融总量日数据（按日期分组求和两交易所） -->
+    <select id="selectMacroMarginDailyAggregate" resultType="com.tradingdiary.service.market.MacroMarginDaily">
+        SELECT trade_date AS tradeDate,
+               SUM(margin_balance) AS marginBalance,
+               SUM(short_balance) AS shortBalance,
+               SUM(margin_buy_amount) AS marginBuyAmount,
+               SUM(short_sell_volume) AS shortSellVolume,
+               SUM(total_balance) AS totalBalance
+        FROM margin_macro
+        WHERE 1=1
+        <if test="startDate != null">AND trade_date &gt;= #{startDate}</if>
+        <if test="endDate != null">AND trade_date &lt;= #{endDate}</if>
+        GROUP BY trade_date
+        ORDER BY trade_date
+    </select>
+
 </mapper>

@@ -1,6 +1,7 @@
 package com.tradingdiary.collection.handler;
 
 import com.tradingdiary.collection.client.AKToolsClient;
+import com.tradingdiary.collection.model.FetchResult;
 import com.tradingdiary.service.collection.MarginMacroCleanseService;
 import org.springframework.stereotype.Component;
 
@@ -26,8 +27,8 @@ public class MarginMacroSseHandler implements DataTypeHandler {
     }
 
     @Override
-    public String fetch(LocalDate tradeDate) {
-        return aktoolsClient.fetchMacroMarginSh();
+    public FetchResult fetch(LocalDate tradeDate) {
+        return FetchResult.single(aktoolsClient.fetchMacroMarginSh());
     }
 
     @Override

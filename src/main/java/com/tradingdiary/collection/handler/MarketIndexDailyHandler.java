@@ -1,6 +1,7 @@
 package com.tradingdiary.collection.handler;
 
 import com.tradingdiary.collection.client.AKToolsClient;
+import com.tradingdiary.collection.model.FetchResult;
 import com.tradingdiary.service.collection.MarketIndexDailyCleanseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +38,7 @@ public class MarketIndexDailyHandler implements DataTypeHandler {
     }
 
     @Override
-    public String fetch(LocalDate tradeDate) {
+    public FetchResult fetch(LocalDate tradeDate) {
         StringBuilder combined = new StringBuilder("[");
         for (int i = 0; i < MARKET_INDEX_CODES.size(); i++) {
             String code = MARKET_INDEX_CODES.get(i);
@@ -53,7 +54,7 @@ public class MarketIndexDailyHandler implements DataTypeHandler {
             }
         }
         combined.append("]");
-        return combined.toString();
+        return FetchResult.single(combined.toString());
     }
 
     @Override

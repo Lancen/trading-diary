@@ -1,8 +1,9 @@
 package com.tradingdiary.collection.orchestrator;
 
 import com.tradingdiary.collection.handler.DataTypeHandler;
-import com.tradingdiary.collection.handler.SectorIndexHandler;
+import com.tradingdiary.collection.model.FetchResult;
 import com.tradingdiary.collection.model.BackfillRequest;
+import com.tradingdiary.collection.model.RetryPolicy;
 import com.tradingdiary.entity.DataCollectionLog;
 import com.tradingdiary.entity.RawData;
 import com.tradingdiary.entity.TradeCalendar;
@@ -35,8 +36,7 @@ public class CollectionOrchestrator {
 
     private static final Logger log = LoggerFactory.getLogger(CollectionOrchestrator.class);
 
-    private static final int MAX_RETRIES = 3;
-    private static final long INITIAL_BACKOFF_MS = 2000;
+    private final RetryPolicy retryPolicy = RetryPolicy.DEFAULT;
 
     private final Map<String, DataTypeHandler> handlerMap;
     private final Map<String, ReentrantLock> lockMap = new ConcurrentHashMap<>();
@@ -120,22 +120,6 @@ public class CollectionOrchestrator {
         try {
             log.info("Starting orchestration: dataType={}, tradeDate={}", dataType, tradeDate);
 
-            // 板块指数K线：使用 SectorIndexHandler 的专用路径
-            if (handler instanceof SectorIndexHandler sectorHandler) {
-                Long reuseLogId = findExistingFetchLog(dataType, tradeDate);
-                if (reuseLogId != null) {
-                    log.info("复用已有 FETCH 数据: dataType={}, tradeDate={}, logId={}", dataType, tradeDate, reuseLogId);
-                    executeCleanse(handler, dataType, tradeDate, reuseLogId);
-                    return "执行成功（复用已有采集数据）";
-                }
-                Long fetchLogId = executeSectorIndexFetch(sectorHandler, dataType, tradeDate, tradeDate);
-                if (fetchLogId == null) {
-                    return "采集失败: 无板块数据";
-                }
-                executeCleanse(handler, dataType, tradeDate, fetchLogId);
-                return "执行成功";
-            }
-
             // 检查是否已有成功的 FETCH，有则复用
             Long reuseLogId = findExistingFetchLog(dataType, tradeDate);
             if (reuseLogId != null) {
@@ -145,13 +129,13 @@ public class CollectionOrchestrator {
             }
 
             // 第一步：FETCH
-            Result fetchResult = executeFetch(handler, dataType, tradeDate);
-            if (!fetchResult.success) {
-                return "采集失败: " + fetchResult.errorMsg;
+            Long fetchLogId = executeFetch(handler, dataType, tradeDate);
+            if (fetchLogId == null) {
+                return "采集失败";
             }
 
             // 第二步：CLEANSE
-            executeCleanse(handler, dataType, tradeDate, fetchResult.collectionLogId);
+            executeCleanse(handler, dataType, tradeDate, fetchLogId);
 
             log.info("Orchestration complete: dataType={}, tradeDate={}", dataType, tradeDate);
             return "执行成功";
@@ -164,31 +148,42 @@ public class CollectionOrchestrator {
         }
     }
 
-    private Result executeFetch(DataTypeHandler handler, String dataType, LocalDate tradeDate) {
+    private Long executeFetch(DataTypeHandler handler, String dataType, LocalDate tradeDate) {
         DataCollectionLog fetchLog = createLog(dataType, "FETCH", tradeDate);
         fetchLog.setStatus("RUNNING");
         fetchLog.setStartedAt(LocalDateTime.now());
         logMapper.insert(fetchLog);
 
-        String rawJson = null;
+        FetchResult result = null;
         String errorMsg = null;
 
         try {
-            rawJson = fetchWithRetry(handler, dataType, tradeDate);
+            result = fetchWithRetry(handler, dataType, tradeDate);
         } catch (Exception e) {
             errorMsg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
             log.error("Fetch failed for {} on {}: {}", dataType, tradeDate, errorMsg);
         }
 
-        if (rawJson == null) {
+        if (result == null || !result.isSuccess()) {
             fetchLog.setStatus("FAILED");
-            fetchLog.setErrorMsg(errorMsg);
+            fetchLog.setErrorMsg(errorMsg != null ? errorMsg : "采集结果为空");
             fetchLog.setCompletedAt(LocalDateTime.now());
             logMapper.updateById(fetchLog);
-            return new Result(false, null, null, errorMsg);
+            return null;
         }
 
-        // 保存原始数据
+        if (result.getType() == FetchResult.Type.MULTI_SECTOR) {
+            // MULTI_SECTOR：handler 内部已保存多条 raw_data 并更新了自己的日志
+            // 关联当前编排器创建的日志，标记成功
+            fetchLog.setStatus("SUCCESS");
+            fetchLog.setRecordCount(result.getSectorCount());
+            fetchLog.setCompletedAt(LocalDateTime.now());
+            logMapper.updateById(fetchLog);
+            return result.getCollectionLogId();
+        }
+
+        // SINGLE：保存单条 raw_data
+        String rawJson = result.getRawJson();
         RawData rawData = new RawData();
         rawData.setCollectionLogId(fetchLog.getId());
         rawData.setDataType(dataType);
@@ -203,31 +198,28 @@ public class CollectionOrchestrator {
         fetchLog.setCompletedAt(LocalDateTime.now());
         logMapper.updateById(fetchLog);
 
-        return new Result(true, rawJson, fetchLog.getId(), null);
+        return fetchLog.getId();
     }
 
-    private String fetchWithRetry(DataTypeHandler handler, String dataType, LocalDate tradeDate) {
-        long backoffMs = INITIAL_BACKOFF_MS;
-
-        for (int attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    private FetchResult fetchWithRetry(DataTypeHandler handler, String dataType, LocalDate tradeDate) {
+        for (int attempt = 0; attempt < retryPolicy.getMaxRetries(); attempt++) {
             try {
-                log.debug("Fetch attempt {}/{} for {} on {}", attempt + 1, MAX_RETRIES, dataType, tradeDate);
+                log.debug("Fetch attempt {}/{} for {} on {}", attempt + 1, retryPolicy.getMaxRetries(), dataType, tradeDate);
                 return handler.fetch(tradeDate);
             } catch (Exception e) {
                 log.warn("Fetch attempt {}/{} failed for {} on {}: {}",
-                        attempt + 1, MAX_RETRIES, dataType, tradeDate, e.getMessage());
+                        attempt + 1, retryPolicy.getMaxRetries(), dataType, tradeDate, e.getMessage());
 
-                if (attempt < MAX_RETRIES - 1) {
+                if (attempt < retryPolicy.getMaxRetries() - 1) {
                     try {
-                        Thread.sleep(backoffMs);
+                        Thread.sleep(retryPolicy.getBackoffMs(attempt));
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
                         throw new RuntimeException("重试被中断", ie);
                     }
-                    backoffMs *= 2;
                 } else {
                     String rootCause = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
-                    throw new RuntimeException("共 " + MAX_RETRIES + " 次采集尝试全部失败，错误: " + rootCause, e);
+                    throw new RuntimeException("共 " + retryPolicy.getMaxRetries() + " 次采集尝试全部失败，错误: " + rootCause, e);
                 }
             }
         }
@@ -262,31 +254,6 @@ public class CollectionOrchestrator {
         }
 
         logMapper.updateById(cleanseLog);
-    }
-
-    private Long executeSectorIndexFetch(SectorIndexHandler sectorHandler, String dataType,
-                                           LocalDate startDate, LocalDate endDate) {
-        DataCollectionLog fetchLog = createLog(dataType, "FETCH", endDate);
-        fetchLog.setStatus("RUNNING");
-        fetchLog.setStartedAt(LocalDateTime.now());
-        logMapper.insert(fetchLog);
-
-        int successCount;
-        try {
-            successCount = sectorHandler.fetchSectors(startDate, endDate, fetchLog.getId());
-        } catch (Exception e) {
-            fetchLog.setStatus("FAILED");
-            fetchLog.setErrorMsg(e.getMessage());
-            fetchLog.setCompletedAt(LocalDateTime.now());
-            logMapper.updateById(fetchLog);
-            return null;
-        }
-
-        fetchLog.setStatus("SUCCESS");
-        fetchLog.setRecordCount(successCount);
-        fetchLog.setCompletedAt(LocalDateTime.now());
-        logMapper.updateById(fetchLog);
-        return fetchLog.getId();
     }
 
     private DataCollectionLog createLog(String dataType, String jobType, LocalDate tradeDate) {
@@ -395,10 +362,14 @@ public class CollectionOrchestrator {
         LocalDate date = startDate;
         while (!date.isAfter(endDate)) {
             try {
-                String rawJson = tushareHandler.fetch(date);
-                int count = tushareHandler.cleanse(rawJson, date);
-                totalRecords += count;
-                log.info("Tushare daily backfill: {} → {} records", date, count);
+                FetchResult result = tushareHandler.fetch(date);
+                if (result.isSuccess() && result.getRawJson() != null) {
+                    int count = tushareHandler.cleanse(result.getRawJson(), date);
+                    totalRecords += count;
+                    log.info("Tushare daily backfill: {} → {} records", date, count);
+                } else {
+                    failedDays++;
+                }
             } catch (Exception e) {
                 log.error("Tushare daily backfill failed for {}", date, e);
                 failedDays++;
@@ -420,33 +391,38 @@ public class CollectionOrchestrator {
     public String backfillSectorIndexDaily(String sectorType, LocalDate startDate, LocalDate endDate) {
         String dataType = "INDUSTRY".equals(sectorType) ? "INDUSTRY_INDEX_DAILY" : "CONCEPT_INDEX_DAILY";
         DataTypeHandler handler = handlerMap.get(dataType);
-        if (handler == null || !(handler instanceof SectorIndexHandler sectorHandler)) {
+        if (handler == null) {
             return dataType + " handler 未注册";
         }
 
         log.info("Starting sector index daily backfill: sectorType={}, {} to {}", sectorType, startDate, endDate);
 
-        Long fetchLogId = executeSectorIndexFetch(sectorHandler, dataType, startDate, endDate);
-        if (fetchLogId == null) {
-            return "板块指数K线补采失败: 无板块数据";
-        }
-
-        int cleanseCount = 0;
-        List<RawData> rawDatas = rawDataMapper.selectList(
-                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<RawData>()
-                        .eq(RawData::getCollectionLogId, fetchLogId));
-        for (RawData rd : rawDatas) {
+        int totalRecords = 0;
+        int failedDays = 0;
+        LocalDate date = startDate;
+        while (!date.isAfter(endDate)) {
             try {
-                String rawJson = rd.getRawJson();
-                if (rawJson != null && !rawJson.equals("[]")) {
-                    cleanseCount += handler.cleanse(rawJson, endDate);
+                FetchResult result = handler.fetch(date);
+                if (result.isSuccess()) {
+                    int sectorCount = result.getSectorCount();
+                    totalRecords += sectorCount;
+                    log.info("Sector index daily backfill: {} -> {} sectors", date, sectorCount);
+
+                    // 执行清洗
+                    if (result.getCollectionLogId() != null) {
+                        executeCleanse(handler, dataType, date, result.getCollectionLogId());
+                    }
+                } else {
+                    failedDays++;
                 }
             } catch (Exception e) {
-                log.error("Failed to cleanse sector index daily for {}: {}", rd.getSectorCode(), e.getMessage());
+                log.error("Sector index daily backfill failed for {}", date, e);
+                failedDays++;
             }
+            date = date.plusDays(1);
         }
 
-        String result = String.format("板块指数K线补采完成: %d 个板块，%d 条记录", rawDatas.size(), cleanseCount);
+        String result = String.format("板块指数K线补采完成: %d 个板块，%d 天失败", totalRecords, failedDays);
         log.info(result);
         return result;
     }
@@ -470,19 +446,5 @@ public class CollectionOrchestrator {
         DataCollectionLog cleanseLog = logMapper.selectLatestByDataTypeAndJobTypeAndTradeDate(dataType, "CLEANSE", tradeDate);
         return fetchLog != null && "SUCCESS".equals(fetchLog.getStatus())
                 && cleanseLog != null && "SUCCESS".equals(cleanseLog.getStatus());
-    }
-
-    private static class Result {
-        final boolean success;
-        final String rawJson;
-        final Long collectionLogId;
-        final String errorMsg;
-
-        Result(boolean success, String rawJson, Long collectionLogId, String errorMsg) {
-            this.success = success;
-            this.rawJson = rawJson;
-            this.collectionLogId = collectionLogId;
-            this.errorMsg = errorMsg;
-        }
     }
 }

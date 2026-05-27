@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 板块成分股 Mapper，提供板块与股票关联的查询 -->
+<mapper namespace="com.tradingdiary.mapper.SectorStockMapper">
+
+    <!-- 查询行业板块的成分股列表，关联 stock_info 获取股票名称 -->
+    <select id="selectIndustryStocks" resultType="com.tradingdiary.service.market.SectorStockItem">
+        SELECT si.stock_code AS stockCode, MAX(info.name) AS stockName
+        FROM stock_industry si
+        LEFT JOIN stock_info info ON si.stock_code = info.stock_code AND info.is_deleted = 0
+        WHERE si.industry_code = #{industryCode} AND si.is_deleted = 0
+        GROUP BY si.stock_code
+        ORDER BY si.stock_code
+    </select>
+
+    <!-- 查询概念板块的成分股列表，关联 stock_info 获取股票名称 -->
+    <select id="selectConceptStocks" resultType="com.tradingdiary.service.market.SectorStockItem">
+        SELECT sc.stock_code AS stockCode, MAX(info.name) AS stockName
+        FROM stock_concept sc
+        LEFT JOIN stock_info info ON sc.stock_code = info.stock_code AND info.is_deleted = 0
+        WHERE sc.concept_code = #{conceptCode} AND sc.is_deleted = 0
+        GROUP BY sc.stock_code
+        ORDER BY sc.stock_code
+    </select>
+
+</mapper>

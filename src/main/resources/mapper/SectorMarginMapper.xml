@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 板块两融占比 Mapper，提供板块级别两融占比聚合查询 -->
+<mapper namespace="com.tradingdiary.mapper.SectorMarginMapper">
+
+    <!-- 聚合板块两融数据，子查询按日汇总后用 LAG 计算变动 -->
+    <select id="selectSectorMarginAggregate" resultType="com.tradingdiary.service.market.SectorMarginDaily">
+        SELECT tradeDate, #{sectorType} AS sectorType, #{sectorCode} AS sectorCode,
+               margin_balance AS marginBalance, short_balance AS shortBalance, total_balance AS totalBalance,
+               margin_balance - LAG(margin_balance) OVER (ORDER BY tradeDate) AS marginBalanceChange,
+               short_balance - LAG(short_balance) OVER (ORDER BY tradeDate) AS shortBalanceChange,
+               total_balance - LAG(total_balance) OVER (ORDER BY tradeDate) AS totalBalanceChange
+        FROM (
+            SELECT m.trade_date AS tradeDate,
+                   SUM(m.margin_balance) AS margin_balance,
+                   SUM(m.short_balance) AS short_balance,
+                   SUM(m.total_balance) AS total_balance
+            FROM margin_daily m
+            INNER JOIN
+            <choose>
+                <when test="sectorType == 'INDUSTRY'">stock_industry</when>
+                <otherwise>stock_concept</otherwise>
+            </choose> s ON m.stock_code = s.stock_code AND s.is_deleted = 0
+            WHERE s.
+            <choose>
+                <when test="sectorType == 'INDUSTRY'">industry_code</when>
+                <otherwise>concept_code</otherwise>
+            </choose> = #{sectorCode} AND m.is_deleted = 0
+            <if test="startDate != null">AND m.trade_date &gt;= #{startDate}</if>
+            <if test="endDate != null">AND m.trade_date &lt;= #{endDate}</if>
+            GROUP BY m.trade_date
+        ) sub
+        ORDER BY tradeDate
+    </select>
+
+</mapper>

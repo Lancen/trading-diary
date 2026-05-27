@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 板块关联度 Mapper，提供板块间成分股交集查询 -->
+<mapper namespace="com.tradingdiary.mapper.SectorCorrelationMapper">
+
+    <!-- 查询与目标板块有共同成分股的关联板块，按交集数降序 -->
+    <select id="selectIntersectionRanking" resultType="map">
+        SELECT t.
+        <choose>
+            <when test="sectorType == 'INDUSTRY'">industry_code</when>
+            <otherwise>concept_code</otherwise>
+        </choose> AS relatedCode,
+               n.name AS relatedName,
+               COUNT(DISTINCT t.stock_code) AS intersectionCount,
+               src_cnt.sourceTotal AS sourceCount
+        FROM
+        <choose>
+            <when test="sectorType == 'INDUSTRY'">stock_industry</when>
+            <otherwise>stock_concept</otherwise>
+        </choose> s
+        INNER JOIN
+        <choose>
+            <when test="sectorType == 'INDUSTRY'">stock_industry</when>
+            <otherwise>stock_concept</otherwise>
+        </choose> t ON s.stock_code = t.stock_code AND t.is_deleted = 0
+        INNER JOIN
+        <choose>
+            <when test="sectorType == 'INDUSTRY'">industry</when>
+            <otherwise>concept</otherwise>
+        </choose> n ON t.
+        <choose>
+            <when test="sectorType == 'INDUSTRY'">industry_code</when>
+            <otherwise>concept_code</otherwise>
+        </choose> = n.code AND n.is_deleted = 0
+        INNER JOIN (
+            SELECT COUNT(DISTINCT stock_code) AS sourceTotal
+            FROM
+            <choose>
+                <when test="sectorType == 'INDUSTRY'">stock_industry</when>
+                <otherwise>stock_concept</otherwise>
+            </choose>
+            WHERE
+            <choose>
+                <when test="sectorType == 'INDUSTRY'">industry_code</when>
+                <otherwise>concept_code</otherwise>
+            </choose> = #{targetSectorCode} AND is_deleted = 0
+        ) src_cnt
+        WHERE s.
+        <choose>
+            <when test="sectorType == 'INDUSTRY'">industry_code</when>
+            <otherwise>concept_code</otherwise>
+        </choose> = #{targetSectorCode} AND s.is_deleted = 0
+        GROUP BY t.
+        <choose>
+            <when test="sectorType == 'INDUSTRY'">industry_code</when>
+            <otherwise>concept_code</otherwise>
+        </choose>, n.name, src_cnt.sourceTotal
+        HAVING COUNT(DISTINCT t.stock_code) &gt; 0
+        ORDER BY intersectionCount DESC
+        LIMIT #{maxResults}
+    </select>
+
+    <!-- 查询指定板块的成分股总数 -->
+    <select id="selectStockCount" resultType="java.lang.Long">
+        SELECT COUNT(DISTINCT stock_code)
+        FROM
+        <choose>
+            <when test="sectorType == 'INDUSTRY'">stock_industry</when>
+            <otherwise>stock_concept</otherwise>
+        </choose>
+        WHERE
+        <choose>
+            <when test="sectorType == 'INDUSTRY'">industry_code</when>
+            <otherwise>concept_code</otherwise>
+        </choose> = #{sectorCode} AND is_deleted = 0
+    </select>
+
+</mapper>

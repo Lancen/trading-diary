@@ -1,6 +1,7 @@
 package com.tradingdiary.collection.handler;
 
 import com.tradingdiary.collection.client.TushareClient;
+import com.tradingdiary.collection.model.FetchResult;
 import com.tradingdiary.service.collection.StockDailyCleanseService;
 import org.springframework.stereotype.Component;
 
@@ -26,8 +27,8 @@ public class StockDailyTushareHandler implements DataTypeHandler {
     }
 
     @Override
-    public String fetch(LocalDate tradeDate) {
-        return tushareClient.fetchDaily(tradeDate);
+    public FetchResult fetch(LocalDate tradeDate) {
+        return FetchResult.single(tushareClient.fetchDaily(tradeDate));
     }
 
     @Override

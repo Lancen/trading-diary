@@ -1,9 +1,12 @@
 package com.tradingdiary.collection.handler;
 
 import com.tradingdiary.collection.client.AKToolsClient;
+import com.tradingdiary.collection.model.FetchResult;
 import com.tradingdiary.entity.Concept;
+import com.tradingdiary.entity.DataCollectionLog;
 import com.tradingdiary.entity.RawData;
 import com.tradingdiary.mapper.ConceptMapper;
+import com.tradingdiary.mapper.DataCollectionLogMapper;
 import com.tradingdiary.mapper.RawDataMapper;
 import com.tradingdiary.service.collection.SectorIndexDailyCleanseService;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,15 +19,15 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * ConceptIndexDailyHandler 单元测试，验证概念指数日线采集的 fetchSectors 和 cleanse 流程
+ * ConceptIndexDailyHandler 单元测试，验证概念指数日线采集的 fetch 和 cleanse 流程
  */
 @ExtendWith(MockitoExtension.class)
 class ConceptIndexDailyHandlerTest {
@@ -33,6 +36,7 @@ class ConceptIndexDailyHandlerTest {
     private SectorIndexDailyCleanseService sectorIndexDailyCleanseService;
     private ConceptMapper conceptMapper;
     private RawDataMapper rawDataMapper;
+    private DataCollectionLogMapper logMapper;
     private ConceptIndexDailyHandler handler;
 
     @BeforeEach
@@ -41,31 +45,28 @@ class ConceptIndexDailyHandlerTest {
         sectorIndexDailyCleanseService = mock(SectorIndexDailyCleanseService.class);
         conceptMapper = mock(ConceptMapper.class);
         rawDataMapper = mock(RawDataMapper.class);
-        handler = new ConceptIndexDailyHandler(aktoolsClient, sectorIndexDailyCleanseService, conceptMapper, rawDataMapper);
+        logMapper = mock(DataCollectionLogMapper.class);
+        handler = new ConceptIndexDailyHandler(aktoolsClient, sectorIndexDailyCleanseService,
+                conceptMapper, rawDataMapper, logMapper);
     }
 
-    // 测试流程: 验证 dataType 返回 CONCEPT_INDEX_DAILY
+    // 测试流程: 验证 dataType() 返回 CONCEPT_INDEX_DAILY
     @Test
     void shouldReturnCorrectDataType() {
         assertThat(handler.dataType()).isEqualTo("CONCEPT_INDEX_DAILY");
     }
 
-    // 测试流程: Given 概念指数不支持标准 fetch, When 调用 fetch, Then 抛出 UnsupportedOperationException
+    // 测试流程: Given concept 表为空, When 调用 fetch, Then 返回失败结果且日志标记 FAILED
     @Test
-    void shouldThrowOnStandardFetch() {
-        assertThatThrownBy(() -> handler.fetch(LocalDate.now()))
-                .isInstanceOf(UnsupportedOperationException.class);
-    }
-
-    // 测试流程: Given concept 表为空, When 调用 fetchSectors, Then 抛出 IllegalStateException
-    @Test
-    void shouldThrowWhenConceptTableEmpty() {
+    void shouldReturnFailedResultWhenConceptTableEmpty() {
         when(conceptMapper.selectList(any())).thenReturn(Collections.emptyList());
-        assertThatThrownBy(() -> handler.fetchSectors(LocalDate.of(2026, 5, 20), LocalDate.of(2026, 5, 20), 1L))
-                .isInstanceOf(IllegalStateException.class);
+        FetchResult result = handler.fetch(LocalDate.of(2026, 5, 20));
+        assertThat(result.isSuccess()).isFalse();
+        verify(logMapper).insert(any(DataCollectionLog.class));
+        verify(logMapper).updateById(any(DataCollectionLog.class));
     }
 
-    // 测试流程: Given concept 表有板块数据且 client 返回行情, When 调用 fetchSectors, Then 返回 1 并保存 rawData
+    // 测试流程: Given concept 表有板块数据且 client 返回行情, When 调用 fetch, Then 返回 FetchResult.multiSector 且保存 rawData
     @Test
     void shouldFetchAndSaveSectors() {
         Concept sector = new Concept();
@@ -73,9 +74,17 @@ class ConceptIndexDailyHandlerTest {
         sector.setName("人工智能");
         when(conceptMapper.selectList(any())).thenReturn(List.of(sector));
         when(aktoolsClient.fetchConceptIndexDaily(eq("人工智能"), any(), any())).thenReturn("[{...}]");
+        // 模拟 MyBatis-Plus insert 后自动回填 ID
+        doAnswer(invocation -> {
+            DataCollectionLog log = invocation.getArgument(0);
+            log.setId(99L);
+            return 1;
+        }).when(logMapper).insert(any(DataCollectionLog.class));
 
-        int count = handler.fetchSectors(LocalDate.of(2026, 5, 20), LocalDate.of(2026, 5, 20), 1L);
-        assertThat(count).isEqualTo(1);
+        FetchResult result = handler.fetch(LocalDate.of(2026, 5, 20));
+        assertThat(result.getType()).isEqualTo(FetchResult.Type.MULTI_SECTOR);
+        assertThat(result.getSectorCount()).isEqualTo(1);
+        assertThat(result.getCollectionLogId()).isEqualTo(99L);
         verify(rawDataMapper).insert(any(RawData.class));
     }
 

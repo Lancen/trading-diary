@@ -11,6 +11,7 @@ import com.tradingdiary.mapper.ConceptMapper;
 import com.tradingdiary.mapper.StockConceptMapper;
 import com.tradingdiary.service.collection.ConceptCleanseService;
 import com.tradingdiary.util.BatchSqlRunner;
+import com.tradingdiary.util.JsonNodeHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static com.tradingdiary.util.JsonNodeHelper.*;
 
 /**
  * 概念板块清洗服务实现，解析概念板块名称 JSON 并入库
@@ -177,9 +180,4 @@ public class ConceptCleanseServiceImpl implements ConceptCleanseService {
         return result;
     }
 
-    private String safeText(JsonNode node, String field) {
-        JsonNode fieldNode = node.get(field);
-        if (fieldNode == null || fieldNode.isNull()) return null;
-        return fieldNode.asText();
-    }
 }
