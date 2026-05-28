@@ -76,3 +76,4 @@ qa-*.png
 
 # Playwright page snapshots
 page-*.yml
+frontend/cookies.txt
