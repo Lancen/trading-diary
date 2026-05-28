@@ -1,165 +1,293 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { useApiQuery, useApiMutation } from "@/lib/hooks";
-import type { StatusItem, CalendarDay, CollectionLog, GapReport } from "@/lib/types";
-import { statusVariant, statusLabel, formatTime, dataTypeLabel } from "@/lib/format";
+import Link from "next/link";
+import api from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
-function Badge({ variant, children }: { variant: string; children: React.ReactNode }) {
-  const colors: Record<string, string> = {
-    default: "bg-gray-100 text-gray-800",
-    secondary: "bg-blue-100 text-blue-800",
-    destructive: "bg-red-100 text-red-800",
-    outline: "bg-white text-gray-600 border",
-  };
-  return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${colors[variant] || colors.outline}`}>{children}</span>;
+interface JobStatus {
+  status: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  recordCount: number | null;
+  errorMsg: string | null;
 }
 
-export default function CollectionDataTypePage() {
-  const params = useParams();
-  const dataType = params.dataType as string;
-  const [calMonth, setCalMonth] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  });
+interface StatusItem {
+  dataType: string;
+  lastFetch: JobStatus | null;
+  lastDataDate: string | null;
+}
 
-  // 状态
-  const { data: statusData } = useApiQuery<StatusItem[]>(
-    ["admin", "collection", "status"],
-    "api/v1/admin/collection/status"
+interface CalendarDay {
+  date: string; tradingDay: boolean; hasData: boolean;
+  status: "COLLECTED" | "MISSING" | "NON_TRADING";
+}
+
+interface CollectionLog {
+  id: number; dataType: string; jobType: string; status: string;
+  recordCount: number | null; errorMsg: string | null;
+  requestUrl: string | null; requestParams: string | null; remark: string | null;
+  startedAt: string | null; completedAt: string | null; tradeDate: string | null;
+}
+
+const LABEL_MAP: Record<string, string> = {
+  STOCK_SPOT: "股票行情", TRADE_CALENDAR: "交易日历",
+  STOCK_DAILY_TUSHARE: "股票日线(Tushare)",
+  INDUSTRY_NAME: "行业板块分类", CONCEPT_NAME: "概念板块分类",
+  MARGIN_DAILY_SSE: "两融明细(沪市)", MARGIN_DAILY_SZSE: "两融明细(深市)",
+  MARGIN_MACRO_SSE: "两融总量(沪市)", MARGIN_MACRO_SZSE: "两融总量(深市)",
+  MARKET_INDEX_DAILY: "宽基指数日线",
+  INDUSTRY_INDEX_DAILY: "行业指数日线",
+  CONCEPT_INDEX_DAILY: "概念指数日线",
+};
+
+const CALENDAR_TYPES = new Set(["STOCK_SPOT", "MARGIN_DAILY_SSE", "MARGIN_DAILY_SZSE", "MARGIN_MACRO_SSE", "MARGIN_MACRO_SZSE"]);
+const SECTOR_INDEX_TYPES = new Set(["INDUSTRY_INDEX_DAILY", "CONCEPT_INDEX_DAILY"]);
+
+
+function BackfillButton({ dataType, onDone }: { dataType: string; onDone: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [bfStart, setBfStart] = useState("");
+  const [bfEnd, setBfEnd] = useState("");
+  const toast = useToast((s) => s.toast);
+
+  const isSectorIndex = SECTOR_INDEX_TYPES.has(dataType);
+  const backfillType = isSectorIndex ? dataType : "STOCK_DAILY";
+  const label = isSectorIndex ? LABEL_MAP[dataType] : "日线数据（STOCK_DAILY）";
+
+  async function handleBackfill() {
+    if (!bfStart || !bfEnd) { toast("请选择日期范围", "error"); return; }
+    try {
+      const res = await api.post("api/v1/admin/collection/backfill", {
+        json: { dataType: backfillType, startDate: bfStart, endDate: bfEnd },
+      }).json<{ code: number; msg?: string }>();
+      if (res.code === 200) { toast("补采任务已提交", "success"); setOpen(false); onDone(); }
+      else toast(`补采失败: ${res.msg || ""}`, "error");
+    } catch (e) { toast("补采请求失败", "error"); }
+  }
+
+  return (
+    <>
+      <button onClick={() => setOpen(true)} className="rounded-lg border px-5 py-2 text-sm font-medium hover:bg-gray-50">历史补采</button>
+      {open && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
+          <div className="relative z-50 w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
+            <h2 className="mb-4 text-lg font-bold">历史数据补采</h2>
+            <div className="space-y-4">
+              <p className="text-sm text-gray-500">{label}</p>
+              <div className="flex gap-4">
+                <div className="flex-1"><label className="block text-sm font-medium text-gray-700">开始日期</label><input type="date" value={bfStart} onChange={(e) => setBfStart(e.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2 text-sm" /></div>
+                <div className="flex-1"><label className="block text-sm font-medium text-gray-700">结束日期</label><input type="date" value={bfEnd} onChange={(e) => setBfEnd(e.target.value)} className="mt-1 w-full rounded-lg border px-3 py-2 text-sm" /></div>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button onClick={() => setOpen(false)} className="rounded-lg border px-4 py-2 text-sm hover:bg-gray-50">取消</button>
+              <button onClick={handleBackfill} className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:opacity-90">开始补采</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
+}
 
-  // 日历
-  const { data: calendarData } = useApiQuery<CalendarDay[]>(
-    ["admin", "collection", "calendar", dataType],
-    "api/v1/admin/stocks/calendar",
-    { dataType, month: calMonth }
-  );
+function formatTime(iso: string | null): string {
+  if (!iso) return "-";
+  return new Date(iso).toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
 
-  // 日志
-  const { data: logsData } = useApiQuery<CollectionLog[]>(
-    ["admin", "collection", "logs", dataType],
-    "api/v1/admin/collection/logs",
-    { dataType }
-  );
+export default function CollectionDetailPage() {
+  const { dataType } = useParams<{ dataType: string }>();
+  const label = LABEL_MAP[dataType] || dataType;
 
-  // 缺口报告
-  const { data: gapData } = useApiQuery<GapReport>(
-    ["admin", "collection", "gap", dataType],
-    "api/v1/admin/collection/gap-report",
-    { dataType }
-  );
+  const [fetchStatus, setFetchStatus] = useState<JobStatus | null>(null);
+  const [lastDataDate, setLastDataDate] = useState<string | null>(null);
+  const [logs, setLogs] = useState<CollectionLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [triggering, setTriggering] = useState(false);
+  const [calYear, setCalYear] = useState(() => new Date().getFullYear());
+  const [calMonth, setCalMonth] = useState(() => new Date().getMonth() + 1);
+  const [calDays, setCalDays] = useState<CalendarDay[]>([]);
+  const toast = useToast((s) => s.toast);
 
-  // 采集触发
-  const fetchMutation = useApiMutation<void, { dataType: string; tradeDate?: string }>(
-    "post",
-    "api/v1/admin/collection/fetch",
-    [["admin", "collection", "status"], ["admin", "collection", "calendar", dataType]]
-  );
+  const isMonthly = dataType === "INDUSTRY_NAME" || dataType === "CONCEPT_NAME";
 
-  // 清洗触发
-  const cleanseMutation = useApiMutation<void, { dataType: string; rawLogId?: number }>(
-    "post",
-    "api/v1/admin/collection/cleanse",
-    [["admin", "collection", "status"]]
-  );
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [statusRes, logsRes] = await Promise.all([
+        api.get("api/v1/admin/collection/status").json<{ code: number; data: StatusItem[] }>(),
+        api.get("api/v1/admin/collection/logs", { searchParams: { dataType, limit: 20 } }).json<{ code: number; data: CollectionLog[] }>(),
+      ]);
+      const item = (statusRes.data || []).find((s: StatusItem) => s.dataType === dataType);
+      setFetchStatus(item?.lastFetch || null);
+      setLastDataDate(item?.lastDataDate || null);
+      setLogs(logsRes.data || []);
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
+  }, [dataType]);
 
-  const currentStatus = statusData?.data?.find(s => s.dataType === dataType);
-  const calendar = calendarData?.data || [];
-  const logs = logsData?.data || [];
-  const gapReport = gapData?.data;
+  const fetchCalendar = useCallback(async () => {
+    try {
+      const res = await api.get("api/v1/admin/stocks/calendar", { searchParams: { year: calYear, month: calMonth, dataType } }).json<{ code: number; data: { days: CalendarDay[] } }>();
+      setCalDays(res.data?.days || []);
+    } catch (e) { console.error(e); }
+  }, [calYear, calMonth, dataType]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => { if (CALENDAR_TYPES.has(dataType)) fetchCalendar(); }, [fetchCalendar]);
+
+  async function handleTrigger() {
+    setTriggering(true);
+    try {
+      const res = await api.post(`api/v1/admin/collection/trigger/${dataType}`).json<{ code: number; msg?: string }>();
+      if (res.code === 200) {
+        toast("采集任务已提交", "success");
+        setTimeout(() => fetchData(), 5000);
+      } else {
+        toast(`触发失败: ${res.msg || ""}`, "error");
+      }
+    } catch (e) { toast("触发请求失败", "error"); }
+    finally { setTriggering(false); }
+  }
+
+  function prevMonth() {
+    if (calMonth === 1) { setCalYear(calYear - 1); setCalMonth(12); }
+    else setCalMonth(calMonth - 1);
+  }
+
+  function nextMonth() {
+    if (calMonth === 12) { setCalYear(calYear + 1); setCalMonth(1); }
+    else setCalMonth(calMonth + 1);
+  }
+
+  function dayClass(d: CalendarDay): string {
+    if (d.status === "COLLECTED") return "bg-green-100 text-green-800";
+    if (d.status === "MISSING") return "bg-red-100 text-red-800 cursor-pointer hover:bg-red-200";
+    return "bg-gray-100 text-gray-400";
+  }
+
+  function dayTitle(d: CalendarDay): string {
+    const day = d.date.slice(8);
+    if (d.status === "COLLECTED") return `${day} ✓已采集`;
+    if (d.status === "MISSING") return `${day} ✗缺数据`;
+    return `${day} 非交易日`;
+  }
 
   return (
     <div className="space-y-6">
-      <a href="/admin/collection" className="text-sm text-gray-400 hover:text-blue-600">← 数据采集</a>
-      <h1 className="text-2xl font-bold">{dataTypeLabel(dataType)}</h1>
+      <div className="flex items-center gap-2 text-sm text-gray-500">
+        <Link href="/admin/collection" className="hover:underline">← 返回数据采集</Link>
+        <span className="text-gray-300">|</span>
+        <h1 className="text-2xl font-bold text-gray-900">{label}</h1>
+      </div>
 
       {/* 操作按钮 */}
       <div className="flex gap-3">
-        <button
-          onClick={() => fetchMutation.mutate({ dataType })}
-          disabled={fetchMutation.isPending}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
-        >
-          {fetchMutation.isPending ? "采集中..." : "采集"}
+        <button onClick={handleTrigger} disabled={triggering}
+          className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50">
+          {triggering ? "提交中..." : "触发采集"}
         </button>
-        <button
-          onClick={() => cleanseMutation.mutate({ dataType })}
-          disabled={cleanseMutation.isPending}
-          className="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-gray-50 disabled:opacity-50"
-        >
-          {cleanseMutation.isPending ? "清洗中..." : "清洗"}
-        </button>
+        {dataType === "STOCK_INFO" && <BackfillButton dataType={dataType} onDone={fetchData} />}
+        {SECTOR_INDEX_TYPES.has(dataType) && <BackfillButton dataType={dataType} onDone={fetchData} />}
       </div>
 
-      {/* 状态摘要 */}
-      {currentStatus && (
-        <div className="grid grid-cols-3 gap-4">
-          <div className="rounded-lg border bg-white p-4">
-            <div className="text-xs text-gray-500 mb-1">最近采集</div>
-            <Badge variant={statusVariant(currentStatus.lastFetch?.status)}>{statusLabel(currentStatus.lastFetch?.status)}</Badge>
-            {currentStatus.lastFetch?.startedAt && <span className="text-xs text-gray-400 ml-2">{formatTime(currentStatus.lastFetch.startedAt)}</span>}
-          </div>
-          <div className="rounded-lg border bg-white p-4">
-            <div className="text-xs text-gray-500 mb-1">数据截止</div>
-            <span className="text-lg font-bold">{currentStatus.lastDataDate || "-"}</span>
-          </div>
-          <div className="rounded-lg border bg-white p-4">
-            <div className="text-xs text-gray-500 mb-1">采集记录数</div>
-            <span className="text-lg font-bold">{currentStatus.lastFetch?.recordCount ?? "-"}</span>
+      {/* 月级类型：最新采集时间 + 数据最新时间（替代交易日历的覆盖度信息） */}
+      {isMonthly && (
+        <div className="rounded-lg border p-4">
+          <div className="flex gap-8 text-sm">
+            <div>
+              <span className="text-gray-500">最新采集: </span>
+              <span className="font-medium">{formatTime(fetchStatus?.completedAt ?? null)}</span>
+            </div>
+            <div>
+              <span className="text-gray-500">数据时间: </span>
+              <span className="font-medium">{formatTime(lastDataDate)}</span>
+            </div>
           </div>
         </div>
       )}
 
-      {/* 交易日历 */}
-      <div className="rounded-lg border bg-white p-4">
-        <div className="flex items-center gap-3 mb-3">
-          <h2 className="text-sm font-semibold">交易日历</h2>
-          <input type="month" value={calMonth} onChange={(e) => setCalMonth(e.target.value)} className="rounded border px-2 py-1 text-sm" />
-        </div>
-        <div className="grid grid-cols-7 gap-1">
-          {calendar.map((day) => (
-            <div key={day.date} className={`rounded px-2 py-1 text-xs text-center ${day.status === "COLLECTED" ? "bg-green-100 text-green-800" : day.status === "MISSING" ? "bg-red-100 text-red-800" : day.tradingDay ? "bg-yellow-50 text-yellow-700" : "bg-gray-50 text-gray-400"}`}>
-              {day.date.slice(8)}
+      {/* 交易日历 — 仅日级数据采集类型 */}
+      {CALENDAR_TYPES.has(dataType) && (
+        <div className="rounded-lg border p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-sm">交易日历</h3>
+            <div className="flex items-center gap-2">
+              <button onClick={prevMonth} className="rounded border px-2 py-1 text-xs hover:bg-gray-50">◀</button>
+              <span className="text-sm font-medium">{calYear}年{calMonth}月</span>
+              <button onClick={nextMonth} className="rounded border px-2 py-1 text-xs hover:bg-gray-50">▶</button>
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* 缺口报告 */}
-      {gapReport && gapReport.partialWeeks + gapReport.missingWeeks > 0 && (
-        <div className="rounded-lg border bg-white p-4">
-          <h2 className="text-sm font-semibold mb-2">数据缺口</h2>
-          <div className="text-sm">
-            完整周 {gapReport.completeWeeks} / {gapReport.totalWeeks}，
-            缺失 {gapReport.missingWeeks} 周，不完整 {gapReport.partialWeeks} 周
+          </div>
+          <div className="grid grid-cols-7 gap-1 text-center text-xs">
+            {["一","二","三","四","五","六","日"].map((w) => <div key={w} className="py-1 text-gray-400">{w}</div>)}
+            {/* 填充月初空白 */}
+            {(() => {
+              const firstDay = calDays[0]?.date ? new Date(calDays[0].date + "T00:00:00").getDay() : 0;
+              const offset = firstDay === 0 ? 6 : firstDay - 1; // Mon=0
+              return Array.from({ length: offset }).map((_, i) => <div key={`pad-${i}`} />);
+            })()}
+            {calDays.map((d) => (
+              <div key={d.date} className={`rounded py-1 text-xs ${dayClass(d)}`} title={dayTitle(d)}>
+                {d.date.slice(8).replace(/^0/, "")}
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-4 mt-2 text-xs text-gray-500">
+            <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded bg-green-100" /> 已采集</span>
+            <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded bg-red-100" /> 交易日缺数据</span>
+            <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded bg-gray-100" /> 非交易日</span>
           </div>
         </div>
       )}
 
       {/* 采集日志 */}
-      <div className="rounded-lg border bg-white p-4">
-        <h2 className="text-sm font-semibold mb-2">采集日志</h2>
+      <div className="rounded-lg border">
+        <div className="flex items-center justify-between border-b px-4 py-3">
+          <h3 className="font-semibold">采集日志</h3>
+          <span className="text-xs text-gray-500">最近 {logs.length} 条</span>
+        </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-xs">
+          <table className="w-full text-sm">
             <thead>
-              <tr className="border-b text-gray-500">
-                <th className="px-2 py-1 text-left">时间</th>
-                <th className="px-2 py-1 text-left">类型</th>
-                <th className="px-2 py-1 text-left">状态</th>
-                <th className="px-2 py-1 text-right">记录数</th>
-                <th className="px-2 py-1 text-left">错误</th>
+              <tr className="border-b bg-gray-50 text-left text-xs text-gray-500">
+                <th className="px-4 py-2">日期</th>
+                <th className="px-4 py-2">阶段</th>
+                <th className="px-4 py-2">状态</th>
+                <th className="px-4 py-2">地址</th>
+                <th className="px-4 py-2">参数</th>
+                <th className="px-4 py-2">记录数</th>
+                <th className="px-4 py-2">备注</th>
               </tr>
             </thead>
             <tbody>
-              {logs.slice(0, 20).map((log) => (
-                <tr key={log.id} className="border-b">
-                  <td className="px-2 py-1">{log.startedAt ? formatTime(log.startedAt) : "-"}</td>
-                  <td className="px-2 py-1">{log.jobType}</td>
-                  <td className="px-2 py-1"><Badge variant={statusVariant(log.status)}>{statusLabel(log.status)}</Badge></td>
-                  <td className="px-2 py-1 text-right">{log.recordCount ?? "-"}</td>
-                  <td className="px-2 py-1 text-red-500 truncate max-w-[200px]">{log.errorMsg || ""}</td>
+              {loading ? (
+                <tr><td colSpan={7} className="px-4 py-4 text-center text-gray-400">加载中...</td></tr>
+              ) : logs.length === 0 ? (
+                <tr><td colSpan={7} className="px-4 py-4 text-center text-gray-400">无日志</td></tr>
+              ) : logs.map((log) => (
+                <tr key={log.id} className={`border-b ${log.status === "FAILED" ? "bg-red-50" : ""}`}>
+                  <td className="px-4 py-2 font-mono text-xs">{log.tradeDate || "-"}</td>
+                  <td className="px-4 py-2">
+                    <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${log.jobType === "FETCH" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"}`}>
+                      {log.jobType === "FETCH" ? "采集" : "清洗"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2">
+                    {log.status === "SUCCESS" ? <span className="text-green-600">成功</span> :
+                     log.status === "FAILED" ? <span className="text-red-600">失败</span> :
+                     <span className="text-gray-500">{log.status}</span>}
+                  </td>
+                  <td className="px-4 py-2 font-mono text-xs text-gray-500 max-w-[200px] truncate">{log.requestUrl || "-"}</td>
+                  <td className="px-4 py-2 font-mono text-xs text-gray-500 max-w-[150px] truncate">{log.requestParams || "-"}</td>
+                  <td className="px-4 py-2 text-center">{log.recordCount ?? "-"}</td>
+                  <td className="px-4 py-2 text-xs max-w-[200px] truncate">
+                    {log.status === "FAILED" ? <span className="text-red-600">{log.errorMsg || log.remark || "-"}</span> :
+                     <span className="text-gray-500">{log.remark || "-"}</span>}
+                  </td>
                 </tr>
               ))}
             </tbody>
