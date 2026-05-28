@@ -357,29 +357,31 @@ public class CollectionOrchestrator {
 
         log.info("Starting stock daily backfill (Tushare): {} to {}", startDate, endDate);
 
-        int totalRecords = 0;
-        int failedDays = 0;
+        int processedDates = 0;
+        int skippedDates = 0;
+        int failedDates = 0;
         LocalDate date = startDate;
         while (!date.isAfter(endDate)) {
-            try {
-                FetchResult result = tushareHandler.fetch(date);
-                if (result.isSuccess() && result.getRawJson() != null) {
-                    int count = tushareHandler.cleanse(result.getRawJson(), date);
-                    totalRecords += count;
-                    log.info("Tushare daily backfill: {} → {} records", date, count);
+            if (isDateComplete("STOCK_DAILY_TUSHARE", date)) {
+                skippedDates++;
+                log.debug("Tushare daily backfill: {} already complete, skipping", date);
+            } else {
+                String result = orchestrate("STOCK_DAILY_TUSHARE", date);
+                if (result.contains("成功")) {
+                    processedDates++;
+                    log.info("Tushare daily backfill: {} -> {}", date, result);
                 } else {
-                    failedDays++;
+                    failedDates++;
+                    log.error("Tushare daily backfill failed for {}: {}", date, result);
                 }
-            } catch (Exception e) {
-                log.error("Tushare daily backfill failed for {}", date, e);
-                failedDays++;
             }
             date = date.plusDays(1);
         }
 
-        String result = String.format("日线补采完成: %d 条记录，%d 天失败", totalRecords, failedDays);
-        log.info(result);
-        return result;
+        String summary = String.format("日线补采完成: %d 个日期已处理，%d 个日期已跳过，%d 个日期失败",
+                processedDates, skippedDates, failedDates);
+        log.info(summary);
+        return summary;
     }
 
     @Async("collectionExecutor")
@@ -397,34 +399,30 @@ public class CollectionOrchestrator {
 
         log.info("Starting sector index daily backfill: sectorType={}, {} to {}", sectorType, startDate, endDate);
 
-        int totalRecords = 0;
-        int failedDays = 0;
+        int processedDates = 0;
+        int failedDates = 0;
         LocalDate date = startDate;
         while (!date.isAfter(endDate)) {
-            try {
-                FetchResult result = handler.fetch(date);
-                if (result.isSuccess()) {
-                    int sectorCount = result.getSectorCount();
-                    totalRecords += sectorCount;
-                    log.info("Sector index daily backfill: {} -> {} sectors", date, sectorCount);
-
-                    // 执行清洗
-                    if (result.getCollectionLogId() != null) {
-                        executeCleanse(handler, dataType, date, result.getCollectionLogId());
-                    }
+            if (isDateComplete(dataType, date)) {
+                log.debug("Sector index daily backfill: {} already complete, skipping", date);
+            } else {
+                Long collectionLogId = executeFetch(handler, dataType, date);
+                if (collectionLogId != null) {
+                    executeCleanse(handler, dataType, date, collectionLogId);
+                    processedDates++;
+                    log.info("Sector index daily backfill: {} -> {} sectors", date, handler.dataType());
                 } else {
-                    failedDays++;
+                    failedDates++;
+                    log.error("Sector index daily backfill failed for {}", date);
                 }
-            } catch (Exception e) {
-                log.error("Sector index daily backfill failed for {}", date, e);
-                failedDays++;
             }
             date = date.plusDays(1);
         }
 
-        String result = String.format("板块指数K线补采完成: %d 个板块，%d 天失败", totalRecords, failedDays);
-        log.info(result);
-        return result;
+        String summary = String.format("板块指数K线补采完成: %d 个日期已处理，%d 个日期失败",
+                processedDates, failedDates);
+        log.info(summary);
+        return summary;
     }
 
     // ===== 公共查询方法 =====

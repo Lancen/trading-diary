@@ -1,6 +1,7 @@
 package com.tradingdiary.util;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.tradingdiary.collection.CollectionConstants;
@@ -262,6 +263,11 @@ public class BatchSqlRunner {
 
             if (f.isAnnotationPresent(TableId.class) && f.getAnnotation(TableId.class).type() == IdType.AUTO) {
                 idField = f;
+                continue;
+            }
+
+            TableField tableField = f.getAnnotation(TableField.class);
+            if (tableField != null && !tableField.exist()) {
                 continue;
             }
 
