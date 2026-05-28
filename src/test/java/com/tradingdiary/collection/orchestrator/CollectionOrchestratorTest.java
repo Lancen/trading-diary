@@ -245,42 +245,47 @@ class CollectionOrchestratorTest {
     // 测试流程: Given tushareHandler 返回 FetchResult.single, When 回补 5 天, Then 总计 25000 条且 0 天失败
     @Test
     void shouldBackfillStockDailyWithTushareHandler() {
-        when(tushareHandler.fetch(any())).thenReturn(FetchResult.single("{\"data\":{\"fields\":[\"ts_code\"],\"items\":[]}}"));
-        when(tushareHandler.cleanse(any(), any())).thenReturn(5000);
+        for (int i = 1; i <= 5; i++) {
+            when(dataCollectionLogMapper.selectLatestByDataTypeAndJobTypeAndTradeDate(
+                    eq("STOCK_DAILY_TUSHARE"), eq("FETCH"), eq(LocalDate.of(2026, 5, i))))
+                    .thenReturn(null);
+            when(dataCollectionLogMapper.selectLatestByDataTypeAndJobTypeAndTradeDate(
+                    eq("STOCK_DAILY_TUSHARE"), eq("CLEANSE"), eq(LocalDate.of(2026, 5, i))))
+                    .thenReturn(null);
+        }
+        doReturn("执行成功").when(orchestrator).orchestrate(any(), any());
 
         String result = orchestrator.backfillStockDaily(
                 LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 5));
 
-        assertThat(result).contains("0 天失败");
-        verify(tushareHandler, times(5)).fetch(any());
+        assertThat(result).contains("日线补采完成");
+        assertThat(result).contains("5 个日期已处理");
+        verify(orchestrator, times(5)).orchestrate(eq("STOCK_DAILY_TUSHARE"), any());
     }
 
-    // 测试流程: Given 结束日期早于开始日期, When 回补, Then 返回 0 条记录且不调用 fetch
+    // 测试流程: Given 结束日期早于开始日期, When 回补, Then 返回 0 个日期已处理
     @Test
     void shouldHandleEmptyDateRange() {
         String result = orchestrator.backfillStockDaily(
                 LocalDate.of(2026, 5, 5), LocalDate.of(2026, 5, 1));
 
-        assertThat(result).contains("0 条记录");
-        verify(tushareHandler, never()).fetch(any());
+        assertThat(result).contains("0 个日期已处理");
+        verify(orchestrator, never()).orchestrate(any(), any());
     }
 
-    // 测试流程: Given 部分 fetch 失败, When 回补 3 天, Then 继续执行后续天、1 天失败
+    // 测试流程: Given 部分日期 orchestrate 失败, When 回补 3 天, Then 继续执行后续天、1 天失败
     @Test
     void shouldContinueBackfillAfterSingleDateFailure() {
-        when(tushareHandler.fetch(any()))
-                .thenReturn(FetchResult.single("{\"data\":{}}"))
-                .thenReturn(FetchResult.single(null))  // 第二天失败
-                .thenReturn(FetchResult.single("{\"data\":{}}"));
-        when(tushareHandler.cleanse(any(), any()))
-                .thenReturn(5000)
-                .thenReturn(5000);
+        doReturn(false).when(orchestrator).isDateComplete(any(), any());
+        doReturn("执行成功").when(orchestrator).orchestrate(eq("STOCK_DAILY_TUSHARE"), eq(LocalDate.of(2026, 5, 1)));
+        doReturn("采集失败").when(orchestrator).orchestrate(eq("STOCK_DAILY_TUSHARE"), eq(LocalDate.of(2026, 5, 2)));
+        doReturn("执行成功").when(orchestrator).orchestrate(eq("STOCK_DAILY_TUSHARE"), eq(LocalDate.of(2026, 5, 3)));
 
         String result = orchestrator.backfillStockDaily(
                 LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 3));
 
-        assertThat(result).contains("1 天失败");
-        verify(tushareHandler, times(3)).fetch(any());
+        assertThat(result).contains("1 个日期失败");
+        verify(orchestrator, times(3)).orchestrate(eq("STOCK_DAILY_TUSHARE"), any());
     }
 
     private TradeCalendar buildTradingDay(LocalDate date) {
