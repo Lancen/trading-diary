@@ -98,10 +98,12 @@ class ConstituentImportServiceImplTest {
         Path file = tempDir.resolve("constituents_20260520.json");
         Files.writeString(file, jsonContent);
 
-        when(stockIndustryMapper.selectOne(any())).thenReturn(null);
-        when(stockIndustryMapper.insert(any(StockIndustry.class))).thenReturn(1);
-        when(stockConceptMapper.selectOne(any())).thenReturn(null);
-        when(stockConceptMapper.insert(any(StockConcept.class))).thenReturn(1);
+        when(stockIndustryMapper.selectList(any())).thenReturn(List.of());
+        when(stockConceptMapper.selectList(any())).thenReturn(List.of());
+        when(batchSqlRunner.batchInsert(any(List.class))).thenAnswer(invocation -> {
+            List<?> list = invocation.getArgument(0);
+            return list.size();
+        });
 
         Map<String, Object> result = service.importFromFile("constituents_20260520.json");
 

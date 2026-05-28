@@ -1,6 +1,7 @@
 package com.tradingdiary.collection.handler;
 
 import com.tradingdiary.collection.client.TushareClient;
+import com.tradingdiary.collection.model.FetchResult;
 import com.tradingdiary.service.collection.StockDailyCleanseService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,8 +43,9 @@ class StockDailyTushareHandlerTest {
     void shouldDelegateFetchToTushareClient() {
         LocalDate date = LocalDate.of(2026, 5, 20);
         when(tushareClient.fetchDaily(date)).thenReturn("{\"data\":{}}");
-        String result = handler.fetch(date);
-        assertThat(result).isEqualTo("{\"data\":{}}");
+        FetchResult result = handler.fetch(date);
+        assertThat(result.getRawJson()).isEqualTo("{\"data\":{}}");
+        assertThat(result.getType()).isEqualTo(FetchResult.Type.SINGLE);
         verify(tushareClient).fetchDaily(date);
     }
 

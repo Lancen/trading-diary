@@ -1,6 +1,7 @@
 package com.tradingdiary.collection.handler;
 
 import com.tradingdiary.collection.client.AKToolsClient;
+import com.tradingdiary.collection.model.FetchResult;
 import com.tradingdiary.service.collection.StockDailyCleanseService;
 import com.tradingdiary.service.collection.StockInfoCleanseService;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,8 +45,9 @@ class StockSpotHandlerTest {
     @Test
     void shouldDelegateFetchToClient() {
         when(aktoolsClient.fetchStockSpot()).thenReturn("[{...}]");
-        String result = handler.fetch(LocalDate.of(2026, 5, 20));
-        assertThat(result).isEqualTo("[{...}]");
+        FetchResult result = handler.fetch(LocalDate.of(2026, 5, 20));
+        assertThat(result.getRawJson()).isEqualTo("[{...}]");
+        assertThat(result.getType()).isEqualTo(FetchResult.Type.SINGLE);
         verify(aktoolsClient).fetchStockSpot();
     }
 

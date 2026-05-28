@@ -1,6 +1,7 @@
 package com.tradingdiary.collection.handler;
 
 import com.tradingdiary.collection.client.AKToolsClient;
+import com.tradingdiary.collection.model.FetchResult;
 import com.tradingdiary.service.collection.IndustryCleanseService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,8 +42,9 @@ class IndustryNameHandlerTest {
     @Test
     void shouldDelegateFetchToClient() {
         when(aktoolsClient.fetchIndustryNames()).thenReturn("[{...}]");
-        String result = handler.fetch(LocalDate.now());
-        assertThat(result).isEqualTo("[{...}]");
+        FetchResult result = handler.fetch(LocalDate.now());
+        assertThat(result.getRawJson()).isEqualTo("[{...}]");
+        assertThat(result.getType()).isEqualTo(FetchResult.Type.SINGLE);
         verify(aktoolsClient).fetchIndustryNames();
     }
 

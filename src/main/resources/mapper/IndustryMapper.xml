@@ -30,7 +30,19 @@
         WHERE ind.is_deleted = 0
         <if test='keyword != null and keyword != ""'>AND ind.name LIKE CONCAT('%', #{keyword}, '%')</if>
         GROUP BY ind.code, ind.name, ind.pinned, ind.pin_order, mkt.amount
-        ORDER BY ind.pinned DESC, ind.pin_order ASC, ${sortBy} ${sortDir}
+        ORDER BY ind.pinned DESC, ind.pin_order ASC,
+        <choose>
+            <when test="sortBy == 'stockCount'">stockCount</when>
+            <when test="sortBy == 'marginBalance'">marginBalance</when>
+            <when test="sortBy == 'marginChange'">marginChange</when>
+            <when test="sortBy == 'shortBalance'">shortBalance</when>
+            <when test="sortBy == 'shortChange'">shortChange</when>
+            <otherwise>marginBalance</otherwise>
+        </choose>
+        <choose>
+            <when test="sortDir == 'ASC'">ASC</when>
+            <otherwise>DESC</otherwise>
+        </choose>
         LIMIT #{offset}, #{size}
     </select>
 

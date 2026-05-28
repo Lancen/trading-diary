@@ -26,7 +26,20 @@
         <if test='concept != null and concept != ""'>AND c.name = #{concept}</if>
         GROUP BY si.stock_code, si.name, si.latest_price, si.change_pct, si.volume, si.snapshot_date, ind.name,
                  md.margin_balance, md.margin_change, md.short_balance, md.short_change
-        ORDER BY ${sortBy} ${sortDir}
+        ORDER BY
+        <choose>
+            <when test="sortBy == 'changePct'">si.change_pct</when>
+            <when test="sortBy == 'volume'">si.volume</when>
+            <when test="sortBy == 'marginBalance'">md.margin_balance</when>
+            <when test="sortBy == 'marginChange'">md.margin_change</when>
+            <when test="sortBy == 'shortBalance'">md.short_balance</when>
+            <when test="sortBy == 'shortChange'">md.short_change</when>
+            <otherwise>si.change_pct</otherwise>
+        </choose>
+        <choose>
+            <when test="sortDir == 'ASC'">ASC</when>
+            <otherwise>DESC</otherwise>
+        </choose>
         LIMIT #{offset}, #{size}
     </select>
 

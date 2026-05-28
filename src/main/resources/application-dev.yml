@@ -15,11 +15,11 @@ springdoc:
 
 app:
   jwt:
-    secret: ${app.jwt.secret:dev-secret}
+    secret: ${app.jwt.secret}
     access-expiration: 900
     refresh-expiration: 604800
   init:
-    admin-password: ${app.init.admin-password:admin123}
+    admin-password: ${app.init.admin-password}
   auto-login:
     enabled: true
     username: admin

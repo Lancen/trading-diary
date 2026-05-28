@@ -9,6 +9,7 @@ import com.tradingdiary.mapper.StockConceptMapper;
 import com.tradingdiary.mapper.StockIndustryMapper;
 import com.tradingdiary.service.collection.ConstituentImportService;
 import com.tradingdiary.util.BatchSqlRunner;
+import com.tradingdiary.util.UpsertHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -120,12 +121,11 @@ public class ConstituentImportServiceImpl implements ConstituentImportService {
 
         try {
             JsonNode root = objectMapper.readTree(file.toFile());
-            int industryCount = 0;
-            int conceptCount = 0;
 
             String fetchedDate = root.has("fetched_date") ? root.get("fetched_date").asText() : null;
             LocalDate snapDate = fetchedDate != null ? LocalDate.parse(fetchedDate) : LocalDate.now();
 
+            List<StockIndustry> industryRelations = new ArrayList<>();
             if (root.has("industries")) {
                 for (JsonNode ind : root.get("industries")) {
                     String industryCode = ind.get("code").asText();
@@ -133,12 +133,17 @@ public class ConstituentImportServiceImpl implements ConstituentImportService {
                         for (JsonNode stock : ind.get("stocks")) {
                             String stockCode = stock.asText();
                             if (stockCode == null || stockCode.isEmpty()) continue;
-                            industryCount += upsertStockIndustry(stockCode, industryCode, snapDate);
+                            StockIndustry si = new StockIndustry();
+                            si.setStockCode(stockCode);
+                            si.setIndustryCode(industryCode);
+                            si.setSnapDate(snapDate);
+                            industryRelations.add(si);
                         }
                     }
                 }
             }
 
+            List<StockConcept> conceptRelations = new ArrayList<>();
             if (root.has("concepts")) {
                 for (JsonNode con : root.get("concepts")) {
                     String conceptCode = con.get("code").asText();
@@ -146,11 +151,18 @@ public class ConstituentImportServiceImpl implements ConstituentImportService {
                         for (JsonNode stock : con.get("stocks")) {
                             String stockCode = stock.asText();
                             if (stockCode == null || stockCode.isEmpty()) continue;
-                            conceptCount += upsertStockConcept(stockCode, conceptCode, snapDate);
+                            StockConcept sc = new StockConcept();
+                            sc.setStockCode(stockCode);
+                            sc.setConceptCode(conceptCode);
+                            sc.setSnapDate(snapDate);
+                            conceptRelations.add(sc);
                         }
                     }
                 }
             }
+
+            int industryCount = batchUpsertIndustry(industryRelations);
+            int conceptCount = batchUpsertConcept(conceptRelations);
 
             log.info("Constituent import complete: {} industries, {} concepts from {}", industryCount, conceptCount, filename);
             Map<String, Object> result = new LinkedHashMap<>();
@@ -164,45 +176,81 @@ public class ConstituentImportServiceImpl implements ConstituentImportService {
         }
     }
 
-    private int upsertStockIndustry(String stockCode, String industryCode, LocalDate snapDate) {
-        StockIndustry existing = stockIndustryMapper.selectOne(
+    private int batchUpsertIndustry(List<StockIndustry> newRelations) {
+        if (newRelations.isEmpty()) return 0;
+
+        Set<String> keys = newRelations.stream()
+                .map(r -> r.getStockCode() + ":" + r.getIndustryCode())
+                .collect(Collectors.toSet());
+
+        List<StockIndustry> existing = stockIndustryMapper.selectList(
                 new LambdaQueryWrapper<StockIndustry>()
-                        .eq(StockIndustry::getStockCode, stockCode)
-                        .eq(StockIndustry::getIndustryCode, industryCode)
                         .eq(StockIndustry::getIsDeleted, false)
+                        .and(w -> w.nested(n -> {
+                            int i = 0;
+                            for (String key : keys) {
+                                String[] parts = key.split(":");
+                                if (i++ == 0) {
+                                    n.eq(StockIndustry::getStockCode, parts[0])
+                                     .eq(StockIndustry::getIndustryCode, parts[1]);
+                                } else {
+                                    n.or(o -> o.eq(StockIndustry::getStockCode, parts[0])
+                                               .eq(StockIndustry::getIndustryCode, parts[1]));
+                                }
+                            }
+                        }))
         );
 
-        if (existing != null) {
-            existing.setSnapDate(snapDate);
-            return stockIndustryMapper.updateById(existing);
-        } else {
-            StockIndustry si = new StockIndustry();
-            si.setStockCode(stockCode);
-            si.setIndustryCode(industryCode);
-            si.setSnapDate(snapDate);
-            stockIndustryMapper.insert(si);
-            return 1;
-        }
+        UpsertHelper.PartitionResult<StockIndustry> result = UpsertHelper.partition(
+                newRelations,
+                existing,
+                r -> r.getStockCode() + ":" + r.getIndustryCode(),
+                r -> r.getStockCode() + ":" + r.getIndustryCode(),
+                (src, tgt) -> tgt.setId(src.getId())
+        );
+
+        int count = 0;
+        if (result.hasInserts()) count += batchSqlRunner.batchInsert(result.getToInsert());
+        if (result.hasUpdates()) count += batchSqlRunner.batchUpdate(result.getToUpdate());
+        return count;
     }
 
-    private int upsertStockConcept(String stockCode, String conceptCode, LocalDate snapDate) {
-        StockConcept existing = stockConceptMapper.selectOne(
+    private int batchUpsertConcept(List<StockConcept> newRelations) {
+        if (newRelations.isEmpty()) return 0;
+
+        Set<String> keys = newRelations.stream()
+                .map(r -> r.getStockCode() + ":" + r.getConceptCode())
+                .collect(Collectors.toSet());
+
+        List<StockConcept> existing = stockConceptMapper.selectList(
                 new LambdaQueryWrapper<StockConcept>()
-                        .eq(StockConcept::getStockCode, stockCode)
-                        .eq(StockConcept::getConceptCode, conceptCode)
                         .eq(StockConcept::getIsDeleted, false)
+                        .and(w -> w.nested(n -> {
+                            int i = 0;
+                            for (String key : keys) {
+                                String[] parts = key.split(":");
+                                if (i++ == 0) {
+                                    n.eq(StockConcept::getStockCode, parts[0])
+                                     .eq(StockConcept::getConceptCode, parts[1]);
+                                } else {
+                                    n.or(o -> o.eq(StockConcept::getStockCode, parts[0])
+                                               .eq(StockConcept::getConceptCode, parts[1]));
+                                }
+                            }
+                        }))
         );
 
-        if (existing != null) {
-            existing.setSnapDate(snapDate);
-            return stockConceptMapper.updateById(existing);
-        } else {
-            StockConcept sc = new StockConcept();
-            sc.setStockCode(stockCode);
-            sc.setConceptCode(conceptCode);
-            sc.setSnapDate(snapDate);
-            stockConceptMapper.insert(sc);
-            return 1;
-        }
+        UpsertHelper.PartitionResult<StockConcept> result = UpsertHelper.partition(
+                newRelations,
+                existing,
+                r -> r.getStockCode() + ":" + r.getConceptCode(),
+                r -> r.getStockCode() + ":" + r.getConceptCode(),
+                (src, tgt) -> tgt.setId(src.getId())
+        );
+
+        int count = 0;
+        if (result.hasInserts()) count += batchSqlRunner.batchInsert(result.getToInsert());
+        if (result.hasUpdates()) count += batchSqlRunner.batchUpdate(result.getToUpdate());
+        return count;
     }
 }
