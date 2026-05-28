@@ -3,7 +3,6 @@ package com.tradingdiary.collection.orchestrator;
 import com.tradingdiary.collection.handler.DataTypeHandler;
 import com.tradingdiary.collection.handler.StockDailyTushareHandler;
 import com.tradingdiary.collection.model.BackfillRequest;
-import com.tradingdiary.collection.model.FetchResult;
 import com.tradingdiary.entity.DataCollectionLog;
 import com.tradingdiary.entity.TradeCalendar;
 import com.tradingdiary.mapper.DataCollectionLogMapper;
@@ -242,50 +241,45 @@ class CollectionOrchestratorTest {
         verify(orchestrator, times(3)).orchestrate(eq("MARGIN_DAILY_SSE"), any());
     }
 
-    // 测试流程: Given tushareHandler 返回 FetchResult.single, When 回补 5 天, Then 总计 25000 条且 0 天失败
+    // 测试流程: Given tushareHandler 返回日线数据, When 回补 5 天, Then 总计 25000 条且 0 天失败
     @Test
     void shouldBackfillStockDailyWithTushareHandler() {
-        for (int i = 1; i <= 5; i++) {
-            when(dataCollectionLogMapper.selectLatestByDataTypeAndJobTypeAndTradeDate(
-                    eq("STOCK_DAILY_TUSHARE"), eq("FETCH"), eq(LocalDate.of(2026, 5, i))))
-                    .thenReturn(null);
-            when(dataCollectionLogMapper.selectLatestByDataTypeAndJobTypeAndTradeDate(
-                    eq("STOCK_DAILY_TUSHARE"), eq("CLEANSE"), eq(LocalDate.of(2026, 5, i))))
-                    .thenReturn(null);
-        }
-        doReturn("执行成功").when(orchestrator).orchestrate(any(), any());
+        when(tushareHandler.fetch(any())).thenReturn("{\"data\":{\"fields\":[\"ts_code\"],\"items\":[]}}");
+        when(tushareHandler.cleanse(any(), any())).thenReturn(5000);
 
         String result = orchestrator.backfillStockDaily(
                 LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 5));
 
-        assertThat(result).contains("日线补采完成");
-        assertThat(result).contains("5 个日期已处理");
-        verify(orchestrator, times(5)).orchestrate(eq("STOCK_DAILY_TUSHARE"), any());
+        assertThat(result).contains("25000 条记录", "0 天失败");
+        verify(tushareHandler, times(5)).fetch(any());
+        verify(tushareHandler, times(5)).cleanse(any(), any());
     }
 
-    // 测试流程: Given 结束日期早于开始日期, When 回补, Then 返回 0 个日期已处理
+    // 测试流程: Given 结束日期早于开始日期, When 回补, Then 返回 0 条记录且不调用 fetch
     @Test
     void shouldHandleEmptyDateRange() {
         String result = orchestrator.backfillStockDaily(
                 LocalDate.of(2026, 5, 5), LocalDate.of(2026, 5, 1));
 
-        assertThat(result).contains("0 个日期已处理");
-        verify(orchestrator, never()).orchestrate(any(), any());
+        assertThat(result).contains("0 条记录");
+        verify(tushareHandler, never()).fetch(any());
     }
 
-    // 测试流程: Given 部分日期 orchestrate 失败, When 回补 3 天, Then 继续执行后续天、1 天失败
+    // 测试流程: Given 第 2 天 cleanse 抛异常, When 回补 3 天, Then 继续执行后续天、总计 10000 条且 1 天失败
     @Test
     void shouldContinueBackfillAfterSingleDateFailure() {
-        doReturn(false).when(orchestrator).isDateComplete(any(), any());
-        doReturn("执行成功").when(orchestrator).orchestrate(eq("STOCK_DAILY_TUSHARE"), eq(LocalDate.of(2026, 5, 1)));
-        doReturn("采集失败").when(orchestrator).orchestrate(eq("STOCK_DAILY_TUSHARE"), eq(LocalDate.of(2026, 5, 2)));
-        doReturn("执行成功").when(orchestrator).orchestrate(eq("STOCK_DAILY_TUSHARE"), eq(LocalDate.of(2026, 5, 3)));
+        when(tushareHandler.fetch(any())).thenReturn("{\"data\":{}}");
+        when(tushareHandler.cleanse(any(), any()))
+                .thenReturn(5000)
+                .thenThrow(new RuntimeException("Tushare cleanse error"))
+                .thenReturn(5000);
 
         String result = orchestrator.backfillStockDaily(
                 LocalDate.of(2026, 5, 1), LocalDate.of(2026, 5, 3));
 
-        assertThat(result).contains("1 个日期失败");
-        verify(orchestrator, times(3)).orchestrate(eq("STOCK_DAILY_TUSHARE"), any());
+        assertThat(result).contains("10000 条记录", "1 天失败");
+        verify(tushareHandler, times(3)).fetch(any());
+        verify(tushareHandler, times(3)).cleanse(any(), any());
     }
 
     private TradeCalendar buildTradingDay(LocalDate date) {
