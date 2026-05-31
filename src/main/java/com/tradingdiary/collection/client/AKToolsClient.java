@@ -168,6 +168,35 @@ public class AKToolsClient {
                 conceptName, startDate, endDate);
     }
 
+    public String fetchStockIncome(String stockCode, String startDate, String endDate) {
+        log.info("Fetching stock income statement: stockCode={}, startDate={}, endDate={}", stockCode, startDate, endDate);
+        return get("/api/public/stock_financial_abstract_ths?symbol={stockCode}&start_date={startDate}&end_date={endDate}",
+                stockCode, startDate, endDate);
+    }
+
+    public String fetchStockBalanceSheet(String stockCode, String startDate, String endDate) {
+        log.info("Fetching stock balance sheet: stockCode={}, startDate={}, endDate={}", stockCode, startDate, endDate);
+        return get("/api/public/stock_financial_debt_ths?symbol={stockCode}&start_date={startDate}&end_date={endDate}",
+                stockCode, startDate, endDate);
+    }
+
+    public String fetchStockCashFlow(String stockCode, String startDate, String endDate) {
+        log.info("Fetching stock cash flow: stockCode={}, startDate={}, endDate={}", stockCode, startDate, endDate);
+        return get("/api/public/stock_financial_cash_flow_ths?symbol={stockCode}&start_date={startDate}&end_date={endDate}",
+                stockCode, startDate, endDate);
+    }
+
+    public String fetchStockFinancialIndicator(String stockCode, String startDate, String endDate) {
+        log.info("Fetching stock financial indicator: stockCode={}, startDate={}, endDate={}", stockCode, startDate, endDate);
+        return get("/api/public/stock_financial_analysis_indicator?symbol={stockCode}&start_date={startDate}&end_date={endDate}",
+                stockCode, startDate, endDate);
+    }
+
+    public String fetchStockDailyValuation(String tradeDate) {
+        log.info("Fetching stock daily valuation: tradeDate={}", tradeDate);
+        return get("/api/public/stock_zh_a_spot_em");
+    }
+
     private String get(String path, Object... uriVariables) {
         rateLimit();
         try {

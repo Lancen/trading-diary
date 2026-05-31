@@ -17,13 +17,14 @@ interface RankingItem {
 }
 
 type SectorType = "INDUSTRY" | "CONCEPT";
+type RankingTab = "amount" | "amountChange" | "changePct" | "changePctChange";
 type SortField = "amount" | "amountChange" | "changePct" | "changePctChange";
 
-const SORT_OPTIONS: { key: SortField; label: string }[] = [
-  { key: "amount", label: "成交额" },
-  { key: "amountChange", label: "成交额环比" },
-  { key: "changePct", label: "涨幅" },
-  { key: "changePctChange", label: "涨幅环比" },
+const RANKING_TABS: { key: RankingTab; label: string }[] = [
+  { key: "amount", label: "成交额排行" },
+  { key: "amountChange", label: "成交额环比排行" },
+  { key: "changePct", label: "涨幅排行" },
+  { key: "changePctChange", label: "涨幅环比排行" },
 ];
 
 function fmtAmount(val: number | null): string {
@@ -54,13 +55,15 @@ function changeColor(val: number | null): string {
 
 export default function RankingsPage() {
   const router = useRouter();
+  const [rankingTab, setRankingTab] = useState<RankingTab>("amount");
   const [sectorType, setSectorType] = useState<SectorType>("INDUSTRY");
   const [tradeDate, setTradeDate] = useState<string>("");
-  const [sortBy, setSortBy] = useState<SortField>("amount");
   const [sortDir, setSortDir] = useState<"desc" | "asc">("desc");
   const [data, setData] = useState<RankingItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [displayDate, setDisplayDate] = useState<string>("");
+
+  const sortBy: SortField = rankingTab;
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -96,7 +99,7 @@ export default function RankingsPage() {
     if (sortBy === f) {
       setSortDir((d) => (d === "desc" ? "asc" : "desc"));
     } else {
-      setSortBy(f);
+      setRankingTab(f as RankingTab);
       setSortDir("desc");
     }
   }
@@ -105,10 +108,13 @@ export default function RankingsPage() {
     return sortBy !== f ? "↕" : sortDir === "desc" ? "↓" : "↑";
   }
 
-  function handleTabChange(t: SectorType) {
-    setSectorType(t);
-    setSortBy("amount");
+  function handleRankingTabChange(tab: RankingTab) {
+    setRankingTab(tab);
     setSortDir("desc");
+  }
+
+  function handleSectorTabChange(t: SectorType) {
+    setSectorType(t);
   }
 
   const detailPath = (code: string) =>
@@ -120,10 +126,26 @@ export default function RankingsPage() {
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">板块排名</h1>
 
+      <div className="flex rounded-lg border overflow-hidden">
+        {RANKING_TABS.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => handleRankingTabChange(tab.key)}
+            className={`px-5 py-2 text-sm font-medium transition-colors ${
+              rankingTab === tab.key
+                ? "bg-blue-600 text-white"
+                : "bg-white text-gray-600 hover:bg-gray-100"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       <div className="flex items-center gap-4 flex-wrap">
         <div className="flex rounded-lg border overflow-hidden">
           <button
-            onClick={() => handleTabChange("INDUSTRY")}
+            onClick={() => handleSectorTabChange("INDUSTRY")}
             className={`px-5 py-2 text-sm font-medium transition-colors ${
               sectorType === "INDUSTRY"
                 ? "bg-blue-600 text-white"
@@ -133,7 +155,7 @@ export default function RankingsPage() {
             行业排名
           </button>
           <button
-            onClick={() => handleTabChange("CONCEPT")}
+            onClick={() => handleSectorTabChange("CONCEPT")}
             className={`px-5 py-2 text-sm font-medium transition-colors ${
               sectorType === "CONCEPT"
                 ? "bg-blue-600 text-white"
@@ -160,31 +182,6 @@ export default function RankingsPage() {
               清除
             </button>
           )}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <label className="text-xs text-gray-500">排序</label>
-          <select
-            value={sortBy}
-            onChange={(e) => {
-              setSortBy(e.target.value as SortField);
-              setSortDir("desc");
-            }}
-            className="rounded-lg border px-3 py-2 text-sm"
-          >
-            {SORT_OPTIONS.map((o) => (
-              <option key={o.key} value={o.key}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-          <button
-            onClick={() => setSortDir((d) => (d === "desc" ? "asc" : "desc"))}
-            className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-100"
-            title={sortDir === "desc" ? "降序" : "升序"}
-          >
-            {sortDir === "desc" ? "↓ 降序" : "↑ 升序"}
-          </button>
         </div>
       </div>
 
