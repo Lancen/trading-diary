@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/mybatis-3-mapper.dtd">
+<!-- 拥挤度 Mapper，提供拥挤度计算所需的数据查询 -->
+<mapper namespace="com.tradingdiary.mapper.CrowdednessMapper">
+
+    <!--
+        拥挤度计算逻辑：
+        1. 每个交易日，按成交额降序排列所有个股
+        2. 取前5%个股（CEIL(总数 * 0.05)）
+        3. 前5%个股总成交额 / 全市场总成交额 = 拥挤度（百分比）
+    -->
+    <select id="selectCrowdednessDaily" resultType="java.util.Map">
+        SELECT
+            trade_date,
+            total_amount,
+            top_amount,
+            total_stocks,
+            top_stocks,
+            CASE WHEN total_amount > 0
+                 THEN ROUND(top_amount / total_amount * 100, 2)
+                 ELSE 0
+            END AS crowdedness
+        FROM (
+            SELECT
+                trade_date,
+                SUM(amount) AS total_amount,
+                SUM(CASE WHEN rn &lt;= CEIL(cnt * 0.05) THEN amount ELSE 0 END) AS top_amount,
+                MAX(cnt) AS total_stocks,
+                CEIL(MAX(cnt) * 0.05) AS top_stocks
+            FROM (
+                SELECT
+                    trade_date,
+                    stock_code,
+                    amount,
+                    ROW_NUMBER() OVER (PARTITION BY trade_date ORDER BY amount DESC) AS rn,
+                    COUNT(*) OVER (PARTITION BY trade_date) AS cnt
+                FROM stock_daily
+                WHERE trade_date BETWEEN #{startDate} AND #{endDate}
+                  AND is_deleted = 0
+                  AND amount IS NOT NULL
+                  AND amount > 0
+            ) ranked
+            GROUP BY trade_date
+        ) agg
+        ORDER BY trade_date
+    </select>
+
+    <select id="selectLatestTradeDate" resultType="java.time.LocalDate">
+        SELECT MAX(trade_date)
+        FROM stock_daily
+        WHERE is_deleted = 0
+    </select>
+
+</mapper>
