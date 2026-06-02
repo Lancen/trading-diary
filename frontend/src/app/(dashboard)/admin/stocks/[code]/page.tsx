@@ -1,44 +1,26 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import api from "@/lib/api";
+import { useApiQuery, keys } from "@/lib/hooks";
+import type { DetailData } from "@/lib/types";
 import KlineMarginOverlay, { KlinePoint, MarginPoint } from "@/components/chart/KlineMarginOverlay";
-
-interface Kline { tradeDate: string; open: number; high: number; low: number; close: number; volume: number; }
-interface Margin { tradeDate: string; marginBalance: number; marginChange: number; shortBalance: number; shortChange: number; }
-interface DetailData {
-  stockCode: string; stockName: string; industry: string; concepts: string[];
-  latestQuote: { open: number; high: number; low: number; close: number; volume: number; changePct: number; };
-  latestMargin: { marginBalance: number; marginBuy: number; shortBalance: number; totalBalance: number; } | null;
-  dailyKlines: Kline[];
-  dailyMargins: Margin[];
-}
 
 export default function StockDetailPage() {
   const { code } = useParams<{ code: string }>();
   const router = useRouter();
-  const [detail, setDetail] = useState<DetailData | null>(null);
-  const [loading, setLoading] = useState(true);
   const [range, setRange] = useState("3m");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [period, setPeriod] = useState<"daily" | "weekly" | "monthly">("daily");
   const [showTable, setShowTable] = useState(false);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params: Record<string, string> = {};
-      if (startDate) params.startDate = startDate;
-      if (endDate) params.endDate = endDate;
-      const res = await api.get(`api/v1/admin/stocks/${code}`, { searchParams: params }).json<{ code: number; data: DetailData }>();
-      setDetail(res.data || null);
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
-  }, [code, startDate, endDate]);
-
-  useEffect(() => { fetchData(); }, [fetchData]);
+  const { data: detail, isPending, error } = useApiQuery<DetailData>(
+    keys.stockDetail(code, { startDate, endDate }),
+    `api/v1/admin/stocks/${code}`,
+    { startDate: startDate || undefined, endDate: endDate || undefined },
+    { enabled: !!startDate },
+  );
 
   function applyRange(r: string) {
     setRange(r);
@@ -63,7 +45,7 @@ export default function StockDetailPage() {
     tradeDate: m.tradeDate, marginBalance: m.marginBalance, shortBalance: m.shortBalance,
   }));
 
-  if (loading) return <div className="py-8 text-center text-gray-500">加载中...</div>;
+  if (isPending && !error) return <div className="py-8 text-center text-gray-500">加载中...</div>;
   if (!detail) return <div className="py-8 text-center text-gray-500">未找到该股票</div>;
 
   return (

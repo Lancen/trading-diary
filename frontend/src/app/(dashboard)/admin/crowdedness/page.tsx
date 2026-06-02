@@ -1,59 +1,35 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import api from "@/lib/api";
+import { useMemo, useState } from "react";
+import { useApiQuery, keys } from "@/lib/hooks";
+import type { CrowdednessDaily } from "@/lib/types";
+import { fmtAmount } from "@/lib/format";
 import CrowdednessChart, { CrowdednessPoint } from "@/components/chart/CrowdednessChart";
 
-interface CrowdednessDaily {
-  tradeDate: string;
-  crowdedness: number;
-  totalAmount: number;
-  topAmount: number;
-  totalStocks: number;
-  topStocks: number;
-}
-
-function fmtAmount(val: number | null): string {
-  if (val == null) return "-";
-  return (val / 1e8).toFixed(2) + "亿";
-}
-
 export default function CrowdednessPage() {
-  const [data, setData] = useState<CrowdednessDaily[]>([]);
-  const [loading, setLoading] = useState(true);
   const [range, setRange] = useState("1y");
-  const [latest, setLatest] = useState<CrowdednessDaily | null>(null);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const now = new Date();
-      let startDate = "";
-      if (range === "6m") {
-        const d = new Date(now); d.setMonth(d.getMonth() - 6); startDate = d.toISOString().slice(0, 10);
-      } else if (range === "1y") {
-        const d = new Date(now); d.setFullYear(d.getFullYear() - 1); startDate = d.toISOString().slice(0, 10);
-      } else if (range === "3y") {
-        const d = new Date(now); d.setFullYear(d.getFullYear() - 3); startDate = d.toISOString().slice(0, 10);
-      } else if (range === "all") {
-        startDate = "2006-01-01";
-      }
-
-      const res = await api.get("api/v1/admin/crowdedness", {
-        searchParams: { startDate },
-      }).json<{ code: number; data: CrowdednessDaily[] }>();
-
-      const rows = res.data || [];
-      setData(rows);
-      setLatest(rows.length > 0 ? rows[rows.length - 1] : null);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
+  const startDate = useMemo(() => {
+    const now = new Date();
+    if (range === "6m") {
+      const d = new Date(now); d.setMonth(d.getMonth() - 6); return d.toISOString().slice(0, 10);
+    } else if (range === "1y") {
+      const d = new Date(now); d.setFullYear(d.getFullYear() - 1); return d.toISOString().slice(0, 10);
+    } else if (range === "3y") {
+      const d = new Date(now); d.setFullYear(d.getFullYear() - 3); return d.toISOString().slice(0, 10);
+    } else if (range === "all") {
+      return "2006-01-01";
     }
+    return "";
   }, [range]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  const { data = [], isFetching } = useApiQuery<CrowdednessDaily[]>(
+    keys.crowdedness(startDate),
+    "api/v1/admin/crowdedness",
+    { startDate },
+  );
+
+  const latest = data.length > 0 ? data[data.length - 1] : null;
 
   const chartData: CrowdednessPoint[] = data.map(d => ({
     tradeDate: d.tradeDate,
@@ -114,7 +90,7 @@ export default function CrowdednessPage() {
             </button>
           ))}
         </div>
-        {loading ? (
+        {isFetching ? (
           <div className="flex items-center justify-center text-gray-500" style={{ height: 400 }}>加载中...</div>
         ) : chartData.length === 0 ? (
           <div className="flex items-center justify-center text-gray-500" style={{ height: 400 }}>暂无数据</div>

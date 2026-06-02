@@ -1,29 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import api from "@/lib/api";
-
-interface JobStatus {
-  status: string;
-  completedAt: string | null;
-  recordCount: number | null;
-  errorMsg: string | null;
-}
-
-interface CollectionStatus {
-  dataType: string;
-  dataTypeLabel: string;
-  lastFetch: JobStatus | null;
-  lastCleanse: JobStatus | null;
-  lastDataDate: string | null;
-}
-
-interface CookieStatus {
-  hasCookie: boolean;
-  cookiePreview: string;
-  updatedAt: string | null;
-}
+import { useApiQuery, useApiMutation, keys } from "@/lib/hooks";
+import type { CollectionStatus, CookieStatus } from "@/lib/types";
+import { formatTime } from "@/lib/format";
 
 type TabType = "daily" | "fixed";
 
@@ -79,13 +60,6 @@ function StatusBadge({ status }: { status: string | null }) {
   if (status === "FAILED") return <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-700">异常</span>;
   if (status === "RUNNING") return <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">采集中</span>;
   return <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">{status}</span>;
-}
-
-function formatTime(iso: string | null): string {
-  if (!iso) return "-";
-  return new Date(iso).toLocaleString("zh-CN", {
-    month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit",
-  });
 }
 
 function FlowStepNode({
@@ -165,64 +139,42 @@ function FlowStepNode({
 }
 
 export default function CollectionHubPage() {
-  const [statusList, setStatusList] = useState<CollectionStatus[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [cookieStatus, setCookieStatus] = useState<CookieStatus>({ hasCookie: false, cookiePreview: "", updatedAt: null });
+  const statusQuery = useApiQuery<CollectionStatus[]>(keys.collectionStatus(), "api/v1/admin/collection/status");
+  const cookieQuery = useApiQuery<CookieStatus>(keys.cookieStatus(), "api/v1/admin/collection/config/cookie");
+  const cookieMutation = useApiMutation<string, { cookie: string }>("post", "api/v1/admin/collection/config/cookie");
+  const triggerDailyMutation = useApiMutation<string, void>("post", "api/v1/admin/collection/trigger-daily");
+
+  const statusList = statusQuery.data ?? [];
+  const cookieStatus = cookieQuery.data ?? { hasCookie: false, cookiePreview: "", updatedAt: null };
+  const loading = statusQuery.isLoading;
+  const savingCookie = cookieMutation.isPending;
+  const triggeringDaily = triggerDailyMutation.isPending;
+
   const [cookieInput, setCookieInput] = useState("");
-  const [savingCookie, setSavingCookie] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("daily");
-  const [triggeringDaily, setTriggeringDaily] = useState(false);
   const [triggerResult, setTriggerResult] = useState<string | null>(null);
   const router = useRouter();
 
-  useEffect(() => { fetchStatus(); fetchCookieStatus(); }, []);
-
-  async function fetchStatus() {
-    setLoading(true);
-    try {
-      const res = await api.get("api/v1/admin/collection/status").json<{ code: number; data: CollectionStatus[] }>();
-      setStatusList(res.data || []);
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
-  }
-
-  async function fetchCookieStatus() {
-    try {
-      const res = await api.get("api/v1/admin/collection/config/cookie").json<{ code: number; data: CookieStatus }>();
-      setCookieStatus(res.data);
-    } catch (e) { console.error(e); }
-  }
-
   async function saveCookie() {
-    setSavingCookie(true);
     try {
-      await api.post("api/v1/admin/collection/config/cookie", { json: { cookie: cookieInput } });
+      await cookieMutation.mutateAsync({ cookie: cookieInput });
       setCookieInput("");
-      await fetchCookieStatus();
     } catch (e) { console.error(e); }
-    finally { setSavingCookie(false); }
   }
 
   async function clearCookie() {
-    setSavingCookie(true);
     try {
-      await api.post("api/v1/admin/collection/config/cookie", { json: { cookie: "" } });
-      await fetchCookieStatus();
+      await cookieMutation.mutateAsync({ cookie: "" });
     } catch (e) { console.error(e); }
-    finally { setSavingCookie(false); }
   }
 
   async function handleTriggerDaily() {
-    setTriggeringDaily(true);
     setTriggerResult(null);
     try {
-      const res = await api.post("api/v1/admin/collection/trigger-daily").json<{ code: number; data: string }>();
-      if (res.code === 200) {
-        setTriggerResult(res.data);
-        setTimeout(() => fetchStatus(), 3000);
-      }
+      const data = await triggerDailyMutation.mutateAsync(undefined!);
+      setTriggerResult(data);
+      setTimeout(() => statusQuery.refetch(), 3000);
     } catch (e) { console.error(e); }
-    finally { setTriggeringDaily(false); }
   }
 
   const normalCount = statusList.filter(s =>
@@ -263,7 +215,7 @@ export default function CollectionHubPage() {
           <span className="text-sm text-gray-500">
             正常 <span className="font-bold text-green-700">{normalCount}</span> · 异常 <span className="font-bold text-red-700">{errorCount}</span>
           </span>
-          <button onClick={() => { fetchStatus(); fetchCookieStatus(); }} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">刷新</button>
+          <button onClick={() => { statusQuery.refetch(); cookieQuery.refetch(); }} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">刷新</button>
         </div>
       </div>
 

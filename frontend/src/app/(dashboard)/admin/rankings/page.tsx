@@ -1,20 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
-import api from "@/lib/api";
-
-interface RankingItem {
-  sectorType: string;
-  sectorCode: string;
-  sectorName: string;
-  tradeDate: string;
-  amount: number | null;
-  amountChange: number | null;
-  changePct: number | null;
-  changePctChange: number | null;
-  volumePct: number | null;
-}
+import { useState } from "react";
+import { useApiQuery, keys } from "@/lib/hooks";
+import type { RankingItem } from "@/lib/types";
+import { fmtAmountSmart, fmtChange, fmtChangeAbs, changeColor } from "@/lib/format";
 
 type SectorType = "INDUSTRY" | "CONCEPT";
 type RankingTab = "amount" | "amountChange" | "changePct" | "changePctChange";
@@ -27,73 +17,28 @@ const RANKING_TABS: { key: RankingTab; label: string }[] = [
   { key: "changePctChange", label: "涨幅环比排行" },
 ];
 
-function fmtAmount(val: number | null): string {
-  if (val == null) return "-";
-  if (Math.abs(val) >= 1e8) return (val / 1e8).toFixed(2) + "亿";
-  if (Math.abs(val) >= 1e4) return (val / 1e4).toFixed(2) + "万";
-  return val.toFixed(2);
-}
-
-function fmtChange(val: number | null): string {
-  if (val == null) return "-";
-  const sign = val > 0 ? "+" : "";
-  return sign + val.toFixed(2) + "%";
-}
-
-function fmtChangeAbs(val: number | null): string {
-  if (val == null) return "-";
-  const sign = val > 0 ? "+" : "";
-  if (Math.abs(val) >= 1e8) return sign + (val / 1e8).toFixed(2) + "亿";
-  if (Math.abs(val) >= 1e4) return sign + (val / 1e4).toFixed(2) + "万";
-  return sign + val.toFixed(2);
-}
-
-function changeColor(val: number | null): string {
-  if (val == null) return "text-gray-400";
-  return val > 0 ? "text-red-600" : val < 0 ? "text-green-600" : "text-gray-500";
-}
-
 export default function RankingsPage() {
   const router = useRouter();
   const [rankingTab, setRankingTab] = useState<RankingTab>("amount");
   const [sectorType, setSectorType] = useState<SectorType>("INDUSTRY");
   const [tradeDate, setTradeDate] = useState<string>("");
   const [sortDir, setSortDir] = useState<"desc" | "asc">("desc");
-  const [data, setData] = useState<RankingItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [displayDate, setDisplayDate] = useState<string>("");
 
   const sortBy: SortField = rankingTab;
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params: Record<string, string> = {
-        sectorType,
-        sortBy,
-        sortDir,
-      };
-      if (tradeDate) params.tradeDate = tradeDate;
-      const res = await api
-        .get("api/v1/admin/sector-ranking", { searchParams: params })
-        .json<{ code: number; data: RankingItem[] }>();
-      setData(res.data || []);
-      if (res.data && res.data.length > 0 && res.data[0].tradeDate) {
-        setDisplayDate(res.data[0].tradeDate.slice(0, 10));
-      } else {
-        setDisplayDate("");
-      }
-    } catch (e) {
-      console.error(e);
-      setData([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [sectorType, tradeDate, sortBy, sortDir]);
+  const params: Record<string, string> = { sectorType, sortBy, sortDir };
+  if (tradeDate) params.tradeDate = tradeDate;
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const { data = [], isLoading } = useApiQuery<RankingItem[]>(
+    keys.rankings(params),
+    "api/v1/admin/sector-ranking",
+    params,
+  );
+
+  const displayDate =
+    data.length > 0 && data[0].tradeDate
+      ? data[0].tradeDate.slice(0, 10)
+      : "";
 
   function handleSort(f: SortField) {
     if (sortBy === f) {
@@ -225,7 +170,7 @@ export default function RankingsPage() {
             </tr>
           </thead>
           <tbody>
-            {loading ? (
+            {isLoading ? (
               <tr>
                 <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
                   加载中...
@@ -277,7 +222,7 @@ export default function RankingsPage() {
                     </span>
                   </td>
                   <td className="px-3 py-2 text-right font-medium">
-                    {fmtAmount(item.amount)}
+                    {fmtAmountSmart(item.amount)}
                   </td>
                   <td className={`px-3 py-2 text-right ${changeColor(item.amountChange)}`}>
                     {fmtChangeAbs(item.amountChange)}
@@ -298,7 +243,7 @@ export default function RankingsPage() {
         </table>
       </div>
 
-      {!loading && data.length > 0 && (
+      {!isLoading && data.length > 0 && (
         <div className="text-sm text-gray-500">
           共 {data.length} 个{sectorType === "INDUSTRY" ? "行业" : "概念"}
         </div>

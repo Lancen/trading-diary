@@ -1,37 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useApiQuery, keys } from "@/lib/hooks";
 import api from "@/lib/api";
-import KlineMarginOverlay, { KlinePoint, MarginPoint } from "@/components/chart/KlineMarginOverlay";
-
-interface IndexQuote {
-  indexCode: string;
-  tradeDate: string;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
-  changePct: number;
-}
-
-interface MarketIndexDaily {
-  indexCode: string;
-  tradeDate: string;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
-  amount: number;
-  changePct: number;
-}
-
-interface MacroMargin {
-  tradeDate: string;
-  marginBalance: number;
-  shortBalance: number;
-}
+import type { IndexQuote, MarketIndexDaily, MacroMargin, ApiResponse } from "@/lib/types";
+import KlineMarginOverlay, { MarginPoint } from "@/components/chart/KlineMarginOverlay";
 
 const INDEX_NAMES: Record<string, string> = {
   "sh000001": "上证指数",
@@ -48,34 +22,18 @@ const P0_INDICES = ["sh000001", "sz399001", "sz399006", "sh000300", "sh000905"];
 
 export default function IndexAnalysisPage() {
   const [selectedIndex, setSelectedIndex] = useState("sh000001");
-  const [latestQuotes, setLatestQuotes] = useState<IndexQuote[]>([]);
-  const [klines, setKlines] = useState<KlinePoint[]>([]);
-  const [margins, setMargins] = useState<MarginPoint[]>([]);
-  const [loading, setLoading] = useState(true);
   const [range, setRange] = useState("3m");
   const [period, setPeriod] = useState<"daily" | "weekly" | "monthly">("daily");
 
-  const fetchLatest = useCallback(async () => {
-    try {
-      const res = await api.get("api/v1/admin/market-index-daily/latest")
-        .json<{ code: number; data: MarketIndexDaily[] }>();
-      const data = res.data || [];
-      setLatestQuotes(data.map(d => ({
-        indexCode: d.indexCode,
-        tradeDate: d.tradeDate,
-        open: d.open,
-        high: d.high,
-        low: d.low,
-        close: d.close,
-        volume: d.volume,
-        changePct: d.changePct,
-      })));
-    } catch (e) { console.error(e); }
-  }, []);
+  const { data: latestRaw = [] } = useApiQuery<MarketIndexDaily[]>(
+    keys.marketIndexLatest(),
+    "api/v1/admin/market-index-daily/latest",
+  );
+  const latestQuotes: IndexQuote[] = latestRaw;
 
-  const fetchChart = useCallback(async () => {
-    setLoading(true);
-    try {
+  const { data: chartData, isPending: chartPending } = useQuery({
+    queryKey: ["indexChart", selectedIndex, range],
+    queryFn: async () => {
       const now = new Date();
       let startDate = "";
       if (range === "1m") { const d = new Date(now); d.setMonth(d.getMonth() - 1); startDate = d.toISOString().slice(0, 10); }
@@ -85,30 +43,30 @@ export default function IndexAnalysisPage() {
 
       const klineRes = await api.get("api/v1/admin/market-index-daily", {
         searchParams: { indexCode: selectedIndex, startDate },
-      }).json<{ code: number; data: MarketIndexDaily[] }>();
+      }).json<ApiResponse<MarketIndexDaily[]>>();
 
-      setKlines((klineRes.data || []).map(k => ({
-        tradeDate: k.tradeDate, open: k.open, high: k.high, low: k.low, close: k.close, volume: k.volume,
-      })));
-
+      let marginPoints: MarginPoint[] = [];
       try {
         const marginRes = await api.get("api/v1/admin/margin-macro/sse", {
           searchParams: { startDate },
-        }).json<{ code: number; data: MacroMargin[] }>();
-        setMargins((marginRes.data || []).map(m => ({
+        }).json<ApiResponse<MacroMargin[]>>();
+        marginPoints = (marginRes.data || []).map(m => ({
           tradeDate: m.tradeDate, marginBalance: m.marginBalance, shortBalance: m.shortBalance,
-        })));
-      } catch {
-        setMargins([]);
-      }
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
-  }, [selectedIndex, range]);
+        }));
+      } catch {}
 
-  useEffect(() => { fetchLatest(); }, [fetchLatest]);
-  useEffect(() => { fetchChart(); }, [fetchChart]);
+      return {
+        klines: (klineRes.data || []).map(k => ({
+          tradeDate: k.tradeDate, open: k.open, high: k.high, low: k.low, close: k.close, volume: k.volume,
+        })),
+        margins: marginPoints,
+      };
+    },
+  });
 
-  const currentQuote = latestQuotes.find(q => q.indexCode === selectedIndex);
+  const klines = chartData?.klines ?? [];
+  const margins = chartData?.margins ?? [];
+  const loading = chartPending;
 
   return (
     <div className="space-y-4">
